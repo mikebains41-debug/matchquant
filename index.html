@@ -60,3 +60,40 @@
       margin-top: 20px;
       display: none;
     }
+
+    .result-box {
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h1>MatchQuant Soccer</h1>
+    <p>Professional soccer betting intelligence.<br>
+    Model-driven predictions.</p>
+
+    <button onclick="runEngine()">Run Soccer Engine</button>
+
+    <div class="results" id="results">
+      <div class="result-box"><strong>Predicted Score:</strong> 2–1 Home</div>
+      <div class="result-box"><strong>Over / Under 2.5:</strong> Over</div>
+      <div class="result-box"><strong>Asian Handicap:</strong> Home -0.5</div>
+      <div class="result-box"><strong>Corners:</strong> Over 8.5</div>
+      <div class="result-box"><strong>Cards:</strong> Over 3.5</div>
+    </div>
+  </div>
+
+  <script>
+    function runEngine() {
+      document.getElementById("results").style.display = "block";
+    }
+  </script>
+
+</body>
+</html>
