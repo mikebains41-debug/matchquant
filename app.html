@@ -5,159 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant Soccer Engine</title>
   <link rel="manifest" href="manifest.json">
-
   <style>
     :root{
-      --bg1:#0b1633;
-      --bg2:#050814;
-      --card:#0f1a3a;
-      --chip:#111d44;
-      --text:#ffffff;
-      --muted:#c9d4ff;
-      --accent:#58a6ff;
-      --accent2:#2f81f7;
-      --border:rgba(255,255,255,.08);
-      --shadow:0 20px 70px rgba(0,0,0,.55);
+      --bg1:#0b1633; --bg2:#050814; --card:#0f1a3a; --text:#ffffff;
+      --muted:#c9d4ff; --accent:#58a6ff; --accent2:#2f81f7;
+      --border:rgba(255,255,255,.08); --shadow:0 20px 70px rgba(0,0,0,.55);
       --radius:24px;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, var(--bg1), var(--bg2));
-      color:var(--text);
-      min-height:100vh;
-      padding:14px;
-    }
-    .topbar{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      max-width:920px;
-      margin:0 auto 12px auto;
-    }
-    .homebtn{
-      background:rgba(255,255,255,.08);
-      border:1px solid var(--border);
-      color:#fff;
-      padding:10px 14px;
-      border-radius:14px;
-      text-decoration:none;
-      font-weight:700;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-    }
-    .title{
-      font-size:20px;
-      font-weight:900;
-      color:var(--accent);
-      letter-spacing:.2px;
-      margin:0;
-      flex:1;
-      text-align:center;
-    }
-    .wrap{
-      max-width:920px;
-      margin:0 auto;
-    }
-    .panel{
-      background:rgba(15,26,58,.92);
-      border:1px solid var(--border);
-      box-shadow:var(--shadow);
-      border-radius:var(--radius);
-      padding:18px;
-      margin:14px 0;
-    }
-    h2{
-      margin:0 0 12px 0;
-      color:var(--accent);
-      font-size:22px;
-      font-weight:900;
-    }
-    .row{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    input{
-      width:100%;
-      padding:14px 14px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.08);
-      color:#fff;
-      outline:none;
-      font-size:16px;
-    }
+    body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;padding:14px;}
+    .topbar{display:flex;align-items:center;gap:12px;max-width:920px;margin:0 auto 12px auto;}
+    .homebtn{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;padding:10px 14px;border-radius:14px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;}
+    .title{font-size:20px;font-weight:900;color:var(--accent);letter-spacing:.2px;margin:0;flex:1;text-align:center;}
+    .wrap{max-width:920px;margin:0 auto;}
+    .panel{background:rgba(15,26,58,.92);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px;margin:14px 0;}
+    h2{margin:0 0 12px 0;color:var(--accent);font-size:22px;font-weight:900;}
+    .row{display:flex;gap:12px;flex-wrap:wrap;}
+    input{width:100%;padding:14px 14px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:#fff;outline:none;font-size:16px;}
     input::placeholder{color:rgba(255,255,255,.6)}
-    .btn{
-      width:100%;
-      background:linear-gradient(90deg, var(--accent2), var(--accent));
-      border:none;
-      color:#00102a;
-      font-weight:900;
-      padding:14px 18px;
-      border-radius:16px;
-      cursor:pointer;
-      font-size:18px;
-      margin-top:10px;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:12px;
-      margin-top:12px;
-    }
-    .chip{
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:12px 14px;
-      font-size:18px;
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:center;
-    }
-    .k{font-weight:900; color:#eaf0ff}
-    .v{color:var(--muted); font-weight:800}
-    .note{
-      margin-top:10px;
-      color:rgba(255,255,255,.65);
-      font-size:13px;
-      line-height:1.35;
-    }
-    .mini{
-      font-size:13px;
-      color:rgba(255,255,255,.7);
-      margin-top:8px;
-    }
-    .cards{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:12px;
-      margin-top:12px;
-    }
-    .matchCard{
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:14px;
-    }
-    .mcTitle{font-size:18px; font-weight:900}
-    .mcLine{margin-top:6px; color:rgba(255,255,255,.85); font-weight:700}
-    .badge{
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(88,166,255,.16);
-      border:1px solid rgba(88,166,255,.22);
-      color:#d9ecff;
-      font-weight:900;
-      font-size:12px;
-      margin-top:10px;
-    }
+    .btn{width:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border:none;color:#00102a;font-weight:900;padding:14px 18px;border-radius:16px;cursor:pointer;font-size:18px;margin-top:10px;}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;}
+    .chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:16px;padding:12px 14px;font-size:18px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
+    .k{font-weight:900;color:#eaf0ff}
+    .v{color:var(--muted);font-weight:800}
+    .note{margin-top:10px;color:rgba(255,255,255,.65);font-size:13px;line-height:1.35;}
+    .mini{font-size:13px;color:rgba(255,255,255,.7);margin-top:8px;}
+    .cards{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;}
+    .matchCard{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:18px;padding:14px;}
+    .mcTitle{font-size:18px;font-weight:900}
+    .mcLine{margin-top:6px;color:rgba(255,255,255,.85);font-weight:700}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.16);border:1px solid rgba(88,166,255,.22);color:#d9ecff;font-weight:900;font-size:12px;margin-top:10px;}
+    .status{margin-top:10px;font-size:13px;color:rgba(255,255,255,.7)}
   </style>
 </head>
 
@@ -169,8 +47,6 @@
   </div>
 
   <div class="wrap">
-
-    <!-- MODE 1 -->
     <div class="panel">
       <h2>Mode 1 — Manual Match Input</h2>
       <div class="row">
@@ -185,6 +61,7 @@
 
       <div class="grid" id="manualOut">
         <div class="chip"><span class="k">Match:</span><span class="v" id="m_match">Home vs Away</span></div>
+        <div class="chip"><span class="k">xG Used:</span><span class="v" id="m_xg">—</span></div>
         <div class="chip"><span class="k">Predicted Score:</span><span class="v" id="m_score">—</span></div>
         <div class="chip"><span class="k">Over / Under 2.5:</span><span class="v" id="m_ou">—</span></div>
         <div class="chip"><span class="k">Asian Handicap:</span><span class="v" id="m_ah">—</span></div>
@@ -193,27 +70,23 @@
         <div class="chip"><span class="k">Win Probabilities:</span><span class="v" id="m_probs">—</span></div>
       </div>
 
+      <div class="status" id="xgStatus">Loading xG tables…</div>
       <div class="note">
-        This is an offline “pro-style” base: team-strength → xG estimate → Monte Carlo score simulation (no API needed).
-        You can later plug in real xG/xGA + real fixtures without changing the UI.
+        Real xG mode: pulls xG For / xG Against from <b>xg_tables.json</b>.
+        If a team isn’t found, it falls back to a baseline estimate so the app never breaks.
       </div>
     </div>
 
-    <!-- MODE 2 -->
     <div class="panel">
       <h2>Mode 2 — Auto Daily Picks</h2>
       <button class="btn" onclick="loadDaily()">Load Today’s Picks</button>
-      <div class="mini">
-        Works now using built-in demo fixtures. Optional: later we can connect a real fixtures API key.
-      </div>
+      <div class="mini">Demo fixtures shown. You can change the fixture list in the code later.</div>
       <div class="cards" id="dailyList"></div>
     </div>
 
-    <!-- MODE 3 -->
     <div class="panel">
       <h2>Mode 3 — Combined Engine Output</h2>
       <button class="btn" onclick="runFull()">Run Full Engine</button>
-
       <div class="grid">
         <div class="chip"><span class="k">Predicted Score:</span><span class="v" id="f_score">—</span></div>
         <div class="chip"><span class="k">Over / Under 2.5:</span><span class="v" id="f_ou">—</span></div>
@@ -222,97 +95,88 @@
         <div class="chip"><span class="k">Cards:</span><span class="v" id="f_cards">—</span></div>
         <div class="chip"><span class="k">Win Probabilities:</span><span class="v" id="f_probs">—</span></div>
       </div>
-
-      <div class="note">
-        Mode 3 runs the same engine as Mode 1, but as a “full output” panel (for quick viewing + future expansion).
-      </div>
     </div>
-
   </div>
 
 <script>
-/**
- * ------------- CORE MODEL (offline) -------------
- * We use a simple Team Strength map (ELO-ish) → convert to xG estimates →
- * simulate goals using Poisson (Monte Carlo) → derive markets.
- *
- * You can replace TEAM_STRENGTH with real xG/xGA later.
- */
+/* ---------------- REAL xG TABLE LOADER ---------------- */
+let XG_DB = null;
 
-// Basic strength ratings (demo but structured). Add teams anytime.
-const TEAM_STRENGTH = {
-  // EPL
-  "Manchester City": 92, "Arsenal": 88, "Liverpool": 87, "Chelsea": 80, "Tottenham": 78,
-  "Aston Villa": 79, "Newcastle": 77, "Manchester United": 76, "Brighton": 74, "West Ham": 72,
-  // La Liga
-  "Real Madrid": 90, "Barcelona": 86, "Atletico Madrid": 84, "Real Sociedad": 76, "Betis": 74,
-  "Getafe": 68, "Sevilla": 70, "Valencia": 70,
-  // Serie A
-  "Inter": 88, "AC Milan": 82, "Juventus": 82, "Napoli": 80, "Roma": 77, "Lazio": 76,
-  "Genoa": 68, "Atalanta": 79,
-  // Bundesliga
-  "Bayern Munich": 90, "Dortmund": 82, "Leverkusen": 84, "RB Leipzig": 80,
-  // Ligue 1
-  "PSG": 90, "Marseille": 76, "Monaco": 78, "Lille": 75,
-  // Portugal
-  "Benfica": 82, "Porto": 82, "Sporting": 83, "Braga": 76
-};
+// load xg_tables.json from same folder as app.html
+(async function boot(){
+  try{
+    const res = await fetch("./xg_tables.json", { cache: "no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    XG_DB = data?.teams || {};
+    document.getElementById("xgStatus").textContent =
+      "xG tables loaded ✅ (" + Object.keys(XG_DB).length + " teams)";
+  }catch(e){
+    XG_DB = null;
+    document.getElementById("xgStatus").textContent =
+      "xG tables NOT loaded ⚠️ (using fallback). Check xg_tables.json file exists.";
+  }
+})();
 
-// Default strength if team not in map
-const DEFAULT_STRENGTH = 72;
+/* ------------- CORE MODEL ------------- */
+const HOME_XG_BONUS = 0.12;     // small home lift
+const BASE_XG_FALLBACK = 1.25;  // if team missing
+const SIMS = 9000;              // Monte Carlo (phone safe)
 
-// Tuning knobs
-const HOME_ADV = 3.5;         // home advantage in strength points
-const BASE_XG = 1.20;         // baseline expected goals per team
-const STRENGTH_TO_XG = 0.018; // how much strength diff affects xG
-const SIMS = 8000;            // Monte Carlo simulations (works fine on phone)
-
-/** Utility */
-function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
 function pct(x){ return Math.round(x*100) + "%"; }
 
-/** Poisson sampler */
 function poisson(lambda){
-  // Knuth method
   const L = Math.exp(-lambda);
-  let k = 0;
-  let p = 1;
-  do {
-    k++;
-    p *= Math.random();
-  } while (p > L);
-  return k - 1;
+  let k=0, p=1;
+  do{ k++; p *= Math.random(); }while(p > L);
+  return k-1;
 }
 
 /**
- * Build xG estimates from strength.
- * Later: replace with real xG_for/xG_against model.
+ * Real xG method:
+ * - home_xg_for (from table) vs away_xg_against (from table)
+ * - away_xg_for vs home_xg_against
+ * We average them to get a fair matchup xG.
  */
+function getTeamXG(name){
+  const row = XG_DB?.[name];
+  if(!row) return null;
+  const xg_for = Number(row.xg_for);
+  const xg_against = Number(row.xg_against);
+  if(!isFinite(xg_for) || !isFinite(xg_against)) return null;
+  return { xg_for, xg_against };
+}
+
 function estimateXG(homeName, awayName){
-  const hs = (TEAM_STRENGTH[homeName] ?? DEFAULT_STRENGTH) + HOME_ADV;
-  const as = (TEAM_STRENGTH[awayName] ?? DEFAULT_STRENGTH);
+  const H = getTeamXG(homeName);
+  const A = getTeamXG(awayName);
 
-  const diff = hs - as; // positive = home stronger
-  const hxg = clamp(BASE_XG + diff * STRENGTH_TO_XG, 0.35, 2.60);
-  const axg = clamp(BASE_XG - diff * STRENGTH_TO_XG, 0.35, 2.40);
+  let hxg, axg, used = "fallback";
 
-  // Total game tempo proxy (used for corners/cards)
-  const tempo = clamp((hxg + axg), 1.2, 4.4);
+  if(H && A){
+    // blend: (home attack + away defense) / 2, plus a small home bonus
+    hxg = ((H.xg_for + A.xg_against) / 2) + HOME_XG_BONUS;
+    axg = ((A.xg_for + H.xg_against) / 2);
 
-  return { hxg, axg, tempo, diff };
+    hxg = clamp(hxg, 0.35, 2.80);
+    axg = clamp(axg, 0.35, 2.60);
+    used = "real_xg";
+  } else {
+    // fallback if one/both teams missing in JSON
+    hxg = BASE_XG_FALLBACK + HOME_XG_BONUS;
+    axg = BASE_XG_FALLBACK;
+    used = "fallback";
+  }
+
+  const tempo = clamp(hxg + axg, 1.2, 4.6);
+  return { hxg, axg, tempo, used };
 }
 
-/**
- * Run Monte Carlo to get:
- * - most likely score (mode)
- * - win/draw probabilities
- * - O/U 2.5 probability
- */
 function simulateMatch(homeName, awayName){
-  const { hxg, axg, tempo, diff } = estimateXG(homeName, awayName);
+  const { hxg, axg, tempo, used } = estimateXG(homeName, awayName);
 
-  let homeW=0, draw=0, awayW=0;
-  let over25=0;
+  let homeW=0, draw=0, awayW=0, over25=0;
   const scoreMap = new Map();
 
   for(let i=0;i<SIMS;i++){
@@ -329,21 +193,16 @@ function simulateMatch(homeName, awayName){
     scoreMap.set(key, (scoreMap.get(key)||0) + 1);
   }
 
-  // Most common score
   let bestScore="1-1", bestCount=-1;
   for(const [k,c] of scoreMap.entries()){
     if(c>bestCount){ bestCount=c; bestScore=k; }
   }
-  const [mh, ma] = bestScore.split("-").map(n=>parseInt(n,10));
 
-  const pHome = homeW/SIMS;
-  const pDraw = draw/SIMS;
-  const pAway = awayW/SIMS;
-
+  const pHome = homeW/SIMS, pDraw = draw/SIMS, pAway = awayW/SIMS;
   const pOver = over25/SIMS;
   const ouLean = (pOver >= 0.52) ? "Over" : "Under";
 
-  // Asian Handicap lean (simple from diff + win prob)
+  // AH heuristic from win probability
   let ah = "Home -0.25";
   if(pHome >= 0.60) ah = "Home -0.5";
   if(pHome >= 0.68) ah = "Home -0.75";
@@ -351,25 +210,24 @@ function simulateMatch(homeName, awayName){
   if(pAway >= 0.60) ah = "Away +0.5";
   if(pAway >= 0.68) ah = "Away +0.75";
   if(pAway >= 0.75) ah = "Away +1.0";
-  if(pDraw >= 0.32 && Math.abs(diff) < 2.0) ah = "Draw No Bet (DNB)";
+  if(pDraw >= 0.32) ah = "Draw No Bet (DNB)";
 
-  // Corners & Cards heuristics from tempo + rivalry proxy
-  // (Later replace with real team corner rates + ref profiles)
-  const cornersLine = (tempo >= 2.8) ? "Over 8.5" : "Under 9.5";
-  const cardsLine = (tempo >= 3.2) ? "Over 3.5" : "Under 4.5";
+  // Corners/Cards quick proxy from tempo
+  const cornersLine = (tempo >= 2.9) ? "Over 8.5" : "Under 9.5";
+  const cardsLine   = (tempo >= 3.2) ? "Over 3.5" : "Under 4.5";
 
   return {
-    scoreText: `${mh}–${ma}`,
-    ou: `${ouLean}`,
+    scoreText: bestScore,
+    ou: ouLean,
     ah,
     corners: cornersLine,
     cards: cardsLine,
     probs: `H ${pct(pHome)} / D ${pct(pDraw)} / A ${pct(pAway)}`,
-    meta: { hxg, axg, tempo, diff, pHome, pDraw, pAway, pOver }
+    xgText: `${hxg.toFixed(2)}–${axg.toFixed(2)} (${used})`
   };
 }
 
-/** MODE 1 */
+/* MODE 1 */
 function runManual(){
   const home = (document.getElementById("homeTeam").value || "Home").trim();
   const away = (document.getElementById("awayTeam").value || "Away").trim();
@@ -377,6 +235,7 @@ function runManual(){
   document.getElementById("m_match").textContent = `${home} vs ${away}`;
 
   const r = simulateMatch(home, away);
+  document.getElementById("m_xg").textContent = r.xgText;
   document.getElementById("m_score").textContent = r.scoreText + " (Home–Away)";
   document.getElementById("m_ou").textContent = r.ou;
   document.getElementById("m_ah").textContent = r.ah;
@@ -385,7 +244,7 @@ function runManual(){
   document.getElementById("m_probs").textContent = r.probs;
 }
 
-/** MODE 2 — demo fixtures now, easy to swap later */
+/* MODE 2 demo fixtures */
 const DEMO_FIXTURES = [
   { home:"Arsenal", away:"Aston Villa" },
   { home:"Inter", away:"Genoa" },
@@ -401,9 +260,9 @@ function loadDaily(){
 
     const card = document.createElement("div");
     card.className = "matchCard";
-
     card.innerHTML = `
       <div class="mcTitle">${fx.home} vs ${fx.away}</div>
+      <div class="mcLine">xG Used: <b>${r.xgText}</b></div>
       <div class="mcLine">Score: <b>${r.scoreText}</b></div>
       <div class="mcLine">O/U 2.5: <b>${r.ou}</b></div>
       <div class="mcLine">AH: <b>${r.ah}</b></div>
@@ -416,9 +275,8 @@ function loadDaily(){
   });
 }
 
-/** MODE 3 */
+/* MODE 3 */
 function runFull(){
-  // If user typed teams, use them; else use a default big match
   const home = (document.getElementById("homeTeam").value || "Arsenal").trim();
   const away = (document.getElementById("awayTeam").value || "Chelsea").trim();
 
