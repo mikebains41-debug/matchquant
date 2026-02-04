@@ -4,234 +4,433 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant Soccer Engine</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0b1633" />
+  <link rel="manifest" href="manifest.json">
 
   <style>
+    :root{
+      --bg1:#0b1633;
+      --bg2:#050814;
+      --card:#0f1a3a;
+      --chip:#111d44;
+      --text:#ffffff;
+      --muted:#c9d4ff;
+      --accent:#58a6ff;
+      --accent2:#2f81f7;
+      --border:rgba(255,255,255,.08);
+      --shadow:0 20px 70px rgba(0,0,0,.55);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
     body{
       margin:0;
       font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #0b1633, #050814);
-      color:#fff;
-      padding: 16px;
-    }
-    .wrap{
-      max-width: 680px;
-      margin: 0 auto;
+      background: radial-gradient(circle at top, var(--bg1), var(--bg2));
+      color:var(--text);
+      min-height:100vh;
+      padding:14px;
     }
     .topbar{
       display:flex;
-      gap:10px;
       align-items:center;
-      margin: 10px 0 14px 0;
+      gap:12px;
+      max-width:920px;
+      margin:0 auto 12px auto;
     }
-    .back{
-      border:none;
-      border-radius:12px;
-      padding:12px 14px;
-      background:#1a2c5f;
+    .homebtn{
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
       color:#fff;
+      padding:10px 14px;
+      border-radius:14px;
+      text-decoration:none;
       font-weight:700;
-      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
     }
     .title{
-      font-size: 1.2rem;
-      font-weight: 800;
-      color:#62b0ff;
+      font-size:20px;
+      font-weight:900;
+      color:var(--accent);
+      letter-spacing:.2px;
+      margin:0;
+      flex:1;
+      text-align:center;
     }
-
-    .card{
-      background: rgba(15,26,58,0.92);
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-      margin: 14px 0;
+    .wrap{
+      max-width:920px;
+      margin:0 auto;
+    }
+    .panel{
+      background:rgba(15,26,58,.92);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      padding:18px;
+      margin:14px 0;
     }
     h2{
-      margin: 0 0 12px 0;
-      font-size: 1.25rem;
-      color:#8cc7ff;
+      margin:0 0 12px 0;
+      color:var(--accent);
+      font-size:22px;
+      font-weight:900;
     }
     .row{
       display:flex;
-      gap:10px;
+      gap:12px;
       flex-wrap:wrap;
     }
     input{
-      flex:1;
-      min-width: 180px;
-      border:none;
-      border-radius: 14px;
-      padding: 14px;
-      font-size: 1rem;
+      width:100%;
+      padding:14px 14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.08);
+      color:#fff;
       outline:none;
+      font-size:16px;
     }
+    input::placeholder{color:rgba(255,255,255,.6)}
     .btn{
       width:100%;
+      background:linear-gradient(90deg, var(--accent2), var(--accent));
       border:none;
-      border-radius: 14px;
-      padding: 14px;
-      font-size: 1.05rem;
-      font-weight: 800;
-      background:#62b0ff;
-      color:#0b1633;
+      color:#00102a;
+      font-weight:900;
+      padding:14px 18px;
+      border-radius:16px;
       cursor:pointer;
-      margin-top: 10px;
-    }
-    .pill{
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 12px 14px;
-      margin-top: 10px;
-      font-size: 1.02rem;
-    }
-    .label{
-      color: rgba(255,255,255,0.85);
-      font-weight: 800;
-    }
-    .muted{
-      color: rgba(255,255,255,0.7);
-      font-size: 0.95rem;
-      margin-top: 6px;
-    }
-    .list .item{
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 12px 14px;
-      margin-top: 10px;
-    }
-    .item b{
-      display:block;
-      font-size: 1.06rem;
-      margin-bottom: 4px;
+      font-size:18px;
+      margin-top:10px;
     }
     .grid{
       display:grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin-top: 10px;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    .chip{
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px 14px;
+      font-size:18px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+    .k{font-weight:900; color:#eaf0ff}
+    .v{color:var(--muted); font-weight:800}
+    .note{
+      margin-top:10px;
+      color:rgba(255,255,255,.65);
+      font-size:13px;
+      line-height:1.35;
+    }
+    .mini{
+      font-size:13px;
+      color:rgba(255,255,255,.7);
+      margin-top:8px;
+    }
+    .cards{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    .matchCard{
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:14px;
+    }
+    .mcTitle{font-size:18px; font-weight:900}
+    .mcLine{margin-top:6px; color:rgba(255,255,255,.85); font-weight:700}
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(88,166,255,.16);
+      border:1px solid rgba(88,166,255,.22);
+      color:#d9ecff;
+      font-weight:900;
+      font-size:12px;
+      margin-top:10px;
     }
   </style>
 </head>
 
 <body>
+  <div class="topbar">
+    <a class="homebtn" href="./index.html">← Home</a>
+    <h1 class="title">MatchQuant Soccer Engine</h1>
+    <div style="width:76px"></div>
+  </div>
+
   <div class="wrap">
-    <div class="topbar">
-      <button class="back" onclick="location.href='index.html'">← Home</button>
-      <div class="title">MatchQuant Soccer Engine</div>
-    </div>
 
     <!-- MODE 1 -->
-    <div class="card">
+    <div class="panel">
       <h2>Mode 1 — Manual Match Input</h2>
-
       <div class="row">
-        <input id="homeTeam" placeholder="Home Team" />
-        <input id="awayTeam" placeholder="Away Team" />
+        <div style="flex:1; min-width:220px;">
+          <input id="homeTeam" placeholder="Home Team (e.g., Arsenal)" />
+        </div>
+        <div style="flex:1; min-width:220px;">
+          <input id="awayTeam" placeholder="Away Team (e.g., Aston Villa)" />
+        </div>
       </div>
-
       <button class="btn" onclick="runManual()">Run Prediction</button>
 
-      <div id="manualOut" class="grid"></div>
-      <div class="muted">Tip: this is demo logic right now — next upgrade is real data + xG.</div>
+      <div class="grid" id="manualOut">
+        <div class="chip"><span class="k">Match:</span><span class="v" id="m_match">Home vs Away</span></div>
+        <div class="chip"><span class="k">Predicted Score:</span><span class="v" id="m_score">—</span></div>
+        <div class="chip"><span class="k">Over / Under 2.5:</span><span class="v" id="m_ou">—</span></div>
+        <div class="chip"><span class="k">Asian Handicap:</span><span class="v" id="m_ah">—</span></div>
+        <div class="chip"><span class="k">Corners:</span><span class="v" id="m_corners">—</span></div>
+        <div class="chip"><span class="k">Cards:</span><span class="v" id="m_cards">—</span></div>
+        <div class="chip"><span class="k">Win Probabilities:</span><span class="v" id="m_probs">—</span></div>
+      </div>
+
+      <div class="note">
+        This is an offline “pro-style” base: team-strength → xG estimate → Monte Carlo score simulation (no API needed).
+        You can later plug in real xG/xGA + real fixtures without changing the UI.
+      </div>
     </div>
 
     <!-- MODE 2 -->
-    <div class="card">
+    <div class="panel">
       <h2>Mode 2 — Auto Daily Picks</h2>
-      <button class="btn" onclick="loadTodaysPicks()">Load Today's Picks</button>
-      <div id="autoList" class="list"></div>
+      <button class="btn" onclick="loadDaily()">Load Today’s Picks</button>
+      <div class="mini">
+        Works now using built-in demo fixtures. Optional: later we can connect a real fixtures API key.
+      </div>
+      <div class="cards" id="dailyList"></div>
     </div>
 
     <!-- MODE 3 -->
-    <div class="card">
+    <div class="panel">
       <h2>Mode 3 — Combined Engine Output</h2>
-      <button class="btn" onclick="runFullEngine()">Run Full Engine</button>
-      <div id="fullOut" class="grid"></div>
+      <button class="btn" onclick="runFull()">Run Full Engine</button>
+
+      <div class="grid">
+        <div class="chip"><span class="k">Predicted Score:</span><span class="v" id="f_score">—</span></div>
+        <div class="chip"><span class="k">Over / Under 2.5:</span><span class="v" id="f_ou">—</span></div>
+        <div class="chip"><span class="k">Asian Handicap:</span><span class="v" id="f_ah">—</span></div>
+        <div class="chip"><span class="k">Corners:</span><span class="v" id="f_corners">—</span></div>
+        <div class="chip"><span class="k">Cards:</span><span class="v" id="f_cards">—</span></div>
+        <div class="chip"><span class="k">Win Probabilities:</span><span class="v" id="f_probs">—</span></div>
+      </div>
+
+      <div class="note">
+        Mode 3 runs the same engine as Mode 1, but as a “full output” panel (for quick viewing + future expansion).
+      </div>
     </div>
+
   </div>
 
-  <script>
-    // --- Simple "demo engine" helpers ---
-    function makePrediction(seedText) {
-      // deterministic-ish demo based on text length
-      const n = (seedText || "").length;
-      const homeGoals = 1 + (n % 3);      // 1..3
-      const awayGoals = (n % 2);          // 0..1
-      const total = homeGoals + awayGoals;
+<script>
+/**
+ * ------------- CORE MODEL (offline) -------------
+ * We use a simple Team Strength map (ELO-ish) → convert to xG estimates →
+ * simulate goals using Poisson (Monte Carlo) → derive markets.
+ *
+ * You can replace TEAM_STRENGTH with real xG/xGA later.
+ */
 
-      const ou = total >= 3 ? "Over" : "Under";
-      const ah = homeGoals > awayGoals ? "Home -0.5" : "Home +0.5";
-      const corners = total >= 3 ? "Over 8.5" : "Under 9.5";
-      const cards = total >= 3 ? "Over 3.5" : "Under 4.5";
+// Basic strength ratings (demo but structured). Add teams anytime.
+const TEAM_STRENGTH = {
+  // EPL
+  "Manchester City": 92, "Arsenal": 88, "Liverpool": 87, "Chelsea": 80, "Tottenham": 78,
+  "Aston Villa": 79, "Newcastle": 77, "Manchester United": 76, "Brighton": 74, "West Ham": 72,
+  // La Liga
+  "Real Madrid": 90, "Barcelona": 86, "Atletico Madrid": 84, "Real Sociedad": 76, "Betis": 74,
+  "Getafe": 68, "Sevilla": 70, "Valencia": 70,
+  // Serie A
+  "Inter": 88, "AC Milan": 82, "Juventus": 82, "Napoli": 80, "Roma": 77, "Lazio": 76,
+  "Genoa": 68, "Atalanta": 79,
+  // Bundesliga
+  "Bayern Munich": 90, "Dortmund": 82, "Leverkusen": 84, "RB Leipzig": 80,
+  // Ligue 1
+  "PSG": 90, "Marseille": 76, "Monaco": 78, "Lille": 75,
+  // Portugal
+  "Benfica": 82, "Porto": 82, "Sporting": 83, "Braga": 76
+};
 
-      return {
-        score: `${homeGoals}–${awayGoals} Home`,
-        ou25: ou,
-        ah: ah,
-        corners: corners,
-        cards: cards
-      };
-    }
+// Default strength if team not in map
+const DEFAULT_STRENGTH = 72;
 
-    function renderPredictions(targetId, p) {
-      const el = document.getElementById(targetId);
-      el.innerHTML = `
-        <div class="pill"><span class="label">Predicted Score:</span> ${p.score}</div>
-        <div class="pill"><span class="label">Over / Under 2.5:</span> ${p.ou25}</div>
-        <div class="pill"><span class="label">Asian Handicap:</span> ${p.ah}</div>
-        <div class="pill"><span class="label">Corners:</span> ${p.corners}</div>
-        <div class="pill"><span class="label">Cards:</span> ${p.cards}</div>
-      `;
-    }
+// Tuning knobs
+const HOME_ADV = 3.5;         // home advantage in strength points
+const BASE_XG = 1.20;         // baseline expected goals per team
+const STRENGTH_TO_XG = 0.018; // how much strength diff affects xG
+const SIMS = 8000;            // Monte Carlo simulations (works fine on phone)
 
-    // --- MODE 1 ---
-    function runManual() {
-      const home = document.getElementById("homeTeam").value.trim();
-      const away = document.getElementById("awayTeam").value.trim();
-      const seed = `${home} vs ${away}`;
-      const p = makePrediction(seed);
+/** Utility */
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function pct(x){ return Math.round(x*100) + "%"; }
 
-      // show output
-      const out = document.getElementById("manualOut");
-      out.innerHTML = `
-        <div class="pill"><span class="label">Match:</span> ${home || "Home"} vs ${away || "Away"}</div>
-        <div class="pill"><span class="label">Predicted Score:</span> ${p.score}</div>
-        <div class="pill"><span class="label">Over / Under 2.5:</span> ${p.ou25}</div>
-        <div class="pill"><span class="label">Asian Handicap:</span> ${p.ah}</div>
-        <div class="pill"><span class="label">Corners:</span> ${p.corners}</div>
-        <div class="pill"><span class="label">Cards:</span> ${p.cards}</div>
-      `;
-    }
+/** Poisson sampler */
+function poisson(lambda){
+  // Knuth method
+  const L = Math.exp(-lambda);
+  let k = 0;
+  let p = 1;
+  do {
+    k++;
+    p *= Math.random();
+  } while (p > L);
+  return k - 1;
+}
 
-    // --- MODE 2 ---
-    function loadTodaysPicks() {
-      // demo list (you can replace later with real fixtures JSON)
-      const picks = [
-        { match: "Arsenal vs Villa", score: "2–0", lean: "AH: Arsenal -1" },
-        { match: "Inter vs Genoa", score: "2–1", lean: "Over 2.5" },
-        { match: "Betis vs Getafe", score: "1–0", lean: "Under 2.5" }
-      ];
+/**
+ * Build xG estimates from strength.
+ * Later: replace with real xG_for/xG_against model.
+ */
+function estimateXG(homeName, awayName){
+  const hs = (TEAM_STRENGTH[homeName] ?? DEFAULT_STRENGTH) + HOME_ADV;
+  const as = (TEAM_STRENGTH[awayName] ?? DEFAULT_STRENGTH);
 
-      const list = document.getElementById("autoList");
-      list.innerHTML = picks.map(p => `
-        <div class="item">
-          <b>${p.match}</b>
-          <div>Score: ${p.score}</div>
-          <div>${p.lean}</div>
-        </div>
-      `).join("");
-    }
+  const diff = hs - as; // positive = home stronger
+  const hxg = clamp(BASE_XG + diff * STRENGTH_TO_XG, 0.35, 2.60);
+  const axg = clamp(BASE_XG - diff * STRENGTH_TO_XG, 0.35, 2.40);
 
-    // --- MODE 3 ---
-    function runFullEngine() {
-      const p = makePrediction("FULL_ENGINE");
-      renderPredictions("fullOut", p);
-    }
-  </script>
+  // Total game tempo proxy (used for corners/cards)
+  const tempo = clamp((hxg + axg), 1.2, 4.4);
+
+  return { hxg, axg, tempo, diff };
+}
+
+/**
+ * Run Monte Carlo to get:
+ * - most likely score (mode)
+ * - win/draw probabilities
+ * - O/U 2.5 probability
+ */
+function simulateMatch(homeName, awayName){
+  const { hxg, axg, tempo, diff } = estimateXG(homeName, awayName);
+
+  let homeW=0, draw=0, awayW=0;
+  let over25=0;
+  const scoreMap = new Map();
+
+  for(let i=0;i<SIMS;i++){
+    const hg = poisson(hxg);
+    const ag = poisson(axg);
+
+    if(hg>ag) homeW++;
+    else if(hg===ag) draw++;
+    else awayW++;
+
+    if(hg+ag >= 3) over25++;
+
+    const key = hg + "-" + ag;
+    scoreMap.set(key, (scoreMap.get(key)||0) + 1);
+  }
+
+  // Most common score
+  let bestScore="1-1", bestCount=-1;
+  for(const [k,c] of scoreMap.entries()){
+    if(c>bestCount){ bestCount=c; bestScore=k; }
+  }
+  const [mh, ma] = bestScore.split("-").map(n=>parseInt(n,10));
+
+  const pHome = homeW/SIMS;
+  const pDraw = draw/SIMS;
+  const pAway = awayW/SIMS;
+
+  const pOver = over25/SIMS;
+  const ouLean = (pOver >= 0.52) ? "Over" : "Under";
+
+  // Asian Handicap lean (simple from diff + win prob)
+  let ah = "Home -0.25";
+  if(pHome >= 0.60) ah = "Home -0.5";
+  if(pHome >= 0.68) ah = "Home -0.75";
+  if(pHome >= 0.75) ah = "Home -1.0";
+  if(pAway >= 0.60) ah = "Away +0.5";
+  if(pAway >= 0.68) ah = "Away +0.75";
+  if(pAway >= 0.75) ah = "Away +1.0";
+  if(pDraw >= 0.32 && Math.abs(diff) < 2.0) ah = "Draw No Bet (DNB)";
+
+  // Corners & Cards heuristics from tempo + rivalry proxy
+  // (Later replace with real team corner rates + ref profiles)
+  const cornersLine = (tempo >= 2.8) ? "Over 8.5" : "Under 9.5";
+  const cardsLine = (tempo >= 3.2) ? "Over 3.5" : "Under 4.5";
+
+  return {
+    scoreText: `${mh}–${ma}`,
+    ou: `${ouLean}`,
+    ah,
+    corners: cornersLine,
+    cards: cardsLine,
+    probs: `H ${pct(pHome)} / D ${pct(pDraw)} / A ${pct(pAway)}`,
+    meta: { hxg, axg, tempo, diff, pHome, pDraw, pAway, pOver }
+  };
+}
+
+/** MODE 1 */
+function runManual(){
+  const home = (document.getElementById("homeTeam").value || "Home").trim();
+  const away = (document.getElementById("awayTeam").value || "Away").trim();
+
+  document.getElementById("m_match").textContent = `${home} vs ${away}`;
+
+  const r = simulateMatch(home, away);
+  document.getElementById("m_score").textContent = r.scoreText + " (Home–Away)";
+  document.getElementById("m_ou").textContent = r.ou;
+  document.getElementById("m_ah").textContent = r.ah;
+  document.getElementById("m_corners").textContent = r.corners;
+  document.getElementById("m_cards").textContent = r.cards;
+  document.getElementById("m_probs").textContent = r.probs;
+}
+
+/** MODE 2 — demo fixtures now, easy to swap later */
+const DEMO_FIXTURES = [
+  { home:"Arsenal", away:"Aston Villa" },
+  { home:"Inter", away:"Genoa" },
+  { home:"Betis", away:"Getafe" }
+];
+
+function loadDaily(){
+  const box = document.getElementById("dailyList");
+  box.innerHTML = "";
+
+  DEMO_FIXTURES.forEach(fx=>{
+    const r = simulateMatch(fx.home, fx.away);
+
+    const card = document.createElement("div");
+    card.className = "matchCard";
+
+    card.innerHTML = `
+      <div class="mcTitle">${fx.home} vs ${fx.away}</div>
+      <div class="mcLine">Score: <b>${r.scoreText}</b></div>
+      <div class="mcLine">O/U 2.5: <b>${r.ou}</b></div>
+      <div class="mcLine">AH: <b>${r.ah}</b></div>
+      <div class="mcLine">Corners: <b>${r.corners}</b></div>
+      <div class="mcLine">Cards: <b>${r.cards}</b></div>
+      <div class="mcLine">Probs: <b>${r.probs}</b></div>
+      <div class="badge">Auto Pick</div>
+    `;
+    box.appendChild(card);
+  });
+}
+
+/** MODE 3 */
+function runFull(){
+  // If user typed teams, use them; else use a default big match
+  const home = (document.getElementById("homeTeam").value || "Arsenal").trim();
+  const away = (document.getElementById("awayTeam").value || "Chelsea").trim();
+
+  const r = simulateMatch(home, away);
+
+  document.getElementById("f_score").textContent = `${home} vs ${away}: ${r.scoreText}`;
+  document.getElementById("f_ou").textContent = r.ou;
+  document.getElementById("f_ah").textContent = r.ah;
+  document.getElementById("f_corners").textContent = r.corners;
+  document.getElementById("f_cards").textContent = r.cards;
+  document.getElementById("f_probs").textContent = r.probs;
+}
+</script>
 </body>
-</html>
+                                                                     </html>
