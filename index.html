@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MatchQuant Soccer Engine</title>
-
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -20,7 +19,8 @@
     }
     *{box-sizing:border-box}
     body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:var(--text);
       background: radial-gradient(1200px 800px at 50% 0%, #0b2a5b 0%, var(--bg1) 35%, var(--bg2) 100%);
     }
@@ -35,8 +35,12 @@
     .title h1{margin:0;font-size:36px;letter-spacing:.2px;color:var(--accent)}
     .title p{margin:6px 0 0;color:var(--muted)}
     .card{
-      background:var(--card); border:1px solid var(--border); border-radius:var(--r);
-      box-shadow:var(--shadow); padding:16px; margin:14px 0;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      padding:16px;
+      margin:14px 0;
       backdrop-filter: blur(10px);
     }
     h2{margin:0 0 12px;color:var(--accent);font-size:26px}
@@ -55,7 +59,8 @@
       box-shadow:0 18px 40px rgba(77,163,255,.25);
     }
     .btn.secondary{
-      background:rgba(255,255,255,.08); color:var(--text);
+      background:rgba(255,255,255,.08);
+      color:var(--text);
       border:1px solid var(--border);
       box-shadow:none;
     }
@@ -78,21 +83,21 @@
     .k{color:var(--muted)}
     .v{text-align:right;max-width:70%}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .table{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
-    .trow{
-      display:grid;grid-template-columns:1.2fr .6fr .8fr .6fr .8fr;
-      gap:10px;padding:10px 12px;background:rgba(0,0,0,.16);
-      border-bottom:1px solid rgba(255,255,255,.08);
-      font-size:14px;font-weight:900;
-    }
-    .thead{background:rgba(255,255,255,.07);color:var(--muted)}
-    .trow:last-child{border-bottom:0}
-    .right{text-align:right}
     .tag{
       display:inline-block; padding:5px 10px; border-radius:999px;
       border:1px solid var(--border); background:rgba(255,255,255,.06);
       font-weight:1000; margin-left:6px;
     }
+    .divider{height:1px;background:rgba(255,255,255,.10);margin:14px 0}
+    .cardsGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+    @media(min-width:760px){ .cardsGrid{grid-template-columns:1fr 1fr} }
+    .matchCard{
+      padding:14px;border-radius:16px;border:1px solid var(--border);
+      background:rgba(0,0,0,.18);
+    }
+    .matchTitle{font-weight:1000;margin:0 0 8px}
+    .line{display:flex;justify-content:space-between;gap:10px;font-weight:900;margin:6px 0}
+    .line .lbl{color:var(--muted)}
   </style>
 </head>
 
@@ -116,11 +121,13 @@
       <button class="btn secondary" onclick="runAllLeagues()">Run ALL Leagues at Once</button>
       <div class="mini">Uses <span class="mono">fixtures.json</span>. Add your real fixtures there.</div>
 
-      <label>Home Team</label>
-      <input id="home" placeholder="type EXACT team name (case/spaces) e.g., Arsenal" />
+      <label>Home Team (auto-suggest)</label>
+      <input id="home" list="teamsHome" placeholder="Start typing… e.g., Arsenal" />
+      <datalist id="teamsHome"></datalist>
 
-      <label>Away Team</label>
-      <input id="away" placeholder="type EXACT team name (case/spaces) e.g., Aston Villa" />
+      <label>Away Team (auto-suggest)</label>
+      <input id="away" list="teamsAway" placeholder="Start typing… e.g., Aston Villa" />
+      <datalist id="teamsAway"></datalist>
 
       <div class="pillrow">
         <div class="pill">Monte Carlo sims</div>
@@ -128,40 +135,40 @@
       </div>
       <div class="mini">Poisson goals + 10,000 simulations → score distribution + win probs</div>
 
-      <div class="card" style="margin-top:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-          <div>
-            <div style="font-weight:1000">Optional Odds (for EV flags)</div>
-            <div class="mini">Enter decimal odds. EV flags: <span class="good">Green</span> / <span class="warn">Yellow</span> / <span class="bad">Red</span></div>
-          </div>
-          <div class="mini">decimal</div>
-        </div>
+      <div class="divider"></div>
 
-        <div class="row">
-          <div>
-            <label>ML Home</label>
-            <input id="od_ml_h" placeholder="e.g., 1.95" inputmode="decimal" />
-          </div>
-          <div>
-            <label>ML Draw</label>
-            <input id="od_ml_d" placeholder="e.g., 3.60" inputmode="decimal" />
-          </div>
-          <div>
-            <label>ML Away</label>
-            <input id="od_ml_a" placeholder="e.g., 3.90" inputmode="decimal" />
-          </div>
-          <div>
-            <label>O/U 2.5 Over</label>
-            <input id="od_ou_o" placeholder="e.g., 1.85" inputmode="decimal" />
-          </div>
-          <div>
-            <label>O/U 2.5 Under</label>
-            <input id="od_ou_u" placeholder="e.g., 2.05" inputmode="decimal" />
-          </div>
-          <div>
-            <label>AH Home -0.5</label>
-            <input id="od_ah_h" placeholder="e.g., 2.05" inputmode="decimal" />
-          </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <div style="font-weight:1000">Optional Odds (for EV flags)</div>
+          <div class="mini">Enter decimal odds. EV flags: <span class="good">Green</span> / <span class="warn">Yellow</span> / <span class="bad">Red</span></div>
+        </div>
+        <div class="mini">decimal</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>ML Home</label>
+          <input id="od_ml_h" placeholder="e.g., 1.95" inputmode="decimal" />
+        </div>
+        <div>
+          <label>ML Draw</label>
+          <input id="od_ml_d" placeholder="e.g., 3.60" inputmode="decimal" />
+        </div>
+        <div>
+          <label>ML Away</label>
+          <input id="od_ml_a" placeholder="e.g., 3.90" inputmode="decimal" />
+        </div>
+        <div>
+          <label>O/U 2.5 Over</label>
+          <input id="od_ou_o" placeholder="e.g., 1.85" inputmode="decimal" />
+        </div>
+        <div>
+          <label>O/U 2.5 Under</label>
+          <input id="od_ou_u" placeholder="e.g., 2.05" inputmode="decimal" />
+        </div>
+        <div>
+          <label>AH Home -0.5</label>
+          <input id="od_ah_h" placeholder="e.g., 2.05" inputmode="decimal" />
         </div>
       </div>
 
@@ -191,7 +198,7 @@
     <div class="card">
       <h2>Auto Fixtures Output</h2>
       <div class="mini">Press “Run ALL Leagues at Once”. Uses <span class="mono">fixtures.json</span>.</div>
-      <div id="allOut" class="table" style="display:none"></div>
+      <div id="allOut" class="cardsGrid" style="display:none"></div>
     </div>
   </div>
 
@@ -230,11 +237,30 @@
       $("status").innerText = "Loaded ✓ xG + fixtures + H2H (if present)";
       $("loadedNote").innerText = `xG loaded ✓ (${LEAGUES.length} leagues)`;
 
+      // build team suggestions for first league
+      refreshTeamLists(sel.value);
+
+      sel.addEventListener("change", () => {
+        refreshTeamLists(sel.value);
+        // clear teams so user doesn't keep wrong league teams
+        $("home").value = "";
+        $("away").value = "";
+      });
+
     }catch(e){
       $("status").innerText = "Load error. Make sure xg_tables.json exists in repo root.";
       $("loadedNote").innerText = "—";
     }
   }
+
+  function refreshTeamLists(league){
+    const teams = Object.keys(XG?.[league] || {}).sort((a,b)=>a.localeCompare(b));
+    const listH = $("teamsHome");
+    const listA = $("teamsAway");
+    listH.innerHTML = teams.map(t => `<option value="${t}"></option>`).join("");
+    listA.innerHTML = teams.map(t => `<option value="${t}"></option>`).join("");
+  }
+
   loadAll();
 
   function poisson(lambda){
@@ -310,7 +336,7 @@
     const a = safeGetTeam(league, away);
 
     if(!h || !a){
-      alert("Team not found. Spelling must match EXACTLY what’s in xg_tables.json");
+      alert("Team not found. Use the suggestions, or make sure spelling matches xg_tables.json");
       return;
     }
 
@@ -343,7 +369,8 @@
     $("r_score").innerText = predScore;
     $("r_ou").innerText = ouLean;
     $("r_ah").innerText = ahLean;
-    $("r_prob").innerText = `H ${(sim.H*100).toFixed(0)}% / D ${(sim.D*100).toFixed(0)}% / A ${(sim.A*100).toFixed(0)}%`;
+    $("r_prob").innerText =
+      `H ${(sim.H*100).toFixed(0)}% / D ${(sim.D*100).toFixed(0)}% / A ${(sim.A*100).toFixed(0)}%`;
     $("r_top").innerText = sim.top || "—";
     $("r_h2h").innerText = h2hText(league, home, away);
 
@@ -360,16 +387,8 @@
 
   function runAllLeagues(){
     const out = $("allOut");
-    out.style.display = "block";
-    out.innerHTML = `
-      <div class="trow thead">
-        <div>Match</div>
-        <div class="right">Score</div>
-        <div class="right">H/D/A</div>
-        <div class="right">O2.5</div>
-        <div class="right">Top</div>
-      </div>
-    `;
+    out.style.display = "grid";
+    out.innerHTML = "";
 
     const leagues = Object.keys(FIX || {});
     if(leagues.length === 0){
@@ -387,17 +406,17 @@
 
         const sim = simMatch(h.home, a.away);
         const score = `${Math.round(h.home)}-${Math.round(a.away)}`;
-        const hda = `H ${(sim.H*100).toFixed(0)} / D ${(sim.D*100).toFixed(0)} / A ${(sim.A*100).toFixed(0)}`;
-        const ou  = `${(sim.O*100).toFixed(0)}%`;
-        const top = (sim.top || "").split(", ").slice(0,2).join(", ");
+        const hda = `H ${(sim.H*100).toFixed(0)}% / D ${(sim.D*100).toFixed(0)}% / A ${(sim.A*100).toFixed(0)}%`;
+        const ou  = `Over2.5 ${(sim.O*100).toFixed(0)}%`;
+        const top = (sim.top || "").split(", ").slice(0,3).join(", ");
 
         out.innerHTML += `
-          <div class="trow">
-            <div>${league}: ${home} vs ${away}</div>
-            <div class="right mono">${score}</div>
-            <div class="right mono">${hda}</div>
-            <div class="right mono">${ou}</div>
-            <div class="right mono">${top}</div>
+          <div class="matchCard">
+            <div class="matchTitle">${league}: ${home} vs ${away}</div>
+            <div class="line"><span class="lbl">Pred score</span><span class="mono">${score}</span></div>
+            <div class="line"><span class="lbl">H/D/A</span><span class="mono">${hda}</span></div>
+            <div class="line"><span class="lbl">O/U 2.5</span><span class="mono">${ou}</span></div>
+            <div class="line"><span class="lbl">Top scorelines</span><span class="mono">${top}</span></div>
           </div>
         `;
       }
