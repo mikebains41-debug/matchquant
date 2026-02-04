@@ -1,41 +1,25 @@
 {
-  "season": "2025-26",
   "leagues": {
     "EPL": {
       "teams": {
-        "Arsenal": { "xg_for": 1.95, "xg_against": 1.10 },
-        "Aston Villa": { "xg_for": 1.55, "xg_against": 1.45 }
+        "Arsenal": { "xg_for": 1.85, "xg_against": 1.05 },
+        "Aston Villa": { "xg_for": 1.55, "xg_against": 1.30 }
       }
     },
     "LaLiga": {
       "teams": {
-        "Real Madrid": { "xg_for": 2.05, "xg_against": 1.05 },
-        "Barcelona": { "xg_for": 2.10, "xg_against": 1.10 }
+        "Real Betis": { "xg_for": 1.35, "xg_against": 1.20 },
+        "Getafe": { "xg_for": 1.05, "xg_against": 1.25 }
       }
     },
     "SerieA": {
       "teams": {
-        "Inter": { "xg_for": 1.95, "xg_against": 0.95 },
-        "Genoa": { "xg_for": 1.10, "xg_against": 1.55 }
+        "Inter": { "xg_for": 1.75, "xg_against": 0.95 },
+        "Genoa": { "xg_for": 1.10, "xg_against": 1.35 }
       }
     },
-    "Bundesliga": {
-      "teams": {
-        "Bayern Munich": { "xg_for": 2.25, "xg_against": 1.05 },
-        "Borussia Dortmund": { "xg_for": 1.85, "xg_against": 1.25 }
-      }
-    },
-    "Ligue1": {
-      "teams": {
-        "PSG": { "xg_for": 2.30, "xg_against": 0.95 },
-        "Marseille": { "xg_for": 1.55, "xg_against": 1.20 }
-      }
-    },
-    "Portugal": {
-      "teams": {
-        "Benfica": { "xg_for": 2.05, "xg_against": 0.95 },
-        "Sporting CP": { "xg_for": 2.00, "xg_against": 0.90 }
-      }
-    }
+    "Bundesliga": { "teams": {} },
+    "Ligue1": { "teams": {} },
+    "Portugal": { "teams": {} }
   }
 }
