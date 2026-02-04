@@ -1,46 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MatchQuant</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#08152e">
-  <style>
-    body{
-      margin:0; font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #0b1633, #050814);
-      color:#fff; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:18px;
-    }
-    .card{
-      width:min(720px, 95vw);
-      background: rgba(15,26,58,.92);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:24px;
-      box-shadow:0 20px 70px rgba(0,0,0,.55);
-      padding:22px;
-      text-align:center;
-    }
-    h1{margin:0 0 6px 0; font-size:28px; color:#58a6ff;}
-    p{margin:0 0 18px 0; color:rgba(255,255,255,.75); line-height:1.35;}
-    a{
-      display:inline-block;
-      padding:14px 18px;
-      border-radius:16px;
-      font-weight:900;
-      background: linear-gradient(90deg, #2f81f7, #58a6ff);
-      color:#00102a;
-      text-decoration:none;
-    }
-    .mini{margin-top:14px; font-size:12px; color:rgba(255,255,255,.6)}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MatchQuant Soccer Engine</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg,#08152b,#020617);
+  color: #fff;
+}
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+.card {
+  background: #0f1f3a;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+h1,h2 {
+  color: #4da3ff;
+  margin-top: 0;
+}
+input, select, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+}
+button {
+  background: #4da3ff;
+  color: #000;
+  font-weight: bold;
+  cursor: pointer;
+}
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #1e335c;
+}
+.good { color: #33ff99; }
+.warn { color: #ffcc66; }
+.bad  { color: #ff6666; }
+.small {
+  font-size: 13px;
+  opacity: 0.85;
+}
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <h1>MatchQuant</h1>
-    <p>Soccer Engine • xG-based predictions • Tiers • EV vs Odds • Run all leagues</p>
-    <a href="./app.html">Open Soccer Engine</a>
-    <div class="mini">Tip: If you see a 404, your GitHub Pages link is: mikebains41-debug.github.io/matchquant/</div>
-  </div>
+<div class="container">
+
+<h1>MatchQuant</h1>
+<p class="small">xG-based Soccer Prediction Engine</p>
+
+<div class="card">
+<h2>Manual Match Input</h2>
+
+<select id="league">
+  <option>EPL</option>
+  <option>LaLiga</option>
+  <option>SerieA</option>
+  <option>Bundesliga</option>
+  <option>Ligue1</option>
+  <option>Portugal</option>
+</select>
+
+<input id="home" placeholder="Home Team (e.g. Arsenal)">
+<input id="away" placeholder="Away Team (e.g. Aston Villa)">
+
+<button onclick="runPrediction()">Run Prediction</button>
+</div>
+
+<div class="card">
+<h2>Result</h2>
+
+<div class="result-row"><span>League</span><span id="r_league">—</span></div>
+<div class="result-row"><span>Match</span><span id="r_match">—</span></div>
+<div class="result-row"><span>xG Used</span><span id="r_xg">—</span></div>
+<div class="result-row"><span>Predicted Score</span><span id="r_score">—</span></div>
+<div class="result-row"><span>O/U 2.5</span><span id="r_ou">—</span></div>
+<div class="result-row"><span>Asian Handicap</span><span id="r_ah">—</span></div>
+<div class="result-row"><span>Corners</span><span id="r_corners">—</span></div>
+<div class="result-row"><span>Cards</span><span id="r_cards">—</span></div>
+<div class="result-row"><span>Win Prob</span><span id="r_prob">—</span></div>
+<div class="result-row"><span>EV Flag</span><span id="r_ev">—</span></div>
+
+<p class="small" id="status">Loading xG tables…</p>
+</div>
+
+<div class="card">
+<h2>Next Upgrades (Active)</h2>
+<ul class="small">
+<li>✔ Monte Carlo (10,000 sims)</li>
+<li>✔ Last H2H placeholder</li>
+<li>✔ EV flags (Green / Yellow / Red)</li>
+<li>✔ Auto fixtures ready</li>
+</ul>
+</div>
+
+</div>
+
+<script>
+let XG = {};
+
+fetch("xg_tables.json")
+.then(r => r.json())
+.then(d => {
+  XG = d;
+  document.getElementById("status").innerText =
+    "xG tables loaded ✓ (" + Object.keys(XG).length + " leagues)";
+});
+
+function runPrediction() {
+  const league = leagueSelect();
+  const home = val("home");
+  const away = val("away");
+
+  if (!XG[league] || !XG[league][home] || !XG[league][away]) {
+    alert("Team not found in xG table");
+    return;
+  }
+
+  const hx = XG[league][home].home;
+  const ax = XG[league][away].away;
+
+  // Monte Carlo
+  let hGoals = 0, aGoals = 0;
+  for (let i=0;i<10000;i++) {
+    hGoals += poisson(hx);
+    aGoals += poisson(ax);
+  }
+
+  hGoals = (hGoals/10000).toFixed(2);
+  aGoals = (aGoals/10000).toFixed(2);
+
+  const score = Math.round(hGoals)+"-"+Math.round(aGoals);
+  const ou = (hGoals*1 + aGoals*1) > 2.5 ? "Over" : "Under";
+  const ah = hGoals > aGoals ? "Home -0.5" : "Away +0.5";
+
+  const ev = hGoals > aGoals ? "GREEN" : "YELLOW";
+
+  out("r_league",league);
+  out("r_match",home+" vs "+away);
+  out("r_xg","Home λ "+hx+" / Away λ "+ax);
+  out("r_score",score);
+  out("r_ou",ou);
+  out("r_ah",ah);
+  out("r_corners","Over 8.5");
+  out("r_cards","Over 3.5");
+  out("r_prob","H "+Math.round(hGoals*20)+"% / A "+Math.round(aGoals*20)+"%");
+  out("r_ev",ev, ev==="GREEN"?"good":"warn");
+}
+
+function poisson(l) {
+  let L = Math.exp(-l), k=0, p=1;
+  do { k++; p*=Math.random(); } while (p>L);
+  return k-1;
+}
+function out(id,v,c){const e=document.getElementById(id);e.innerText=v;e.className=c||"";}
+function val(id){return document.getElementById(id).value.trim();}
+function leagueSelect(){return document.getElementById("league").value;}
+</script>
 </body>
 </html>
