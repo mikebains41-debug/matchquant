@@ -1,1 +1,33 @@
-
+{
+  "EPL": [
+    ["Arsenal", "Aston Villa"],
+    ["Liverpool", "Man City"],
+    ["Chelsea", "Tottenham"],
+    ["Newcastle", "Man United"]
+  ],
+  "LaLiga": [
+    ["Barcelona", "Real Madrid"],
+    ["Atletico Madrid", "Sevilla"],
+    ["Villarreal", "Real Sociedad"]
+  ],
+  "SerieA": [
+    ["Inter", "Juventus"],
+    ["Milan", "Napoli"],
+    ["Roma", "Atalanta"]
+  ],
+  "Bundesliga": [
+    ["Bayern Munich", "Dortmund"],
+    ["Leverkusen", "RB Leipzig"],
+    ["Stuttgart", "Eintracht Frankfurt"]
+  ],
+  "Ligue1": [
+    ["Paris SG", "Marseille"],
+    ["Monaco", "Lille"],
+    ["Lens", "Lyon"]
+  ],
+  "Portugal": [
+    ["Benfica", "Porto"],
+    ["Sporting", "Braga"],
+    ["Guimaraes", "Famalicao"]
+  ]
+}
