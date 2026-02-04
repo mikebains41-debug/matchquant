@@ -2,286 +2,270 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MatchQuant</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#0b1220" />
-  <link rel="manifest" href="manifest.json" />
+  <title>MatchQuant</title>
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="https://www.svgrepo.com/show/532999/soccer-ball.svg" />
 
   <style>
     :root{
-      --bg:#0b1220;
-      --card:rgba(255,255,255,.06);
-      --card2:rgba(0,0,0,.18);
-      --border:rgba(255,255,255,.08);
-      --text:#e5e7eb;
-      --muted:#94a3b8;
-      --blue:#3b82f6;
+      --bg1:#060b16;
+      --bg2:#0b1220;
+      --card:#0f1a2e;
+      --card2:#0b1426;
+      --text:#dbe7ff;
+      --muted:#9fb3d9;
+      --accent:#2e7cff;
+      --accent2:#57a2ff;
+      --good:#27d17f;
+      --warn:#f7c948;
+      --bad:#ff4d4d;
+      --stroke:rgba(255,255,255,.08);
+      --shadow: 0 12px 35px rgba(0,0,0,.45);
+      --radius: 18px;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-      background:radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,.22), transparent 60%),
-                 radial-gradient(900px 600px at 90% 20%, rgba(14,165,233,.18), transparent 55%),
-                 var(--bg);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 30% 0%, rgba(46,124,255,.22), transparent 55%),
+        radial-gradient(900px 600px at 85% 25%, rgba(87,162,255,.18), transparent 55%),
+        linear-gradient(180deg,var(--bg1),var(--bg2));
+      min-height:100vh;
     }
-    .wrap{
-      max-width:900px;
-      margin:0 auto;
-      padding:18px 14px 40px;
+    .wrap{max-width:920px;margin:0 auto;padding:18px 14px 50px}
+    .top{
+      display:flex;align-items:center;gap:12px;margin:10px 2px 12px;
     }
-    .title{
-      font-size:46px;
+    .pill{
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      padding:10px 14px;
+      display:inline-flex;align-items:center;gap:10px;
+      box-shadow: var(--shadow);
+    }
+    .pill b{font-size:14px;letter-spacing:.2px}
+    .brand{margin:10px 2px 14px;}
+    .brand h1{
+      margin:0;
+      font-size:54px;
       line-height:1;
-      font-weight:800;
-      margin:6px 0 0;
-      letter-spacing:.5px;
-      text-shadow:0 10px 40px rgba(0,0,0,.35);
+      letter-spacing:-1px;
+      color: #e8f0ff;
+      text-shadow: 0 10px 35px rgba(0,0,0,.45);
     }
-    .subtitle{
-      margin:6px 0 18px;
-      color:var(--muted);
-      opacity:.95;
-    }
-    .row{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
+    .brand p{margin:8px 0 0;color:var(--muted);max-width:780px}
     .card{
-      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
-      border:1px solid var(--border);
-      border-radius:20px;
-      padding:14px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
     }
     .card h2{
-      margin:0 0 10px;
-      font-size:36px;
-      color:var(--blue);
-      letter-spacing:.2px;
+      margin:0 0 8px;
+      font-size:44px;
+      letter-spacing:-.6px;
+      color: var(--accent2);
     }
-    label{
-      display:block;
-      font-size:13px;
-      color:var(--muted);
-      margin:10px 0 6px;
-    }
-    select,input{
+    .sub{color:var(--muted);margin:0 0 12px}
+    label{display:block;color:var(--muted);font-size:14px;margin:12px 2px 8px}
+    select,input,button{
       width:100%;
+      padding:14px 14px;
       border-radius:16px;
-      border:1px solid var(--border);
-      padding:12px 12px;
-      background:rgba(0,0,0,.18);
+      border:1px solid var(--stroke);
+      background: rgba(10,18,34,.72);
       color:var(--text);
       outline:none;
       font-size:16px;
     }
-    input::placeholder{color:rgba(148,163,184,.7)}
+    input::placeholder{color:rgba(219,231,255,.35)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
     .btn{
-      width:100%;
-      border:0;
-      border-radius:18px;
-      padding:14px 14px;
-      font-size:18px;
+      background: linear-gradient(180deg, var(--accent), #1e5fe0);
+      border:none;
       font-weight:800;
-      color:white;
+      letter-spacing:.3px;
       cursor:pointer;
-      background:linear-gradient(180deg, rgba(59,130,246,1), rgba(37,99,235,1));
-      box-shadow:0 18px 40px rgba(37,99,235,.35);
+      padding:15px 16px;
+      border-radius:18px;
       margin-top:14px;
     }
-    .btn:active{transform:translateY(1px)}
-    .grid2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:10px;
+    .btn:active{transform: translateY(1px)}
+    .btnGhost{
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--stroke);
+      font-weight:700;
+      cursor:pointer;
     }
-    .grid2 .wide{grid-column:1 / -1;}
-    .pill{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:12px 12px;
-      border-radius:18px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.16);
-      margin-top:10px;
+    .hint{
+      margin:10px 2px 0;
+      color:rgba(219,231,255,.55);
+      font-size:13px;
     }
-    .pill b{font-weight:800}
-    .pill span{color:var(--muted)}
     .sectionTitle{
-      margin:14px 0 8px;
-      font-size:18px;
+      font-size:34px;color:var(--accent2);margin:18px 0 10px;
+      letter-spacing:-.4px;
+    }
+    .resultGrid{display:grid;grid-template-columns:1fr;gap:10px}
+    .field{
+      background: rgba(10,18,34,.62);
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      padding:14px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    .field .k{color:var(--muted);font-weight:700}
+    .field .v{font-weight:900;text-align:right}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
       font-weight:800;
     }
-    #todayBox button{
-      width:100%;
-      text-align:left;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.18);
-      color:var(--text);
-      margin:6px 0;
-    }
-    canvas{
-      width:100%;
-      border-radius:16px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.15);
-    }
-    .small{font-size:12px;color:var(--muted);opacity:.95}
-    @media (max-width:720px){
-      .title{font-size:44px}
-      .card h2{font-size:34px}
-      .grid2{grid-template-columns:1fr}
+    .good{color:var(--good)}
+    .warn{color:var(--warn)}
+    .bad{color:var(--bad)}
+    .spacer{height:14px}
+    .tiny{font-size:12px;color:rgba(219,231,255,.55);margin-top:6px}
+    @media (max-width:700px){
+      .brand h1{font-size:48px}
+      .card h2{font-size:40px}
+      .row,.row3{grid-template-columns:1fr}
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-
-    <div class="row" style="gap:14px;justify-content:space-between;">
-      <div>
-        <div class="title">MatchQuant</div>
-        <div class="subtitle">Soccer Prediction Engine (xG lambdas + Monte Carlo 10,000 + EV flags + Auto fixtures + H2H)</div>
-      </div>
+    <div class="top">
+      <div class="pill"><b>Home</b></div>
+      <div class="pill"><span style="opacity:.75">PWA:</span> <b id="pwaStatus">Ready</b></div>
     </div>
 
-    <!-- ===== INPUT CARD ===== -->
+    <div class="brand">
+      <h1>MatchQuant</h1>
+      <p>Soccer Prediction Engine (xG lambdas + Monte Carlo + EV badges + Auto fixtures + H2H)</p>
+    </div>
+
+    <!-- MODE 1 -->
     <div class="card">
-      <h2>Mode 1 – Manual Match Input</h2>
+      <h2>Mode 1 — Manual Match Input</h2>
+      <p class="sub">Pick a league, choose teams, optionally add odds for EV badges.</p>
 
-      <label for="league">League</label>
-      <select id="league">
-        <option value="EPL">EPL</option>
-        <option value="LaLiga">LaLiga</option>
-        <option value="SerieA">SerieA</option>
-        <option value="Bundesliga">Bundesliga</option>
-        <option value="Ligue1">Ligue1</option>
-        <option value="Portugal">Portugal</option>
-      </select>
-      <div class="small">League list auto-loads from <code>xg_tables.json</code> (your JSON must use the same league keys).</div>
+      <label for="leagueSelect">League</label>
+      <select id="leagueSelect"></select>
+      <div class="hint">League list auto-loads from <code>xg_tables.json</code></div>
 
-      <button class="btn" type="button" onclick="/* optional: runPrediction will auto-run when clicking fixtures */ window.scrollTo({top:0,behavior:'smooth'})">
-        Run ALL Leagues at Once
-      </button>
-      <div class="small">Uses <code>fixtures.json</code>. Add your real fixtures there (include dates for “today”).</div>
+      <div class="spacer"></div>
+      <button class="btnGhost" id="runAllBtn">Run ALL Leagues at Once</button>
+      <div class="hint">Uses <code>fixtures.json</code>. Add your real fixtures there (include dates for “today”).</div>
 
       <label for="homeTeam">Home Team (auto-suggest)</label>
-      <input id="homeTeam" placeholder="Start typing… e.g., Arsenal" />
-
+      <input id="homeTeam" placeholder="Start typing… e.g., Arsenal" list="teamsList" autocomplete="off" />
       <label for="awayTeam">Away Team (auto-suggest)</label>
-      <input id="awayTeam" placeholder="Start typing… e.g., Aston Villa" />
+      <input id="awayTeam" placeholder="Start typing… e.g., Aston Villa" list="teamsList" autocomplete="off" />
+      <datalist id="teamsList"></datalist>
 
-      <div class="row" style="margin-top:10px;">
-        <div class="pill" style="flex:1;">
-          <span>Monte Carlo sims</span>
-          <b><input id="sims" value="10000" style="width:110px;padding:8px 10px;border-radius:14px;margin:0;border:1px solid var(--border);" /></b>
-        </div>
-      </div>
-      <div class="small" style="margin-top:8px;">Poisson goals + simulations → score distribution + win probabilities</div>
-
-      <!-- ===== ODDS (for EV badges) ===== -->
-      <div class="sectionTitle">Optional Odds (for EV flags) <span class="small">(decimal)</span></div>
-
-      <div class="grid2">
+      <div class="row">
         <div>
-          <label for="oddsHome">ML Home</label>
-          <input id="oddsHome" placeholder="e.g., 1.95" />
+          <label for="sims">Monte Carlo sims</label>
+          <input id="sims" type="number" min="1000" step="1000" value="10000" />
+          <div class="tiny">Poisson goals + simulations → score distribution + win probs</div>
         </div>
         <div>
-          <label for="oddsDraw">ML Draw</label>
-          <input id="oddsDraw" placeholder="e.g., 3.60" />
-        </div>
-        <div>
-          <label for="oddsAway">ML Away</label>
-          <input id="oddsAway" placeholder="e.g., 3.90" />
-        </div>
-        <div>
-          <label for="oddsOver25">O/U 2.5 Over</label>
-          <input id="oddsOver25" placeholder="e.g., 1.85" />
-        </div>
-        <div>
-          <label for="oddsUnder25">O/U 2.5 Under</label>
-          <input id="oddsUnder25" placeholder="e.g., 2.05" />
-        </div>
-        <div>
-          <label for="oddsAHHome">AH Home -0.5</label>
-          <input id="oddsAHHome" placeholder="e.g., 2.05" />
-        </div>
-
-        <div>
-          <label for="cornersLine">Corners Line (e.g., 9.5)</label>
-          <input id="cornersLine" placeholder="e.g., 9.5" />
-        </div>
-        <div>
-          <label for="cardsLine">Cards Line (e.g., 4.5)</label>
-          <input id="cardsLine" placeholder="e.g., 4.5" />
-        </div>
-
-        <div>
-          <label for="cornersOver">Corners Odds (Over)</label>
-          <input id="cornersOver" placeholder="e.g., 1.90" />
-        </div>
-        <div>
-          <label for="cornersUnder">Corners Odds (Under)</label>
-          <input id="cornersUnder" placeholder="e.g., 1.95" />
-        </div>
-
-        <div>
-          <label for="cardsOver">Cards Odds (Over)</label>
-          <input id="cardsOver" placeholder="e.g., 1.85" />
-        </div>
-        <div>
-          <label for="cardsUnder">Cards Odds (Under)</label>
-          <input id="cardsUnder" placeholder="e.g., 2.05" />
+          <label>EV badges</label>
+          <div class="badge"><span class="good">Green</span> / <span class="warn">Yellow</span> / <span class="bad">Red</span></div>
+          <div class="tiny">Enter decimal odds below (optional) to get EV flags.</div>
         </div>
       </div>
 
-      <button class="btn" type="button" onclick="runPrediction()">Run Prediction</button>
+      <div class="spacer"></div>
+
+      <div class="card" style="padding:14px;background:rgba(0,0,0,.18)">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="font-weight:900">Optional Odds (for EV flags)</div>
+          <div style="color:rgba(219,231,255,.55);font-weight:800">decimal</div>
+        </div>
+
+        <div class="row">
+          <input id="oddsMlHome" placeholder="ML Home (e.g., 1.95)" inputmode="decimal" />
+          <input id="oddsMlDraw" placeholder="ML Draw (e.g., 3.60)" inputmode="decimal" />
+        </div>
+        <div class="row">
+          <input id="oddsMlAway" placeholder="ML Away (e.g., 3.90)" inputmode="decimal" />
+          <input id="oddsOuOver" placeholder="O/U 2.5 Over (e.g., 1.85)" inputmode="decimal" />
+        </div>
+        <div class="row">
+          <input id="oddsOuUnder" placeholder="O/U 2.5 Under (e.g., 2.05)" inputmode="decimal" />
+          <input id="oddsAhHome" placeholder="AH Home -0.5 (e.g., 2.05)" inputmode="decimal" />
+        </div>
+
+        <div class="row">
+          <input id="cornersLine" placeholder="Corners Line (e.g., 9.5)" inputmode="decimal" />
+          <input id="cornersOver" placeholder="Corners Odds (Over) (e.g., 1.90)" inputmode="decimal" />
+        </div>
+        <div class="row">
+          <input id="cornersUnder" placeholder="Corners Odds (Under) (e.g., 1.95)" inputmode="decimal" />
+          <input id="cardsLine" placeholder="Cards Line (e.g., 4.5)" inputmode="decimal" />
+        </div>
+        <div class="row">
+          <input id="cardsOver" placeholder="Cards Odds (Over) (e.g., 1.85)" inputmode="decimal" />
+          <input id="cardsUnder" placeholder="Cards Odds (Under) (e.g., 2.05)" inputmode="decimal" />
+        </div>
+      </div>
+
+      <button class="btn" id="runBtn">Run Prediction</button>
     </div>
 
-    <!-- ===== RESULT CARD ===== -->
-    <div class="card" style="margin-top:14px;">
-      <h2>Result</h2>
+    <div class="sectionTitle">Result</div>
 
-      <div class="pill"><span>League:</span><b id="resLeague">—</b></div>
-      <div class="pill"><span>Match:</span><b id="resMatch">—</b></div>
-      <div class="pill"><span>xG Used:</span><b id="resXG">—</b></div>
-      <div class="pill"><span>Predicted Score:</span><b id="resScore">—</b></div>
-      <div class="pill"><span>O/U 2.5:</span><b id="resOU">—</b></div>
-      <div class="pill"><span>Asian Handicap:</span><b id="resAH">—</b></div>
-      <div class="pill"><span>Win Probabilities:</span><b id="resWin">—</b></div>
-      <div class="pill"><span>EV Flags:</span><b id="resEV">—</b></div>
-      <div class="pill"><span>Confidence Tier:</span><b id="resTier">—</b></div>
-      <div class="pill"><span>Top Scorelines (MC):</span><b id="resTop">—</b></div>
-
-      <!-- ===== TODAY + CHARTS ===== -->
-      <div class="sectionTitle" style="margin-top:18px;">Today’s Fixtures (auto)</div>
-      <div id="todayBox" class="small"></div>
-
-      <div class="sectionTitle" style="margin-top:18px;">Chart</div>
-      <canvas id="scoreChart" width="360" height="240"></canvas>
-
-      <div class="small" style="margin-top:10px;">
-        Tip: Tap a fixture above → it auto-fills teams and runs prediction.
+    <div class="card">
+      <div class="resultGrid">
+        <div class="field"><div class="k">League:</div><div class="v" id="rLeague">—</div></div>
+        <div class="field"><div class="k">Match:</div><div class="v" id="rMatch">—</div></div>
+        <div class="field"><div class="k">xG Used:</div><div class="v" id="rXg">—</div></div>
+        <div class="field"><div class="k">Predicted Score:</div><div class="v" id="rScore">—</div></div>
+        <div class="field"><div class="k">O/U 2.5:</div><div class="v" id="rOu">—</div></div>
+        <div class="field"><div class="k">Asian Handicap:</div><div class="v" id="rAh">—</div></div>
+        <div class="field"><div class="k">Win Probabilities:</div><div class="v" id="rWin">—</div></div>
+        <div class="field"><div class="k">EV Flags:</div><div class="v" id="rEv">—</div></div>
+        <div class="field"><div class="k">Confidence Tier:</div><div class="v" id="rTier">—</div></div>
+        <div class="field"><div class="k">Top Scorelines (MC):</div><div class="v" id="rTop">—</div></div>
       </div>
+
+      <div class="hint" id="statusLine" style="margin-top:12px">Status: waiting…</div>
     </div>
+
+    <div class="spacer"></div>
   </div>
 
-  <!-- Your app code -->
-  <script src="app.js"></script>
+  <!-- IMPORTANT: keep this exactly like this -->
+  <script src="./app.js"></script>
 
-  <!-- Optional: Service worker for install -->
   <script>
+    // Register Service Worker (PWA)
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+      window.addEventListener("load", async () => {
+        try {
+          await navigator.serviceWorker.register("./sw.js");
+          document.getElementById("pwaStatus").textContent = "Installed";
+        } catch (e) {
+          document.getElementById("pwaStatus").textContent = "SW error";
+        }
+      });
     }
   </script>
 </body>
