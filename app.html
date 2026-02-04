@@ -180,4 +180,64 @@
   <script>
     // Demo dataset (soccer only)
     let picks = [
-      demo("
+      demo("EPL", "Arsenal vs Newcastle", "2-1", "Over 2.5", "10-9", "4-5", "Arsenal -0.5", "Arsenal ML", "Tier 1"),
+      demo("EPL", "Man City vs Spurs", "3-1", "Over 2.5", "11-8", "3-4", "City -1.0", "City ML", "Tier 1"),
+      demo("LaLiga", "Real Madrid vs Sevilla", "2-0", "Under 3.5", "9-4", "5-3", "Madrid -1.0", "Madrid ML", "Tier 2"),
+      demo("SerieA", "Inter vs Atalanta", "2-1", "Over 2.5", "8-6", "6-4", "Inter -0.5", "Inter ML", "Tier 2"),
+      demo("Bundesliga", "Bayern vs Dortmund", "3-2", "Over 3.0", "12-6", "5-5", "Bayern -0.75", "Bayern ML", "Tier 1"),
+      demo("Ligue1", "PSG vs Marseille", "2-1", "Over 2.5", "7-5", "6-6", "PSG -0.5", "PSG ML", "Tier 2"),
+      demo("Portugal", "Benfica vs Porto", "1-1", "Under 2.5", "6-7", "7-8", "Porto +0.25", "Draw", "Tier 3"),
+      demo("UCL", "Barcelona vs Napoli", "2-1", "Over 2.5", "8-4", "4-5", "Barca -0.5", "Barca ML", "Tier 2"),
+    ];
+
+    function demo(league, match, score, ou, corners, cards, ah, ml, tier){
+      return { league, match, score, ou, corners, cards, ah, ml, tier };
+    }
+
+    function refreshPicks(){
+      // Simple shuffle to show "refresh" works (demo)
+      picks = picks.sort(() => Math.random() - 0.5);
+      render();
+    }
+
+    function render(){
+      const q = (document.getElementById("search").value || "").toLowerCase();
+      const league = document.getElementById("league").value;
+
+      const filtered = picks.filter(p => {
+        const inLeague = (league === "ALL") || (p.league === league);
+        const inSearch = !q || p.match.toLowerCase().includes(q);
+        return inLeague && inSearch;
+      });
+
+      const grid = document.getElementById("grid");
+      grid.innerHTML = filtered.map(p => card(p)).join("");
+    }
+
+    function card(p){
+      return `
+        <div class="card">
+          <div class="row">
+            <div>
+              <div class="match">${p.match}</div>
+              <div class="meta">${p.league}</div>
+            </div>
+            <div class="tag">${p.tier}</div>
+          </div>
+
+          <div class="cols">
+            <div class="box"><span class="k">Predicted score:</span> <span class="v">${p.score}</span></div>
+            <div class="box"><span class="k">O/U lean:</span> <span class="v">${p.ou}</span></div>
+            <div class="box"><span class="k">Corners (proj):</span> <span class="v">${p.corners}</span></div>
+            <div class="box"><span class="k">Cards (proj):</span> <span class="v">${p.cards}</span></div>
+            <div class="box"><span class="k">Asian Handicap:</span> <span class="v">${p.ah}</span></div>
+            <div class="box"><span class="k">3-way ML:</span> <span class="v">${p.ml}</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    render();
+  </script>
+</body>
+</html>
