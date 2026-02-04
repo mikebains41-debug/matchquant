@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>MatchQuant Soccer Engine</title>
 
 <style>
@@ -51,118 +51,261 @@ button{
 .row{display:flex;justify-content:space-between;gap:12px;margin:8px 0}
 .key{color:var(--muted);font-weight:700}
 .val{font-weight:700;text-align:right}
-.note{font-size:13px;color:#b6c8ff;margin-top:8px}
+.note{font-size:13px;color:#b6c8ff;margin-top:8px;line-height:1.35}
+.small{font-size:12px;color:#a9bbff;opacity:.9}
+hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:12px 0}
+pre{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:rgba(255,255,255,.06);
+  padding:12px;
+  border-radius:14px;
+  margin:10px 0 0;
+}
 </style>
 </head>
 
 <body>
 <div class="container">
 
-<div class="card">
-  <h1>MatchQuant</h1>
-  <div class="note">Soccer Prediction Engine (xG-based)</div>
-</div>
+  <div class="card">
+    <h1>MatchQuant</h1>
+    <div class="note">Soccer Prediction Engine (xG-based)</div>
+  </div>
 
-<div class="card">
-  <h2>Mode 1 — Manual Match Input</h2>
+  <div class="card">
+    <h2>Mode 1 — Manual Match Input</h2>
 
-  <label>League</label>
-  <select id="league">
-    <option value="EPL">EPL</option>
-    <option value="LaLiga">LaLiga</option>
-    <option value="SerieA">SerieA</option>
-    <option value="Bundesliga">Bundesliga</option>
-    <option value="Ligue1">Ligue1</option>
-    <option value="Portugal">Portugal</option>
-  </select>
+    <label>League</label>
+    <select id="league">
+      <option value="EPL">EPL</option>
+      <option value="LaLiga">LaLiga</option>
+      <option value="SerieA">SerieA</option>
+      <option value="Bundesliga">Bundesliga</option>
+      <option value="Ligue1">Ligue1</option>
+      <option value="Portugal">Portugal</option>
+    </select>
 
-  <button onclick="runAll()">Run ALL Leagues at Once</button>
+    <button onclick="runAll()">Run ALL Leagues at Once</button>
+    <div class="small">Runs a quick demo batch (you can upgrade to real fixtures later).</div>
 
-  <label>Home Team</label>
-  <input id="home" placeholder="Arsenal">
+    <label>Home Team</label>
+    <input id="home" placeholder="Arsenal" />
 
-  <label>Away Team</label>
-  <input id="away" placeholder="Aston Villa">
+    <label>Away Team</label>
+    <input id="away" placeholder="Aston Villa" />
 
-  <button onclick="runPrediction()">Run Prediction</button>
-</div>
+    <button onclick="runPrediction()">Run Prediction</button>
+  </div>
 
-<div class="card">
-  <h2>Result</h2>
+  <div class="card">
+    <h2>Result</h2>
 
-  <div class="row"><div class="key">League:</div><div id="rLeague" class="val">—</div></div>
-  <div class="row"><div class="key">Match:</div><div id="rMatch" class="val">—</div></div>
-  <div class="row"><div class="key">xG Used:</div><div id="rXg" class="val">—</div></div>
-  <div class="row"><div class="key">Predicted Score:</div><div id="rScore" class="val">—</div></div>
-  <div class="row"><div class="key">O/U 2.5:</div><div id="rOU" class="val">—</div></div>
-  <div class="row"><div class="key">Asian Handicap:</div><div id="rAH" class="val">—</div></div>
-  <div class="row"><div class="key">Corners:</div><div id="rCorners" class="val">—</div></div>
-  <div class="row"><div class="key">Cards:</div><div id="rCards" class="val">—</div></div>
-  <div class="row"><div class="key">Win Probabilities:</div><div id="rProb" class="val">—</div></div>
+    <div class="row"><div class="key">League:</div><div id="rLeague" class="val">—</div></div>
+    <div class="row"><div class="key">Match:</div><div id="rMatch" class="val">—</div></div>
+    <div class="row"><div class="key">xG Used:</div><div id="rXg" class="val">—</div></div>
+    <div class="row"><div class="key">Predicted Score:</div><div id="rScore" class="val">—</div></div>
+    <div class="row"><div class="key">O/U 2.5:</div><div id="rOU" class="val">—</div></div>
+    <div class="row"><div class="key">Asian Handicap:</div><div id="rAH" class="val">—</div></div>
+    <div class="row"><div class="key">Corners:</div><div id="rCorners" class="val">—</div></div>
+    <div class="row"><div class="key">Cards:</div><div id="rCards" class="val">—</div></div>
+    <div class="row"><div class="key">Win Probabilities:</div><div id="rProb" class="val">—</div></div>
 
-  <div class="note" id="status">Loading xG tables…</div>
-</div>
+    <div class="note" id="status">Loading xG tables…</div>
+
+    <div id="batchWrap" style="display:none;">
+      <hr />
+      <div class="note"><b>All-Leagues Batch Output</b></div>
+      <pre id="batchOut"></pre>
+    </div>
+  </div>
 
 </div>
 
 <script>
-let XG=null;
+let XG = null;
 
+// ---- load xg tables ----
 fetch("xg_tables.json")
-.then(r=>r.json())
-.then(d=>{
-  XG=d.leagues;
-  document.getElementById("status").innerText =
-    "xG tables loaded ✓ ("+Object.keys(XG).length+" leagues)";
-});
+  .then(r => r.json())
+  .then(d => {
+    XG = d.leagues || d;
+    const leaguesCount = Object.keys(XG || {}).length;
+    document.getElementById("status").innerText = "xG tables loaded ✓ (" + leaguesCount + " leagues)";
+  })
+  .catch(() => {
+    document.getElementById("status").innerText = "Could not load xg_tables.json (check file name + path).";
+  });
 
-function poisson(l,k){
-  return Math.exp(-l)*Math.pow(l,k)/factorial(k);
+// ---- math helpers ----
+function factorial(n){
+  let x = 1;
+  for(let i=2;i<=n;i++) x *= i;
+  return x;
 }
-function factorial(n){return n<=1?1:n*factorial(n-1);}
+function poisson(lambda, k){
+  // safe-ish for small k; good enough for 0..10
+  return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k);
+}
 
+// Make H/D/A show 1 decimal and sum to 100.0 exactly
+function normalizeTo100_1dp(h, d, a){
+  let sum = h + d + a;
+  if(sum <= 0) return {H:0, D:0, A:0};
+
+  // normalize
+  h = (h/sum)*100;
+  d = (d/sum)*100;
+  a = (a/sum)*100;
+
+  // round to 1 decimal
+  let H = Math.round(h*10)/10;
+  let D = Math.round(d*10)/10;
+  let A = Math.round(a*10)/10;
+
+  // fix total to 100.0 by adjusting the largest component
+  let total = Math.round((H + D + A)*10)/10;
+  let diff = Math.round((100.0 - total)*10)/10; // e.g. +0.1 / -0.1 / +0.2
+
+  // choose component with max value to absorb diff
+  let arr = [{k:"H", v:H}, {k:"D", v:D}, {k:"A", v:A}].sort((x,y)=>y.v-x.v);
+  if(arr[0].k === "H") H = Math.round((H + diff)*10)/10;
+  if(arr[0].k === "D") D = Math.round((D + diff)*10)/10;
+  if(arr[0].k === "A") A = Math.round((A + diff)*10)/10;
+
+  // final clamp
+  if(H < 0) H = 0;
+  if(D < 0) D = 0;
+  if(A < 0) A = 0;
+
+  return {H, D, A};
+}
+
+// find most likely scoreline on the grid
+function mostLikelyScore(hx, ax, maxGoals){
+  let bestP = -1, bestI = 0, bestJ = 0;
+  for(let i=0;i<=maxGoals;i++){
+    const pi = poisson(hx,i);
+    for(let j=0;j<=maxGoals;j++){
+      const p = pi * poisson(ax,j);
+      if(p > bestP){
+        bestP = p; bestI = i; bestJ = j;
+      }
+    }
+  }
+  return `${bestI}-${bestJ}`;
+}
+
+// ---- main prediction ----
 function runPrediction(){
-  if(!XG) return;
+  if(!XG){
+    alert("xG tables not loaded yet. Wait 2 seconds then try again.");
+    return;
+  }
 
-  const lg=document.getElementById("league").value;
-  const home=document.getElementById("home").value.trim();
-  const away=document.getElementById("away").value.trim();
-  if(!XG[lg]||!XG[lg][home]||!XG[lg][away]) return;
+  const lg = document.getElementById("league").value;
+  const home = document.getElementById("home").value.trim();
+  const away = document.getElementById("away").value.trim();
 
-  const hx=XG[lg][home].xg_for;
-  const ax=XG[lg][away].xg_for;
+  if(!XG[lg]){
+    alert("League not found in xG tables: " + lg);
+    return;
+  }
+  if(!XG[lg][home]){
+    alert("Home team not found in " + lg + ": " + home + "\n(Team name must match xg_tables.json exactly.)");
+    return;
+  }
+  if(!XG[lg][away]){
+    alert("Away team not found in " + lg + ": " + away + "\n(Team name must match xg_tables.json exactly.)");
+    return;
+  }
 
-  let H=0,D=0,A=0;
-  for(let i=0;i<=5;i++){
-    for(let j=0;j<=5;j++){
-      const p=poisson(hx,i)*poisson(ax,j);
-      if(i>j)H+=p;
-      else if(i<j)A+=p;
-      else D+=p;
+  const hx = Number(XG[lg][home].xg_for);
+  const ax = Number(XG[lg][away].xg_for);
+
+  // bigger grid so draw isn't lost
+  const MAX_GOALS = 10;
+
+  let hWin=0, draw=0, aWin=0;
+  for(let i=0;i<=MAX_GOALS;i++){
+    const pi = poisson(hx, i);
+    for(let j=0;j<=MAX_GOALS;j++){
+      const p = pi * poisson(ax, j);
+      if(i>j) hWin += p;
+      else if(i<j) aWin += p;
+      else draw += p;
     }
   }
 
-  const sum=H+D+A;
-  H=Math.round(H/sum*100);
-  D=Math.round(D/sum*100);
-  A=100-H-D;
+  // normalize & format
+  const probs = normalizeTo100_1dp(hWin, draw, aWin);
 
-  const score=hx>ax?`${Math.round(hx)}-${Math.round(ax)}`:
-               ax>hx?`${Math.round(ax)}-${Math.round(hx)}`:"1-1";
+  // predicted score = mode (most likely score)
+  const score = mostLikelyScore(hx, ax, MAX_GOALS);
 
-  document.getElementById("rLeague").innerText=lg;
-  document.getElementById("rMatch").innerText=`${home} vs ${away}`;
-  document.getElementById("rXg").innerText=`Home λ ${hx.toFixed(2)} / Away λ ${ax.toFixed(2)}`;
-  document.getElementById("rScore").innerText=score;
-  document.getElementById("rOU").innerText=(hx+ax>2.5)?"Over":"Under";
-  document.getElementById("rAH").innerText=hx>ax?"Home -0.5":"0 (Draw No Bet lean)";
-  document.getElementById("rCorners").innerText=(hx+ax>2.8)?"Over 8.5":"Under 9.5";
-  document.getElementById("rCards").innerText=(hx+ax>2.6)?"Over 3.5":"Under 4.5";
-  document.getElementById("rProb").innerText=`H ${H}% / D ${D}% / A ${A}%`;
+  // simple market leans (same style you had)
+  const totalXG = hx + ax;
+
+  document.getElementById("rLeague").innerText = lg;
+  document.getElementById("rMatch").innerText = `${home} vs ${away}`;
+  document.getElementById("rXg").innerText = `Home λ ${hx.toFixed(2)} / Away λ ${ax.toFixed(2)}`;
+  document.getElementById("rScore").innerText = score;
+  document.getElementById("rOU").innerText = (totalXG > 2.5) ? "Over" : "Under";
+
+  // AH lean
+  let ah = "0 (Draw No Bet lean)";
+  if(hx - ax > 0.25) ah = "Home -0.5";
+  if(ax - hx > 0.25) ah = "Away +0.5";
+  document.getElementById("rAH").innerText = ah;
+
+  // corners/cards heuristic (placeholder)
+  document.getElementById("rCorners").innerText = (totalXG > 2.8) ? "Over 8.5" : "Under 9.5";
+  document.getElementById("rCards").innerText = (totalXG > 2.6) ? "Over 3.5" : "Under 4.5";
+
+  document.getElementById("rProb").innerText =
+    `H ${probs.H.toFixed(1)}% / D ${probs.D.toFixed(1)}% / A ${probs.A.toFixed(1)}%`;
 }
 
+// ---- demo all-leagues batch ----
+// (This is a placeholder batch. Next step: real fixtures JSON per league.)
 function runAll(){
-  alert("Multi-league batch runner will be added next.");
+  if(!XG){
+    alert("xG tables not loaded yet.");
+    return;
+  }
+
+  const home = document.getElementById("home").value.trim();
+  const away = document.getElementById("away").value.trim();
+
+  let out = [];
+  for(const lg of Object.keys(XG)){
+    if(XG[lg]?.[home] && XG[lg]?.[away]){
+      const hx = Number(XG[lg][home].xg_for);
+      const ax = Number(XG[lg][away].xg_for);
+      const score = mostLikelyScore(hx, ax, 10);
+
+      let hWin=0, draw=0, aWin=0;
+      for(let i=0;i<=10;i++){
+        const pi = poisson(hx, i);
+        for(let j=0;j<=10;j++){
+          const p = pi * poisson(ax, j);
+          if(i>j) hWin += p;
+          else if(i<j) aWin += p;
+          else draw += p;
+        }
+      }
+      const probs = normalizeTo100_1dp(hWin, draw, aWin);
+      out.push(`${lg}: ${home} vs ${away} | Score ${score} | H ${probs.H.toFixed(1)} D ${probs.D.toFixed(1)} A ${probs.A.toFixed(1)}`);
+    }
+  }
+
+  if(out.length === 0){
+    out.push("No leagues had BOTH teams matching exactly in xg_tables.json.");
+  }
+
+  document.getElementById("batchOut").innerText = out.join("\n");
+  document.getElementById("batchWrap").style.display = "block";
+  window.scrollTo({top: document.body.scrollHeight, behavior: "smooth"});
 }
 </script>
 </body>
