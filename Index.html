@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MatchQuant</title>
+  <title>MatchQuant Engine</title>
 
   <style>
     body {
@@ -21,7 +21,7 @@
       background: #121c3f;
       padding: 32px;
       border-radius: 18px;
-      max-width: 420px;
+      max-width: 480px;
       width: 90%;
       text-align: center;
       box-shadow: 0 0 30px rgba(0,0,0,0.5);
@@ -29,44 +29,34 @@
 
     h1 {
       margin-top: 0;
-      font-size: 32px;
       color: #4da3ff;
     }
 
-    p {
-      font-size: 16px;
-      opacity: 0.9;
-      margin-bottom: 28px;
-    }
-
     button {
+      margin-top: 20px;
+      padding: 14px;
+      font-size: 16px;
+      width: 100%;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
       background: #4da3ff;
       color: #000;
-      border: none;
-      padding: 16px;
-      font-size: 18px;
-      border-radius: 12px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    button:hover {
-      background: #79b8ff;
     }
   </style>
 </head>
 
 <body>
   <div class="card">
-    <h1>MatchQuant</h1>
-    <p>Professional sports analytics & betting intelligence.</p>
+    <h1>MatchQuant Engine</h1>
+    <p>You are now inside the app.</p>
 
-    <button onclick="goToApp()">Get Started</button>
+    <button onclick="goHome()">← Back Home</button>
   </div>
 
   <script>
-    function goToApp() {
-      window.location.href = "/matchquant/app.html";
+    function goHome() {
+      window.location.href = "/matchquant/";
     }
   </script>
 </body>
