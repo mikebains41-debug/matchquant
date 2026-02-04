@@ -3,13 +3,7 @@
   "short_name": "MatchQuant",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0b1633",
-  "theme_color": "#0b1633",
-  "icons": [
-    {
-      "src": "https://www.svgrepo.com/show/331760/soccer-ball.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    }
-  ]
+  "background_color": "#050814",
+  "theme_color": "#050814",
+  "icons": []
 }
