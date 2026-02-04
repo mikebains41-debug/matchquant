@@ -1,8 +1,127 @@
-<select id="leaguePick" style="width:100%;padding:14px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:#fff;font-size:16px;">
-  <option value="EPL">EPL</option>
-  <option value="LaLiga">LaLiga</option>
-  <option value="SerieA">SerieA</option>
-  <option value="Bundesliga">Bundesliga</option>
-  <option value="Ligue1">Ligue1</option>
-  <option value="Portugal">Portugal</option>
-</select>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatchQuant Soccer Engine</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#08152e;
+  color:#fff;
+}
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:16px;
+}
+.card{
+  background:#0f1f3f;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+h1,h2{color:#5aa9ff}
+input,select,button{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:none;
+  margin-top:8px;
+  font-size:16px;
+}
+button{
+  background:#5aa9ff;
+  color:#00142f;
+  font-weight:900;
+}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.box{flex:1;min-width:200px}
+.result{
+  background:#142b55;
+  border-radius:12px;
+  padding:12px;
+  margin-top:8px;
+}
+.small{font-size:13px;opacity:.75}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>MatchQuant Soccer Engine</h1>
+
+  <div class="card">
+    <h2>Mode 1 — Manual Match</h2>
+
+    <select id="leaguePick">
+      <option value="EPL">Premier League</option>
+      <option value="LaLiga">La Liga</option>
+      <option value="SerieA">Serie A</option>
+      <option value="Bundesliga">Bundesliga</option>
+      <option value="Ligue1">Ligue 1</option>
+      <option value="Portugal">Portugal</option>
+    </select>
+
+    <input id="homeTeam" placeholder="Home Team">
+    <input id="awayTeam" placeholder="Away Team">
+
+    <button onclick="run()">Run Prediction</button>
+
+    <div class="result" id="out">Waiting…</div>
+    <div class="small" id="status">Loading xG tables…</div>
+  </div>
+</div>
+
+<script>
+/* ===== MULTI LEAGUE xG LOADER ===== */
+let XG = {};
+
+(async function(){
+  try{
+    const r = await fetch("./xg_tables.json",{cache:"no-store"});
+    const j = await r.json();
+    XG = j.leagues || {};
+    let t=0;
+    Object.values(XG).forEach(l=>t+=Object.keys(l.teams).length);
+    document.getElementById("status").textContent =
+      `xG loaded ✅ (${Object.keys(XG).length} leagues / ${t} teams)`;
+  }catch{
+    document.getElementById("status").textContent =
+      "xG NOT loaded ⚠️ fallback mode";
+  }
+})();
+
+function getXG(lg,team){
+  return XG?.[lg]?.teams?.[team] || {xg_for:1.3,xg_against:1.3};
+}
+
+function run(){
+  const lg = leaguePick.value;
+  const h = homeTeam.value.trim();
+  const a = awayTeam.value.trim();
+
+  const hx = getXG(lg,h);
+  const ax = getXG(lg,a);
+
+  const home = (hx.xg_for + ax.xg_against)/2 + 0.12;
+  const away = (ax.xg_for + hx.xg_against)/2;
+
+  const score =
+    Math.round(home) + "-" + Math.round(away);
+
+  out.innerHTML = `
+    <b>${h} vs ${a}</b><br>
+    League: ${lg}<br>
+    xG: ${home.toFixed(2)} / ${away.toFixed(2)}<br>
+    Score: ${score}<br>
+    O/U 2.5: ${(home+away)>2.5?"Over":"Under"}<br>
+    AH: ${(home-away)>0.4?"Home -0.5":"0 DNB"}
+  `;
+}
+</script>
+
+</body>
+</html>
