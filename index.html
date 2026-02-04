@@ -2,11 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MatchQuant</title>
-
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MatchQuant Soccer Engine</title>
 
   <style>
     body {
@@ -17,7 +14,8 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      padding: 16px;
     }
 
     .card {
@@ -25,52 +23,40 @@
       max-width: 520px;
       background: #0f1a3a;
       border-radius: 22px;
-      padding: 32px;
-      text-align: center;
+      padding: 28px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      text-align: center;
     }
 
     h1 {
+      margin-top: 0;
       font-size: 2.2rem;
-      margin-bottom: 12px;
-      color: #5fb0ff;
+      color: #5fb3ff;
     }
 
     p {
-      font-size: 1.05rem;
       opacity: 0.9;
-      margin-bottom: 28px;
+      line-height: 1.4;
     }
 
     button {
-      background: #5fb0ff;
-      color: #000;
+      margin-top: 22px;
+      padding: 14px 22px;
       border: none;
       border-radius: 14px;
-      padding: 14px 26px;
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: bold;
+      background: #5fb3ff;
+      color: #000;
       cursor: pointer;
     }
 
     button:hover {
-      opacity: 0.9;
+      background: #7fc3ff;
     }
-  </style>
-</head>
 
-<body>
-  <div class="card">
-    <h1>MatchQuant</h1>
-    <p>Professional soccer analytics & betting intelligence.</p>
-
-    <button onclick="goToApp()">Get Started</button>
-  </div>
-
-  <script>
-    function goToApp() {
-      window.location.href = "app.html";
+    .results {
+      text-align: left;
+      margin-top: 20px;
+      display: none;
     }
-  </script>
-</body>
-</html>
