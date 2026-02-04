@@ -1,55 +1,38 @@
 {
   "leagues": {
     "EPL": {
-      "Arsenal": { "xg_for": 1.72, "xg_against": 0.98 },
-      "Aston Villa": { "xg_for": 1.38, "xg_against": 1.25 },
-      "Man City": { "xg_for": 2.05, "xg_against": 0.90 },
-      "Liverpool": { "xg_for": 1.95, "xg_against": 1.05 },
-      "Chelsea": { "xg_for": 1.55, "xg_against": 1.30 },
-      "Man United": { "xg_for": 1.48, "xg_against": 1.45 },
-      "Tottenham": { "xg_for": 1.65, "xg_against": 1.40 },
-      "Newcastle": { "xg_for": 1.58, "xg_against": 1.32 }
+      "Arsenal": { "xg_for": 1.72 },
+      "Aston Villa": { "xg_for": 1.18 },
+      "Man City": { "xg_for": 2.05 },
+      "Liverpool": { "xg_for": 1.95 },
+      "Chelsea": { "xg_for": 1.55 }
     },
-
     "LaLiga": {
-      "Real Madrid": { "xg_for": 1.85, "xg_against": 0.95 },
-      "Barcelona": { "xg_for": 1.78, "xg_against": 1.02 },
-      "Atletico Madrid": { "xg_for": 1.55, "xg_against": 0.88 },
-      "Real Sociedad": { "xg_for": 1.42, "xg_against": 1.05 },
-      "Sevilla": { "xg_for": 1.25, "xg_against": 1.30 },
-      "Valencia": { "xg_for": 1.10, "xg_against": 1.35 }
+      "Barcelona": { "xg_for": 1.78 },
+      "Real Madrid": { "xg_for": 1.88 },
+      "Atletico Madrid": { "xg_for": 1.42 },
+      "Real Betis": { "xg_for": 1.35 }
     },
-
     "SerieA": {
-      "Inter": { "xg_for": 1.90, "xg_against": 0.92 },
-      "Juventus": { "xg_for": 1.45, "xg_against": 1.00 },
-      "AC Milan": { "xg_for": 1.60, "xg_against": 1.15 },
-      "Napoli": { "xg_for": 1.70, "xg_against": 1.05 },
-      "Lazio": { "xg_for": 1.35, "xg_against": 1.20 },
-      "Roma": { "xg_for": 1.40, "xg_against": 1.18 }
+      "Inter": { "xg_for": 1.75 },
+      "Juventus": { "xg_for": 1.48 },
+      "Milan": { "xg_for": 1.52 },
+      "Genoa": { "xg_for": 1.05 }
     },
-
     "Bundesliga": {
-      "Bayern Munich": { "xg_for": 2.10, "xg_against": 0.95 },
-      "Borussia Dortmund": { "xg_for": 1.75, "xg_against": 1.20 },
-      "RB Leipzig": { "xg_for": 1.68, "xg_against": 1.10 },
-      "Bayer Leverkusen": { "xg_for": 1.80, "xg_against": 1.05 },
-      "Eintracht Frankfurt": { "xg_for": 1.42, "xg_against": 1.30 }
+      "Bayern Munich": { "xg_for": 2.10 },
+      "Dortmund": { "xg_for": 1.72 },
+      "Leipzig": { "xg_for": 1.65 }
     },
-
     "Ligue1": {
-      "PSG": { "xg_for": 2.05, "xg_against": 0.90 },
-      "Monaco": { "xg_for": 1.65, "xg_against": 1.20 },
-      "Marseille": { "xg_for": 1.50, "xg_against": 1.25 },
-      "Lille": { "xg_for": 1.40, "xg_against": 1.10 },
-      "Lyon": { "xg_for": 1.35, "xg_against": 1.30 }
+      "PSG": { "xg_for": 2.00 },
+      "Marseille": { "xg_for": 1.45 },
+      "Lyon": { "xg_for": 1.38 }
     },
-
     "Portugal": {
-      "Benfica": { "xg_for": 1.95, "xg_against": 0.95 },
-      "Porto": { "xg_for": 1.85, "xg_against": 1.00 },
-      "Sporting": { "xg_for": 1.80, "xg_against": 1.05 },
-      "Braga": { "xg_for": 1.55, "xg_against": 1.25 }
+      "Benfica": { "xg_for": 1.82 },
+      "Porto": { "xg_for": 1.75 },
+      "Sporting CP": { "xg_for": 1.78 }
     }
   }
 }
