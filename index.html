@@ -5,6 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant Soccer</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    :root{
+      --bg1:#0b1633; --bg2:#050814; --card:#0f1a3a; --text:#ffffff;
+      --muted:#c9d4ff; --accent:#58a6ff; --accent2:#2f81f7;
+      --border:rgba(255,255,255,.08); --shadow:0 20px 70px rgba(0,0,0,.55);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Arial,sans-serif;
+      background:radial-gradient(circle at top,var(--bg1),var(--bg2));
+      color:var(--text); min-height:100vh; padding:14px;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .panel{
+      width:min(920px, 100%);
+      background:rgba(15,26,58,.92);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      padding:26px;
+      text-align:center;
+    }
+    h1{margin:0 0 10px 0; color:var(--accent); font-size:44px; font-weight:900; letter-spacing:.3px}
+    p{margin:0 0 18px 0; color:rgba(255,255,255,.75); font-weight:700; line-height:1.35}
+    .btn{
+      display:inline-block;
+      background:linear-gradient(90deg,var(--accent2),var(--accent));
+      color:#00102a;
+      font-weight:900;
+      padding:14px 18px;
+      border-radius:16px;
+      text-decoration:none;
+      min-width:220px;
+      font-size:18px;
+    }
+    .mini{margin-top:14px; font-size:13px; color:rgba(255,255,255,.6)}
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>MatchQuant<br/>Soccer</h1>
+    <p>Professional soccer betting intelligence.<br/>Model-driven predictions.</p>
+    <a class="btn" href="./app.html">Run Soccer Engine</a>
+    <div class="mini">Tip: Add to Home Screen for a full-app feel.</div>
+  </div>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchQuant Soccer</title>
+  <link rel="manifest" href="manifest.json">
 
   <style>
     :root{
