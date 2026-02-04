@@ -1,40 +1,139 @@
 {
   "leagues": {
     "EPL": {
-      "Arsenal": { "xg_for": 1.70, "xg_against": 1.05 },
-      "Aston Villa": { "xg_for": 1.35, "xg_against": 1.20 },
-      "Man City": { "xg_for": 2.00, "xg_against": 0.95 },
-      "Chelsea": { "xg_for": 1.55, "xg_against": 1.25 }
+      "Arsenal": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Aston Villa": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Bournemouth": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Brentford": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Brighton": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Chelsea": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Crystal Palace": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Everton": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Fulham": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Ipswich": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Leicester": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Liverpool": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Man City": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Man United": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Newcastle": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Nottingham Forest": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Southampton": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Tottenham": { "xg_for": 1.30, "xg_against": 1.30 },
+      "West Ham": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Wolves": { "xg_for": 1.30, "xg_against": 1.30 }
     },
+
     "LaLiga": {
-      "Barcelona": { "xg_for": 1.75, "xg_against": 1.10 },
-      "Valencia": { "xg_for": 1.10, "xg_against": 1.35 },
-      "Real Madrid": { "xg_for": 1.85, "xg_against": 1.00 },
-      "Sevilla": { "xg_for": 1.20, "xg_against": 1.40 }
+      "Alaves": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Athletic Club": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Atletico Madrid": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Barcelona": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Betis": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Celta Vigo": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Espanyol": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Getafe": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Girona": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Las Palmas": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Leganes": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Mallorca": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Osasuna": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Rayo Vallecano": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Real Madrid": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Real Sociedad": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Sevilla": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Valencia": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Valladolid": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Villarreal": { "xg_for": 1.30, "xg_against": 1.30 }
     },
+
     "SerieA": {
-      "Inter": { "xg_for": 1.75, "xg_against": 1.00 },
-      "Genoa": { "xg_for": 1.05, "xg_against": 1.35 },
-      "Juventus": { "xg_for": 1.45, "xg_against": 1.10 },
-      "Lazio": { "xg_for": 1.30, "xg_against": 1.20 }
+      "Atalanta": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Bologna": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Cagliari": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Como": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Empoli": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Fiorentina": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Genoa": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Inter": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Juventus": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Lazio": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Lecce": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Milan": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Monza": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Napoli": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Parma": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Roma": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Torino": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Udinese": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Venezia": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Verona": { "xg_for": 1.30, "xg_against": 1.30 }
     },
+
     "Bundesliga": {
-      "Bayern": { "xg_for": 2.05, "xg_against": 1.10 },
-      "Dortmund": { "xg_for": 1.70, "xg_against": 1.30 },
-      "Leverkusen": { "xg_for": 1.85, "xg_against": 1.10 },
-      "RB Leipzig": { "xg_for": 1.65, "xg_against": 1.20 }
+      "Augsburg": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Bayern Munich": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Bochum": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Borussia Dortmund": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Borussia Monchengladbach": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Darmstadt": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Eintracht Frankfurt": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Freiburg": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Heidenheim": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Hoffenheim": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Holstein Kiel": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Leverkusen": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Mainz": { "xg_for": 1.30, "xg_against": 1.30 },
+      "RB Leipzig": { "xg_for": 1.30, "xg_against": 1.30 },
+      "St Pauli": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Stuttgart": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Union Berlin": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Werder Bremen": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Wolfsburg": { "xg_for": 1.30, "xg_against": 1.30 }
     },
+
     "Ligue1": {
-      "PSG": { "xg_for": 2.00, "xg_against": 1.00 },
-      "Marseille": { "xg_for": 1.35, "xg_against": 1.25 },
-      "Lyon": { "xg_for": 1.40, "xg_against": 1.30 },
-      "Monaco": { "xg_for": 1.55, "xg_against": 1.20 }
+      "Angers": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Auxerre": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Brest": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Clermont": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Lens": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Le Havre": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Lille": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Lyon": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Marseille": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Monaco": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Montpellier": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Nantes": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Nice": { "xg_for": 1.30, "xg_against": 1.30 },
+      "PSG": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Reims": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Rennes": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Strasbourg": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Toulouse": { "xg_for": 1.30, "xg_against": 1.30 }
     },
+
     "Portugal": {
-      "Benfica": { "xg_for": 1.85, "xg_against": 0.95 },
-      "Braga": { "xg_for": 1.45, "xg_against": 1.10 },
-      "Porto": { "xg_for": 1.75, "xg_against": 0.98 },
-      "Sporting": { "xg_for": 1.70, "xg_against": 1.00 }
+      "Arouca": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Benfica": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Boavista": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Braga": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Casa Pia": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Estoril": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Famalicao": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Farense": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Gil Vicente": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Moreirense": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Nacional": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Porto": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Rio Ave": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Santa Clara": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Sporting": { "xg_for": 1.30, "xg_against": 1.30 },
+      "Vitoria Guimaraes": { "xg_for": 1.30, "xg_against": 1.30 }
     }
+  },
+
+  "meta": {
+    "version": "1.0",
+    "note": "Baseline placeholder xG values (1.30/1.30) so the app runs for every team. Replace each xg_for and xg_against with real numbers from your source (Understat tables, etc.). Team names must match exactly."
   }
 }
