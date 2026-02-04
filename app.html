@@ -2,62 +2,182 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MatchQuant Engine</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchQuant Engine (Soccer)</title>
   <style>
-    body {
-      margin: 0;
+    body{
+      margin:0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0b1020, #0f1a3a);
-      color: #ffffff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      background: radial-gradient(circle at top, #0b1633, #050814);
+      color:#fff;
+      min-height:100vh;
+      padding:16px;
+    }
+    .wrap{
+      max-width:980px;
+      margin:0 auto;
+    }
+    .top{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-size:34px;
+      color:#4da3ff;
+      letter-spacing:.3px;
+    }
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:999px;
+      background:#0f1a3a;
+      border:1px solid rgba(255,255,255,.08);
+      font-size:13px;
+      opacity:.95;
+    }
+    .btn{
+      border:none;
+      padding:12px 14px;
+      border-radius:12px;
+      font-weight:700;
+      background:#4da3ff;
+      color:#001024;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .btn.secondary{
+      background:#0f1a3a;
+      color:#fff;
+      border:1px solid rgba(255,255,255,.12);
     }
 
-    .card {
-      background: #121c3f;
-      padding: 32px;
-      border-radius: 18px;
-      max-width: 480px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    @media(min-width:820px){
+      .grid{ grid-template-columns: 1fr 1fr; }
     }
 
-    h1 {
-      margin-top: 0;
-      color: #4da3ff;
+    .card{
+      background:#0f1a3a;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+    }
+    .row{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .match{
+      font-weight:800;
+      font-size:16px;
+    }
+    .meta{
+      font-size:12px;
+      opacity:.78;
+    }
+    .tag{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(77,163,255,.14);
+      color:#bfe1ff;
     }
 
-    button {
-      margin-top: 20px;
-      padding: 14px;
-      font-size: 16px;
-      width: 100%;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      background: #4da3ff;
-      color: #000;
+    .cols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .box{
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:10px;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .k{ opacity:.75; }
+    .v{ font-weight:800; }
+
+    .filters{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    select, input{
+      background:#0f1a3a;
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      border-radius:12px;
+      padding:12px;
+      font-size:14px;
+      width:100%;
+      max-width:260px;
+      outline:none;
+    }
+    .footer{
+      margin-top:16px;
+      opacity:.7;
+      font-size:12px;
+      line-height:1.4;
     }
   </style>
 </head>
-
 <body>
-  <div class="card">
-    <h1>MatchQuant Engine</h1>
-    <p>You are now inside the app.</p>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>MatchQuant Engine</h1>
+        <div class="pill">⚽ Soccer Only • Demo Picks • Pro-style fields</div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn secondary" onclick="window.location.href='index.html'">← Back Home</button>
+        <button class="btn" onclick="refreshPicks()">Refresh Picks</button>
+      </div>
+    </div>
 
-    <button onclick="goHome()">← Back Home</button>
+    <div class="filters">
+      <input id="search" placeholder="Search team (e.g. Arsenal)..." oninput="render()" />
+      <select id="league" onchange="render()">
+        <option value="ALL">All Leagues</option>
+        <option value="EPL">EPL</option>
+        <option value="LaLiga">La Liga</option>
+        <option value="SerieA">Serie A</option>
+        <option value="Bundesliga">Bundesliga</option>
+        <option value="Ligue1">Ligue 1</option>
+        <option value="Portugal">Portugal</option>
+        <option value="UCL">UEFA</option>
+      </select>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div class="footer">
+      This is demo data to prove the app works. Next step: connect real fixtures/odds and your model.
+      If you want, we can add: bankroll tracker, confidence tiers, and a “today’s best 3 picks” widget.
+    </div>
   </div>
 
   <script>
-    function goHome() {
-      window.location.href = "/matchquant/";
-    }
-  </script>
-</body>
-</html>
+    // Demo dataset (soccer only)
+    let picks = [
+      demo("
