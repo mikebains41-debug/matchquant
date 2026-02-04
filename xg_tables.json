@@ -1,15 +1,12 @@
 {
-  "meta": {
-    "source": "Manual xG table",
-    "notes": "Replace values with Understat (xG For and xG Against per match)."
-  },
   "teams": {
-    "Arsenal": { "xg_for": 1.85, "xg_against": 1.05 },
-    "Aston Villa": { "xg_for": 1.55, "xg_against": 1.30 },
-    "Inter": { "xg_for": 1.90, "xg_against": 0.95 },
-    "Genoa": { "xg_for": 1.05, "xg_against": 1.45 },
-    "Betis": { "xg_for": 1.35, "xg_against": 1.10 },
-    "Getafe": { "xg_for": 1.05, "xg_against": 1.25 },
-    "Chelsea": { "xg_for": 1.45, "xg_against": 1.30 }
+    "Arsenal": { "xg_for": 1.95, "xg_against": 0.95 },
+    "Aston Villa": { "xg_for": 1.55, "xg_against": 1.25 },
+
+    "Inter": { "xg_for": 1.80, "xg_against": 0.95 },
+    "Genoa": { "xg_for": 1.05, "xg_against": 1.35 },
+
+    "Real Betis": { "xg_for": 1.35, "xg_against": 1.15 },
+    "Getafe": { "xg_for": 1.05, "xg_against": 1.20 }
   }
 }
