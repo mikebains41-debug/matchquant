@@ -1,33 +1,12 @@
 {
   "EPL": [
-    ["Arsenal", "Aston Villa"],
-    ["Liverpool", "Man City"],
-    ["Chelsea", "Tottenham"],
-    ["Newcastle", "Man United"]
+    { "home": "Arsenal", "away": "Aston Villa", "date": "2026-02-04" },
+    { "home": "Liverpool", "away": "Man City", "date": "2026-02-04" },
+    { "home": "Chelsea", "away": "Tottenham", "date": "2026-02-04" },
+    { "home": "Newcastle", "away": "Man United", "date": "2026-02-04" }
   ],
   "LaLiga": [
-    ["Barcelona", "Real Madrid"],
-    ["Atletico Madrid", "Sevilla"],
-    ["Villarreal", "Real Sociedad"]
-  ],
-  "SerieA": [
-    ["Inter", "Juventus"],
-    ["Milan", "Napoli"],
-    ["Roma", "Atalanta"]
-  ],
-  "Bundesliga": [
-    ["Bayern Munich", "Dortmund"],
-    ["Leverkusen", "RB Leipzig"],
-    ["Stuttgart", "Eintracht Frankfurt"]
-  ],
-  "Ligue1": [
-    ["Paris SG", "Marseille"],
-    ["Monaco", "Lille"],
-    ["Lens", "Lyon"]
-  ],
-  "Portugal": [
-    ["Benfica", "Porto"],
-    ["Sporting", "Braga"],
-    ["Guimaraes", "Famalicao"]
+    { "home": "Barcelona", "away": "Real Madrid", "date": "2026-02-04" },
+    { "home": "Atletico Madrid", "away": "Sevilla", "date": "2026-02-04" }
   ]
 }
