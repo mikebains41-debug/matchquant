@@ -2,98 +2,112 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MatchQuant Soccer Engine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchQuant Soccer</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
 
   <style>
-    body {
-      margin: 0;
+    body{
+      margin:0;
       font-family: Arial, sans-serif;
       background: radial-gradient(circle at top, #0b1633, #050814);
-      color: #ffffff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 16px;
+      color:#fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+      padding:16px;
     }
-
-    .card {
-      width: 100%;
-      max-width: 520px;
-      background: #0f1a3a;
-      border-radius: 22px;
-      padding: 28px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-      text-align: center;
+    .card{
+      width:100%;
+      max-width:560px;
+      background:#0f1a3a;
+      border-radius:22px;
+      padding:28px;
+      text-align:center;
+      box-shadow:0 20px 60px rgba(0,0,0,0.55);
     }
-
-    h1 {
-      margin-top: 0;
-      font-size: 2.2rem;
-      color: #5fb3ff;
+    h1{
+      margin:0 0 10px 0;
+      font-size:2.2rem;
+      color:#58a6ff;
+      letter-spacing:0.5px;
     }
-
-    p {
-      opacity: 0.9;
-      line-height: 1.4;
+    p{
+      margin:0 0 18px 0;
+      opacity:0.9;
+      line-height:1.4;
+      font-size:1.05rem;
     }
-
-    button {
-      margin-top: 22px;
-      padding: 14px 22px;
-      border: none;
-      border-radius: 14px;
-      font-size: 1rem;
-      font-weight: bold;
-      background: #5fb3ff;
-      color: #000;
-      cursor: pointer;
+    .pillRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:center;
+      margin:18px 0 22px 0;
     }
-
-    button:hover {
-      background: #7fc3ff;
-    }
-
-    .results {
-      text-align: left;
-      margin-top: 20px;
-      display: none;
-    }
-
-    .result-box {
+    .pill{
       background: rgba(255,255,255,0.06);
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 10px;
-      font-size: 0.95rem;
+      border:1px solid rgba(255,255,255,0.08);
+      padding:10px 12px;
+      border-radius:14px;
+      font-size:0.95rem;
+      min-width:140px;
+      text-align:left;
+    }
+    .pill b{ color:#ffffff; }
+    .btn{
+      display:inline-block;
+      width:100%;
+      max-width:340px;
+      padding:16px 18px;
+      border:none;
+      border-radius:14px;
+      background:#58a6ff;
+      color:#0b1633;
+      font-size:1.15rem;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn:active{ transform:scale(0.99); }
+    .small{
+      margin-top:14px;
+      font-size:0.9rem;
+      opacity:0.75;
+    }
+    .linkBtn{
+      display:inline-block;
+      margin-top:10px;
+      color:#9ecbff;
+      text-decoration:none;
+      font-size:0.95rem;
     }
   </style>
 </head>
 
 <body>
-
   <div class="card">
-    <h1>MatchQuant Soccer</h1>
-    <p>Professional soccer betting intelligence.<br>
-    Model-driven predictions.</p>
+    <h1>MatchQuant<br/>Soccer</h1>
+    <p>Professional soccer betting intelligence.<br/>Model-driven predictions.</p>
 
-    <button onclick="runEngine()">Run Soccer Engine</button>
-
-    <div class="results" id="results">
-      <div class="result-box"><strong>Predicted Score:</strong> 2–1 Home</div>
-      <div class="result-box"><strong>Over / Under 2.5:</strong> Over</div>
-      <div class="result-box"><strong>Asian Handicap:</strong> Home -0.5</div>
-      <div class="result-box"><strong>Corners:</strong> Over 8.5</div>
-      <div class="result-box"><strong>Cards:</strong> Over 3.5</div>
+    <div class="pillRow">
+      <div class="pill"><b>Mode 1:</b> Manual picks</div>
+      <div class="pill"><b>Mode 2:</b> Auto daily picks</div>
+      <div class="pill"><b>Mode 3:</b> Both (recommended)</div>
     </div>
+
+    <!-- This button opens the engine page -->
+    <a href="app.html" style="text-decoration:none;">
+      <button class="btn">Run Soccer Engine</button>
+    </a>
+
+    <div class="small">
+      Tip: if you see an old version, refresh (pull down) or clear cache.
+    </div>
+
+    <a class="linkBtn" href="app.html">Open engine page directly →</a>
   </div>
-
-  <script>
-    function runEngine() {
-      document.getElementById("results").style.display = "block";
-    }
-  </script>
-
 </body>
 </html>
