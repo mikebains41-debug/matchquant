@@ -4,64 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+
   <style>
-    body{
-      margin:0;
+    body {
+      margin: 0;
       font-family: Arial, sans-serif;
       background: radial-gradient(circle at top, #0b1633, #050814);
-      color:#fff;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-      padding:16px;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
-    .card{
-      width:100%;
-      max-width:520px;
-      background:#0f1a3a;
-      border-radius:22px;
-      padding:28px;
-      box-shadow:0 20px 60px rgba(0,0,0,.55);
-      text-align:center;
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: #0f1a3a;
+      border-radius: 22px;
+      padding: 32px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
     }
-    h1{
-      margin:0 0 10px 0;
-      font-size:44px;
-      letter-spacing:.5px;
-      color:#4da3ff;
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+      color: #5fb0ff;
     }
-    p{
-      margin:0 0 22px 0;
-      line-height:1.45;
-      opacity:.92;
-      font-size:16px;
+
+    p {
+      font-size: 1.05rem;
+      opacity: 0.9;
+      margin-bottom: 28px;
     }
-    .btn{
-      width:100%;
-      border:none;
-      padding:16px 18px;
-      border-radius:14px;
-      font-size:18px;
-      font-weight:700;
-      background:#4da3ff;
-      color:#001024;
-      cursor:pointer;
+
+    button {
+      background: #5fb0ff;
+      color: #000;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 26px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
     }
-    .btn:active{ transform:scale(.99); }
-    .mini{
-      margin-top:14px;
-      font-size:12px;
-      opacity:.75;
+
+    button:hover {
+      opacity: 0.9;
     }
   </style>
 </head>
+
 <body>
   <div class="card">
     <h1>MatchQuant</h1>
-    <p>Soccer-only picks dashboard (demo data). Built for pro-style analysis: score, O/U, corners, cards, AH, and ML.</p>
-    <button class="btn" onclick="window.location.href='app.html'">Get Started</button>
-    <div class="mini">Tip: If it doesn’t change, refresh the page once.</div>
+    <p>Professional soccer analytics & betting intelligence.</p>
+
+    <button onclick="goToApp()">Get Started</button>
   </div>
+
+  <script>
+    function goToApp() {
+      window.location.href = "app.html";
+    }
+  </script>
 </body>
 </html>
