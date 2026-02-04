@@ -1,0 +1,9 @@
+{
+  "name": "MatchQuant Soccer",
+  "short_name": "MatchQuant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#4da3ff",
+  "orientation": "portrait"
+}
