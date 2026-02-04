@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MatchQuant Soccer Engine</title>
 
 <style>
@@ -13,11 +13,9 @@
   --accent:#58a6ff;
   --accent2:#2f81f7;
   --text:#ffffff;
-  --muted:#9fb6ff;
-  --border:rgba(255,255,255,.1);
+  --muted:#9db4ff;
   --radius:18px;
 }
-
 *{box-sizing:border-box}
 body{
   margin:0;
@@ -25,72 +23,44 @@ body{
   background:radial-gradient(circle at top,var(--bg1),var(--bg2));
   color:var(--text);
 }
-
-.wrap{max-width:900px;margin:auto;padding:16px}
+.container{max-width:900px;margin:auto;padding:16px}
 .card{
-  background:var(--card);
+  background:rgba(15,26,58,.92);
   border-radius:var(--radius);
   padding:16px;
   margin-bottom:16px;
-  border:1px solid var(--border);
+  box-shadow:0 10px 40px rgba(0,0,0,.4);
 }
-
-h1,h2{color:var(--accent);margin:0 0 10px}
-label{font-size:14px;color:var(--muted)}
+h1,h2{color:var(--accent);margin:0 0 12px}
+label{display:block;margin-top:10px;color:var(--muted)}
 input,select,button{
   width:100%;
   padding:14px;
-  margin-top:8px;
+  margin-top:6px;
   border-radius:14px;
-  border:1px solid var(--border);
-  background:#08122a;
+  border:none;
+  background:rgba(255,255,255,.08);
   color:white;
   font-size:16px;
 }
-
 button{
   background:linear-gradient(90deg,var(--accent2),var(--accent));
-  border:none;
-  font-weight:bold;
+  font-weight:700;
   cursor:pointer;
 }
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-
-.row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-}
-
-.small{font-size:13px;color:var(--muted)}
-.k{font-weight:bold;color:#eaf0ff}
-.v{color:var(--muted);text-align:right}
-
-.loader{
-  display:none;
-  margin:12px auto;
-  width:36px;height:36px;
-  border:4px solid rgba(255,255,255,.2);
-  border-top:4px solid var(--accent);
-  border-radius:50%;
-  animation:spin 1s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;justify-content:space-between;gap:12px;margin:8px 0}
+.key{color:var(--muted);font-weight:700}
+.val{font-weight:700;text-align:right}
+.note{font-size:13px;color:#b6c8ff;margin-top:8px}
 </style>
 </head>
 
 <body>
-<div class="wrap">
+<div class="container">
 
 <div class="card">
   <h1>MatchQuant</h1>
-  <div class="small">Soccer Prediction Engine (xG-based)</div>
+  <div class="note">Soccer Prediction Engine (xG-based)</div>
 </div>
 
 <div class="card">
@@ -100,93 +70,99 @@ button{
   <select id="league">
     <option value="EPL">EPL</option>
     <option value="LaLiga">LaLiga</option>
-    <option value="SerieA">Serie A</option>
+    <option value="SerieA">SerieA</option>
     <option value="Bundesliga">Bundesliga</option>
-    <option value="Ligue1">Ligue 1</option>
+    <option value="Ligue1">Ligue1</option>
     <option value="Portugal">Portugal</option>
   </select>
 
   <button onclick="runAll()">Run ALL Leagues at Once</button>
 
   <label>Home Team</label>
-  <input id="home" placeholder="Arsenal"/>
+  <input id="home" placeholder="Arsenal">
 
   <label>Away Team</label>
-  <input id="away" placeholder="Aston Villa"/>
+  <input id="away" placeholder="Aston Villa">
 
-  <button onclick="runSingle()">Run Prediction</button>
-
-  <div class="loader" id="loader"></div>
+  <button onclick="runPrediction()">Run Prediction</button>
 </div>
 
 <div class="card">
   <h2>Result</h2>
 
-  <div class="row"><div class="k">League:</div><div id="rLeague" class="v">—</div></div>
-  <div class="row"><div class="k">Match:</div><div id="rMatch" class="v">—</div></div>
-  <div class="row"><div class="k">xG Used:</div><div id="rXg" class="v">—</div></div>
-  <div class="row"><div class="k">Predicted Score:</div><div id="rScore" class="v">—</div></div>
-  <div class="row"><div class="k">O/U 2.5:</div><div id="rOU" class="v">—</div></div>
-  <div class="row"><div class="k">Asian Handicap:</div><div id="rAH" class="v">—</div></div>
-  <div class="row"><div class="k">Corners:</div><div id="rCorners" class="v">—</div></div>
-  <div class="row"><div class="k">Cards:</div><div id="rCards" class="v">—</div></div>
-  <div class="row"><div class="k">Win Probabilities:</div><div id="rWin" class="v">—</div></div>
+  <div class="row"><div class="key">League:</div><div id="rLeague" class="val">—</div></div>
+  <div class="row"><div class="key">Match:</div><div id="rMatch" class="val">—</div></div>
+  <div class="row"><div class="key">xG Used:</div><div id="rXg" class="val">—</div></div>
+  <div class="row"><div class="key">Predicted Score:</div><div id="rScore" class="val">—</div></div>
+  <div class="row"><div class="key">O/U 2.5:</div><div id="rOU" class="val">—</div></div>
+  <div class="row"><div class="key">Asian Handicap:</div><div id="rAH" class="val">—</div></div>
+  <div class="row"><div class="key">Corners:</div><div id="rCorners" class="val">—</div></div>
+  <div class="row"><div class="key">Cards:</div><div id="rCards" class="val">—</div></div>
+  <div class="row"><div class="key">Win Probabilities:</div><div id="rProb" class="val">—</div></div>
 
-  <div class="small" id="status">xG tables loading…</div>
+  <div class="note" id="status">Loading xG tables…</div>
 </div>
 
 </div>
 
 <script>
-let XG={};
+let XG=null;
 
 fetch("xg_tables.json")
 .then(r=>r.json())
 .then(d=>{
   XG=d.leagues;
-  document.getElementById("status").innerText=
-    "xG tables loaded ✔ ("+Object.keys(XG).length+" leagues)";
+  document.getElementById("status").innerText =
+    "xG tables loaded ✓ ("+Object.keys(XG).length+" leagues)";
 });
 
-function simulate(home,away,lg){
-  let h=XG[lg]?.[home]?.xg_for||1.35;
-  let a=XG[lg]?.[away]?.xg_for||1.25;
+function poisson(l,k){
+  return Math.exp(-l)*Math.pow(l,k)/factorial(k);
+}
+function factorial(n){return n<=1?1:n*factorial(n-1);}
 
-  let hs=Math.round(h);
-  let as=Math.round(a);
+function runPrediction(){
+  if(!XG) return;
+
+  const lg=document.getElementById("league").value;
+  const home=document.getElementById("home").value.trim();
+  const away=document.getElementById("away").value.trim();
+  if(!XG[lg]||!XG[lg][home]||!XG[lg][away]) return;
+
+  const hx=XG[lg][home].xg_for;
+  const ax=XG[lg][away].xg_for;
+
+  let H=0,D=0,A=0;
+  for(let i=0;i<=5;i++){
+    for(let j=0;j<=5;j++){
+      const p=poisson(hx,i)*poisson(ax,j);
+      if(i>j)H+=p;
+      else if(i<j)A+=p;
+      else D+=p;
+    }
+  }
+
+  const sum=H+D+A;
+  H=Math.round(H/sum*100);
+  D=Math.round(D/sum*100);
+  A=100-H-D;
+
+  const score=hx>ax?`${Math.round(hx)}-${Math.round(ax)}`:
+               ax>hx?`${Math.round(ax)}-${Math.round(hx)}`:"1-1";
 
   document.getElementById("rLeague").innerText=lg;
-  document.getElementById("rMatch").innerText=home+" vs "+away;
-  document.getElementById("rXg").innerText=`Home λ ${h} / Away λ ${a}`;
-  document.getElementById("rScore").innerText=`${hs}-${as}`;
-  document.getElementById("rOU").innerText=(h+a>2.5?"Over":"Under");
-  document.getElementById("rAH").innerText=(h>a?"Home -0.5":"0 (DNB lean)");
-  document.getElementById("rCorners").innerText=(h+a>2.6?"Over 8.5":"Under 9.5");
-  document.getElementById("rCards").innerText=(h+a>2.7?"Over 3.5":"Under 4.5");
-
-  let hp=Math.round(h/(h+a)*100);
-  let ap=Math.round(a/(h+a)*100);
-  let dp=100-hp-ap;
-
-  document.getElementById("rWin").innerText=
-    `H ${hp}% / D ${dp}% / A ${ap}%`;
-}
-
-function runSingle(){
-  let l=document.getElementById("league").value;
-  simulate(
-    document.getElementById("home").value.trim(),
-    document.getElementById("away").value.trim(),
-    l
-  );
+  document.getElementById("rMatch").innerText=`${home} vs ${away}`;
+  document.getElementById("rXg").innerText=`Home λ ${hx.toFixed(2)} / Away λ ${ax.toFixed(2)}`;
+  document.getElementById("rScore").innerText=score;
+  document.getElementById("rOU").innerText=(hx+ax>2.5)?"Over":"Under";
+  document.getElementById("rAH").innerText=hx>ax?"Home -0.5":"0 (Draw No Bet lean)";
+  document.getElementById("rCorners").innerText=(hx+ax>2.8)?"Over 8.5":"Under 9.5";
+  document.getElementById("rCards").innerText=(hx+ax>2.6)?"Over 3.5":"Under 4.5";
+  document.getElementById("rProb").innerText=`H ${H}% / D ${D}% / A ${A}%`;
 }
 
 function runAll(){
-  let home=document.getElementById("home").value.trim();
-  let away=document.getElementById("away").value.trim();
-  let leagues=Object.keys(XG);
-  if(!home||!away)return alert("Enter teams first");
-  simulate(home,away,leagues[0]);
+  alert("Multi-league batch runner will be added next.");
 }
 </script>
 </body>
