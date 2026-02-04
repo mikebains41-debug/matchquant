@@ -1,9 +1,8 @@
 {
-  "name": "MatchQuant Soccer",
+  "name": "MatchQuant",
   "short_name": "MatchQuant",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#050814",
-  "theme_color": "#0b1633",
-  "icons": []
+  "background_color": "#071429",
+  "theme_color": "#4da3ff"
 }
