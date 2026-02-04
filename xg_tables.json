@@ -1,131 +1,54 @@
 {
-  "EPL": {
-    "Arsenal": { "home": 1.78, "away": 1.55 },
-    "Aston Villa": { "home": 1.52, "away": 1.28 },
-    "Bournemouth": { "home": 1.35, "away": 1.10 },
-    "Brentford": { "home": 1.40, "away": 1.18 },
-    "Brighton": { "home": 1.52, "away": 1.30 },
-    "Chelsea": { "home": 1.62, "away": 1.38 },
-    "Crystal Palace": { "home": 1.22, "away": 1.05 },
-    "Everton": { "home": 1.18, "away": 0.98 },
-    "Fulham": { "home": 1.28, "away": 1.08 },
-    "Ipswich": { "home": 1.05, "away": 0.88 },
-    "Leicester": { "home": 1.12, "away": 0.95 },
-    "Liverpool": { "home": 1.98, "away": 1.72 },
-    "Man City": { "home": 2.10, "away": 1.86 },
-    "Man United": { "home": 1.55, "away": 1.30 },
-    "Newcastle": { "home": 1.62, "away": 1.38 },
-    "Nottingham Forest": { "home": 1.18, "away": 1.00 },
-    "Southampton": { "home": 1.05, "away": 0.90 },
-    "Tottenham": { "home": 1.72, "away": 1.48 },
-    "West Ham": { "home": 1.30, "away": 1.12 },
-    "Wolves": { "home": 1.20, "away": 1.02 }
-  },
-
-  "LaLiga": {
-    "Alaves": { "home": 1.10, "away": 0.92 },
-    "Athletic Club": { "home": 1.45, "away": 1.20 },
-    "Atletico Madrid": { "home": 1.70, "away": 1.45 },
-    "Barcelona": { "home": 1.95, "away": 1.68 },
-    "Betis": { "home": 1.35, "away": 1.18 },
-    "Celta Vigo": { "home": 1.20, "away": 1.02 },
-    "Espanyol": { "home": 1.10, "away": 0.92 },
-    "Getafe": { "home": 1.05, "away": 0.88 },
-    "Girona": { "home": 1.40, "away": 1.18 },
-    "Las Palmas": { "home": 1.05, "away": 0.88 },
-    "Leganes": { "home": 1.00, "away": 0.85 },
-    "Mallorca": { "home": 1.05, "away": 0.90 },
-    "Osasuna": { "home": 1.15, "away": 0.98 },
-    "Rayo Vallecano": { "home": 1.10, "away": 0.95 },
-    "Real Madrid": { "home": 2.05, "away": 1.78 },
-    "Real Sociedad": { "home": 1.40, "away": 1.20 },
-    "Sevilla": { "home": 1.30, "away": 1.10 },
-    "Valencia": { "home": 1.15, "away": 0.98 },
-    "Villarreal": { "home": 1.50, "away": 1.28 },
-    "Valladolid": { "home": 1.00, "away": 0.85 }
-  },
-
-  "SerieA": {
-    "Atalanta": { "home": 1.60, "away": 1.38 },
-    "Bologna": { "home": 1.35, "away": 1.15 },
-    "Cagliari": { "home": 1.05, "away": 0.90 },
-    "Como": { "home": 1.05, "away": 0.90 },
-    "Empoli": { "home": 1.00, "away": 0.85 },
-    "Fiorentina": { "home": 1.35, "away": 1.15 },
-    "Genoa": { "home": 1.05, "away": 0.92 },
-    "Inter": { "home": 1.90, "away": 1.62 },
-    "Juventus": { "home": 1.55, "away": 1.32 },
-    "Lazio": { "home": 1.40, "away": 1.20 },
-    "Lecce": { "home": 1.00, "away": 0.85 },
-    "Milan": { "home": 1.72, "away": 1.45 },
-    "Monza": { "home": 1.00, "away": 0.85 },
-    "Napoli": { "home": 1.65, "away": 1.35 },
-    "Parma": { "home": 1.05, "away": 0.90 },
-    "Roma": { "home": 1.45, "away": 1.22 },
-    "Torino": { "home": 1.10, "away": 0.95 },
-    "Udinese": { "home": 1.05, "away": 0.90 },
-    "Venezia": { "home": 0.98, "away": 0.82 },
-    "Verona": { "home": 1.00, "away": 0.85 }
-  },
-
-  "Bundesliga": {
-    "Augsburg": { "home": 1.15, "away": 0.98 },
-    "Bayern Munich": { "home": 2.20, "away": 1.95 },
-    "Bochum": { "home": 1.00, "away": 0.85 },
-    "Dortmund": { "home": 1.85, "away": 1.60 },
-    "Eintracht Frankfurt": { "home": 1.45, "away": 1.25 },
-    "Freiburg": { "home": 1.25, "away": 1.05 },
-    "Heidenheim": { "home": 1.05, "away": 0.90 },
-    "Hoffenheim": { "home": 1.35, "away": 1.15 },
-    "Holstein Kiel": { "home": 1.00, "away": 0.85 },
-    "Leverkusen": { "home": 1.85, "away": 1.62 },
-    "Mainz": { "home": 1.10, "away": 0.95 },
-    "Monchengladbach": { "home": 1.30, "away": 1.10 },
-    "RB Leipzig": { "home": 1.70, "away": 1.45 },
-    "St Pauli": { "home": 1.00, "away": 0.85 },
-    "Stuttgart": { "home": 1.55, "away": 1.35 },
-    "Union Berlin": { "home": 1.10, "away": 0.95 },
-    "Werder Bremen": { "home": 1.25, "away": 1.08 },
-    "Wolfsburg": { "home": 1.25, "away": 1.08 }
-  },
-
-  "Ligue1": {
-    "Angers": { "home": 1.00, "away": 0.85 },
-    "Auxerre": { "home": 1.05, "away": 0.90 },
-    "Brest": { "home": 1.20, "away": 1.02 },
-    "Lens": { "home": 1.35, "away": 1.15 },
-    "Le Havre": { "home": 1.00, "away": 0.85 },
-    "Lille": { "home": 1.45, "away": 1.25 },
-    "Lyon": { "home": 1.35, "away": 1.15 },
-    "Marseille": { "home": 1.55, "away": 1.32 },
-    "Monaco": { "home": 1.60, "away": 1.38 },
-    "Montpellier": { "home": 1.05, "away": 0.90 },
-    "Nantes": { "home": 1.05, "away": 0.90 },
-    "Nice": { "home": 1.35, "away": 1.18 },
-    "Paris SG": { "home": 2.10, "away": 1.88 },
-    "Reims": { "home": 1.10, "away": 0.95 },
-    "Rennes": { "home": 1.30, "away": 1.10 },
-    "Saint-Etienne": { "home": 1.00, "away": 0.85 },
-    "Strasbourg": { "home": 1.20, "away": 1.05 },
-    "Toulouse": { "home": 1.10, "away": 0.95 }
-  },
-
-  "Portugal": {
-    "Arouca": { "home": 1.05, "away": 0.90 },
-    "Benfica": { "home": 1.95, "away": 1.68 },
-    "Boavista": { "home": 1.00, "away": 0.85 },
-    "Braga": { "home": 1.55, "away": 1.28 },
-    "Casa Pia": { "home": 1.00, "away": 0.85 },
-    "Estoril": { "home": 1.05, "away": 0.90 },
-    "Famalicao": { "home": 1.10, "away": 0.95 },
-    "Farense": { "home": 1.00, "away": 0.85 },
-    "Gil Vicente": { "home": 1.05, "away": 0.90 },
-    "Guimaraes": { "home": 1.20, "away": 1.05 },
-    "Moreirense": { "home": 1.05, "away": 0.90 },
-    "Nacional": { "home": 0.98, "away": 0.82 },
-    "Porto": { "home": 1.90, "away": 1.62 },
-    "Rio Ave": { "home": 1.05, "away": 0.90 },
-    "Santa Clara": { "home": 1.00, "away": 0.85 },
-    "Sporting": { "home": 1.88, "away": 1.60 }
+  "leagues": {
+    "EPL": {
+      "teams": {
+        "Arsenal": { "lambda_for": 1.72 },
+        "Aston Villa": { "lambda_for": 1.25 },
+        "Liverpool": { "lambda_for": 1.80 },
+        "Man City": { "lambda_for": 1.78 },
+        "Chelsea": { "lambda_for": 1.55 },
+        "Tottenham": { "lambda_for": 1.62 },
+        "Newcastle": { "lambda_for": 1.48 },
+        "Man United": { "lambda_for": 1.40 }
+      }
+    },
+    "LaLiga": {
+      "teams": {
+        "Barcelona": { "lambda_for": 1.80 },
+        "Real Madrid": { "lambda_for": 1.78 },
+        "Atletico Madrid": { "lambda_for": 1.55 },
+        "Sevilla": { "lambda_for": 1.25 },
+        "Villarreal": { "lambda_for": 1.32 }
+      }
+    },
+    "SerieA": {
+      "teams": {
+        "Inter": { "lambda_for": 1.75 },
+        "AC Milan": { "lambda_for": 1.45 },
+        "Juventus": { "lambda_for": 1.40 },
+        "Napoli": { "lambda_for": 1.55 }
+      }
+    },
+    "Bundesliga": {
+      "teams": {
+        "Bayern Munich": { "lambda_for": 2.05 },
+        "Borussia Dortmund": { "lambda_for": 1.70 },
+        "RB Leipzig": { "lambda_for": 1.65 }
+      }
+    },
+    "Ligue1": {
+      "teams": {
+        "PSG": { "lambda_for": 1.95 },
+        "Marseille": { "lambda_for": 1.40 },
+        "Lyon": { "lambda_for": 1.30 }
+      }
+    },
+    "Portugal": {
+      "teams": {
+        "Benfica": { "lambda_for": 1.75 },
+        "Sporting CP": { "lambda_for": 1.70 },
+        "Porto": { "lambda_for": 1.62 }
+      }
+    }
   }
-  }
+}
