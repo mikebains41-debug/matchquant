@@ -6,291 +6,283 @@
   <title>MatchQuant</title>
   <meta name="theme-color" content="#0b1220" />
   <link rel="manifest" href="manifest.json" />
+
   <style>
     :root{
-      --bg:#070b14;
-      --card:#0d1426;
-      --card2:#0b1220;
-      --stroke:rgba(255,255,255,.08);
-      --txt:#e9eefc;
-      --muted:rgba(233,238,252,.65);
-      --blue:#2f7cf6;
-      --blue2:#1f5fd0;
-      --green:#1db954;
-      --yellow:#f5c542;
-      --red:#ef4444;
-      --chip:rgba(255,255,255,.06);
-      --shadow: 0 18px 50px rgba(0,0,0,.45);
-      --radius:22px;
+      --bg:#0b1220;
+      --card:rgba(255,255,255,.06);
+      --card2:rgba(0,0,0,.18);
+      --border:rgba(255,255,255,.08);
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --blue:#3b82f6;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1000px 600px at 30% -10%, rgba(47,124,246,.25), transparent 65%),
-                  radial-gradient(900px 700px at 90% 0%, rgba(29,185,84,.10), transparent 60%),
-                  var(--bg);
-      color:var(--txt);
-      padding:18px 14px 50px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:radial-gradient(1200px 700px at 10% 0%, rgba(59,130,246,.22), transparent 60%),
+                 radial-gradient(900px 600px at 90% 20%, rgba(14,165,233,.18), transparent 55%),
+                 var(--bg);
+      color:var(--text);
     }
-    .wrap{max-width:720px;margin:0 auto}
-    .top{
-      display:flex;align-items:center;gap:14px;
+    .wrap{
+      max-width:900px;
+      margin:0 auto;
+      padding:18px 14px 40px;
+    }
+    .title{
+      font-size:46px;
+      line-height:1;
+      font-weight:800;
+      margin:6px 0 0;
+      letter-spacing:.5px;
+      text-shadow:0 10px 40px rgba(0,0,0,.35);
+    }
+    .subtitle{
       margin:6px 0 18px;
+      color:var(--muted);
+      opacity:.95;
     }
-    .homebtn{
-      width:68px;height:68px;border-radius:999px;
-      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid var(--stroke);
-      display:flex;align-items:center;justify-content:center;
-      box-shadow: var(--shadow);
-      cursor:pointer;
-      user-select:none;
+    .row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
     }
-    .homebtn span{font-weight:700}
-    h1{margin:0;font-size:44px;line-height:1.05;letter-spacing:.3px}
-    .subtitle{margin:6px 0 0;color:var(--muted);font-size:14px}
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border:1px solid var(--stroke);
-      box-shadow: var(--shadow);
-      border-radius: var(--radius);
-      padding:18px;
-      margin:14px 0;
+      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
     }
     .card h2{
-      margin:0 0 12px;
-      font-size:40px;line-height:1.05;color:rgba(47,124,246,.95);
+      margin:0 0 10px;
+      font-size:36px;
+      color:var(--blue);
+      letter-spacing:.2px;
     }
-    label{display:block;color:var(--muted);font-size:13px;margin:10px 0 8px}
+    label{
+      display:block;
+      font-size:13px;
+      color:var(--muted);
+      margin:10px 0 6px;
+    }
     select,input{
       width:100%;
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--stroke);
-      color:var(--txt);
-      padding:16px 16px;
-      border-radius:18px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      padding:12px 12px;
+      background:rgba(0,0,0,.18);
+      color:var(--text);
       outline:none;
       font-size:16px;
     }
-    input::placeholder{color:rgba(233,238,252,.35)}
+    input::placeholder{color:rgba(148,163,184,.7)}
     .btn{
       width:100%;
-      padding:16px 18px;
-      border-radius:20px;
-      border:1px solid rgba(47,124,246,.45);
-      background:linear-gradient(180deg, var(--blue), var(--blue2));
-      color:white;
-      font-weight:800;
+      border:0;
+      border-radius:18px;
+      padding:14px 14px;
       font-size:18px;
+      font-weight:800;
+      color:white;
       cursor:pointer;
+      background:linear-gradient(180deg, rgba(59,130,246,1), rgba(37,99,235,1));
+      box-shadow:0 18px 40px rgba(37,99,235,.35);
       margin-top:14px;
     }
-    .btn.secondary{
-      background:rgba(255,255,255,.04);
-      border:1px solid var(--stroke);
-      color:var(--txt);
+    .btn:active{transform:translateY(1px)}
+    .grid2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .grid2 .wide{grid-column:1 / -1;}
+    .pill{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 12px;
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.16);
+      margin-top:10px;
+    }
+    .pill b{font-weight:800}
+    .pill span{color:var(--muted)}
+    .sectionTitle{
+      margin:14px 0 8px;
+      font-size:18px;
       font-weight:800;
     }
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .chiprow{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-    .chip{
-      padding:8px 12px;border-radius:999px;
-      background:var(--chip);
-      border:1px solid var(--stroke);
-      color:var(--muted);
-      font-size:13px;
+    #todayBox button{
+      width:100%;
+      text-align:left;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      margin:6px 0;
     }
-    .badge{
-      padding:8px 12px;border-radius:999px;
-      font-weight:900;
-      border:1px solid var(--stroke);
-      display:inline-flex;gap:8px;align-items:center;
-      background:rgba(255,255,255,.03);
-    }
-    .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
-    .kv{
-      display:grid;grid-template-columns:1fr auto;
-      gap:10px;
-      padding:14px 14px;border-radius:18px;
-      border:1px solid var(--stroke);
+    canvas{
+      width:100%;
+      border-radius:16px;
+      border:1px solid var(--border);
       background:rgba(0,0,0,.15);
-      margin:10px 0;
-      align-items:center;
     }
-    .k{color:rgba(233,238,252,.75);font-weight:700}
-    .v{color:rgba(233,238,252,.95);font-weight:900}
-    .small{color:var(--muted);font-size:13px;margin-top:6px}
-    .tablewrap{overflow:auto;border-radius:18px;border:1px solid var(--stroke)}
-    table{width:100%;border-collapse:collapse;min-width:620px;background:rgba(0,0,0,.12)}
-    th,td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
-    th{color:rgba(233,238,252,.7);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-    td{color:rgba(233,238,252,.92);font-weight:650}
-    .muted{color:var(--muted);font-weight:650}
-    .okline{color:rgba(233,238,252,.75);font-size:13px;margin-top:10px}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
-    .hide{display:none}
+    .small{font-size:12px;color:var(--muted);opacity:.95}
+    @media (max-width:720px){
+      .title{font-size:44px}
+      .card h2{font-size:34px}
+      .grid2{grid-template-columns:1fr}
+    }
   </style>
 </head>
+
 <body>
-<div class="wrap">
+  <div class="wrap">
 
-  <div class="top">
-    <div class="homebtn" onclick="window.scrollTo({top:0,behavior:'smooth'})"><span>←<br>Home</span></div>
-    <div>
-      <h1>MatchQuant</h1>
-      <div class="subtitle">Soccer Prediction Engine (xG lambdas + Monte Carlo 10,000 + EV flags + Auto fixtures + H2H)</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Mode 1 – Manual Match<br/>Input</h2>
-
-    <label>League</label>
-    <select id="leagueSelect"></select>
-    <div class="small">League list auto-loads from <span class="mono">xg_tables.json</span></div>
-
-    <button class="btn secondary" id="runAllBtn">Run ALL Leagues at Once</button>
-    <div class="small">Uses <span class="mono">fixtures.json</span>. Add your real fixtures there (include dates for “today”).</div>
-
-    <label>Home Team (auto-suggest)</label>
-    <input id="homeTeam" list="teamsList" placeholder="Start typing… e.g., Arsenal" />
-    <datalist id="teamsList"></datalist>
-
-    <label>Away Team (auto-suggest)</label>
-    <input id="awayTeam" list="teamsList" placeholder="Start typing… e.g., Aston Villa" />
-
-    <div class="chiprow">
-      <span class="chip"><b>Monte Carlo sims</b> <span id="mcSimsLabel" style="margin-left:8px">10,000</span></span>
-      <span class="chip">Poisson goals + sims → score distribution + win probs</span>
-    </div>
-
-    <div class="card" style="margin-top:16px;background:rgba(255,255,255,.03)">
-      <div style="font-weight:900;margin-bottom:6px">Optional Odds (for EV flags) <span class="muted" style="float:right">decimal</span></div>
-      <div class="small">Enter decimal odds. EV flags: <span style="color:var(--green);font-weight:900">Green</span> / <span style="color:var(--yellow);font-weight:900">Yellow</span> / <span style="color:var(--red);font-weight:900">Red</span></div>
-
-      <div class="grid2">
-        <div>
-          <label>ML Home</label>
-          <input id="oddsHome" placeholder="e.g., 1.95" inputmode="decimal" />
-        </div>
-        <div>
-          <label>ML Draw</label>
-          <input id="oddsDraw" placeholder="e.g., 3.60" inputmode="decimal" />
-        </div>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <label>ML Away</label>
-          <input id="oddsAway" placeholder="e.g., 3.90" inputmode="decimal" />
-        </div>
-        <div>
-          <label>O/U 2.5 Over</label>
-          <input id="oddsO25Over" placeholder="e.g., 1.85" inputmode="decimal" />
-        </div>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <label>O/U 2.5 Under</label>
-          <input id="oddsO25Under" placeholder="e.g., 2.05" inputmode="decimal" />
-        </div>
-        <div>
-          <label>AH Home -0.5</label>
-          <input id="oddsAHHome05" placeholder="e.g., 2.05" inputmode="decimal" />
-        </div>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <label>Corners Line (e.g., 9.5)</label>
-          <input id="cornersLine" placeholder="e.g., 9.5" inputmode="decimal" />
-        </div>
-        <div>
-          <label>Corners Odds (Over)</label>
-          <input id="oddsCornersOver" placeholder="e.g., 1.90" inputmode="decimal" />
-        </div>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <label>Corners Odds (Under)</label>
-          <input id="oddsCornersUnder" placeholder="e.g., 1.95" inputmode="decimal" />
-        </div>
-        <div>
-          <label>Cards Line (e.g., 4.5)</label>
-          <input id="cardsLine" placeholder="e.g., 4.5" inputmode="decimal" />
-        </div>
-      </div>
-
-      <div class="grid2">
-        <div>
-          <label>Cards Odds (Over)</label>
-          <input id="oddsCardsOver" placeholder="e.g., 1.85" inputmode="decimal" />
-        </div>
-        <div>
-          <label>Cards Odds (Under)</label>
-          <input id="oddsCardsUnder" placeholder="e.g., 2.05" inputmode="decimal" />
-        </div>
+    <div class="row" style="gap:14px;justify-content:space-between;">
+      <div>
+        <div class="title">MatchQuant</div>
+        <div class="subtitle">Soccer Prediction Engine (xG lambdas + Monte Carlo 10,000 + EV flags + Auto fixtures + H2H)</div>
       </div>
     </div>
 
-    <button class="btn" id="runBtn">Run Prediction</button>
-  </div>
+    <!-- ===== INPUT CARD ===== -->
+    <div class="card">
+      <h2>Mode 1 – Manual Match Input</h2>
 
-  <div class="card">
-    <h2 style="font-size:44px;margin-bottom:8px">Result</h2>
+      <label for="league">League</label>
+      <select id="league">
+        <option value="EPL">EPL</option>
+        <option value="LaLiga">LaLiga</option>
+        <option value="SerieA">SerieA</option>
+        <option value="Bundesliga">Bundesliga</option>
+        <option value="Ligue1">Ligue1</option>
+        <option value="Portugal">Portugal</option>
+      </select>
+      <div class="small">League list auto-loads from <code>xg_tables.json</code> (your JSON must use the same league keys).</div>
 
-    <div class="kv"><div class="k">League:</div><div class="v" id="rLeague">—</div></div>
-    <div class="kv"><div class="k">Match:</div><div class="v" id="rMatch">—</div></div>
-    <div class="kv"><div class="k">xG Used:</div><div class="v" id="rXg">—</div></div>
-    <div class="kv"><div class="k">Predicted Score:</div><div class="v" id="rScore">—</div></div>
-    <div class="kv"><div class="k">O/U 2.5:</div><div class="v" id="rO25">—</div></div>
-    <div class="kv"><div class="k">Asian Handicap:</div><div class="v" id="rAH">—</div></div>
-    <div class="kv"><div class="k">Win Probabilities:</div><div class="v" id="rHDA">—</div></div>
+      <button class="btn" type="button" onclick="/* optional: runPrediction will auto-run when clicking fixtures */ window.scrollTo({top:0,behavior:'smooth'})">
+        Run ALL Leagues at Once
+      </button>
+      <div class="small">Uses <code>fixtures.json</code>. Add your real fixtures there (include dates for “today”).</div>
 
-    <div class="kv"><div class="k">EV Flags:</div><div class="v" id="rEV">—</div></div>
-    <div class="kv"><div class="k">Confidence Tier:</div><div class="v" id="rConf">—</div></div>
+      <label for="homeTeam">Home Team (auto-suggest)</label>
+      <input id="homeTeam" placeholder="Start typing… e.g., Arsenal" />
 
-    <div class="kv"><div class="k">Top Scorelines (MC):</div><div class="v" id="rTop">—</div></div>
-    <div class="kv"><div class="k">Last H2H:</div><div class="v" id="rH2H">—</div></div>
+      <label for="awayTeam">Away Team (auto-suggest)</label>
+      <input id="awayTeam" placeholder="Start typing… e.g., Aston Villa" />
 
-    <div class="okline" id="loadedLine">Loading xG…</div>
-  </div>
+      <div class="row" style="margin-top:10px;">
+        <div class="pill" style="flex:1;">
+          <span>Monte Carlo sims</span>
+          <b><input id="sims" value="10000" style="width:110px;padding:8px 10px;border-radius:14px;margin:0;border:1px solid var(--border);" /></b>
+        </div>
+      </div>
+      <div class="small" style="margin-top:8px;">Poisson goals + simulations → score distribution + win probabilities</div>
 
-  <div class="card">
-    <h2 style="font-size:44px;margin-bottom:8px">Auto Fixtures Output</h2>
-    <div class="small">Press “Run ALL Leagues at Once”. Uses <span class="mono">fixtures.json</span>. If you include a date like <span class="mono">2026-02-04</span>, it will show “today” rows first.</div>
-    <div class="tablewrap" style="margin-top:12px">
-      <table>
-        <thead>
-          <tr>
-            <th>Match</th>
-            <th>Score</th>
-            <th>H/D/A</th>
-            <th>O2.5</th>
-            <th>Top</th>
-            <th>EV</th>
-            <th>Tier</th>
-            <th>H2H</th>
-          </tr>
-        </thead>
-        <tbody id="autoBody">
-          <tr><td class="muted" colspan="8">—</td></tr>
-        </tbody>
-      </table>
+      <!-- ===== ODDS (for EV badges) ===== -->
+      <div class="sectionTitle">Optional Odds (for EV flags) <span class="small">(decimal)</span></div>
+
+      <div class="grid2">
+        <div>
+          <label for="oddsHome">ML Home</label>
+          <input id="oddsHome" placeholder="e.g., 1.95" />
+        </div>
+        <div>
+          <label for="oddsDraw">ML Draw</label>
+          <input id="oddsDraw" placeholder="e.g., 3.60" />
+        </div>
+        <div>
+          <label for="oddsAway">ML Away</label>
+          <input id="oddsAway" placeholder="e.g., 3.90" />
+        </div>
+        <div>
+          <label for="oddsOver25">O/U 2.5 Over</label>
+          <input id="oddsOver25" placeholder="e.g., 1.85" />
+        </div>
+        <div>
+          <label for="oddsUnder25">O/U 2.5 Under</label>
+          <input id="oddsUnder25" placeholder="e.g., 2.05" />
+        </div>
+        <div>
+          <label for="oddsAHHome">AH Home -0.5</label>
+          <input id="oddsAHHome" placeholder="e.g., 2.05" />
+        </div>
+
+        <div>
+          <label for="cornersLine">Corners Line (e.g., 9.5)</label>
+          <input id="cornersLine" placeholder="e.g., 9.5" />
+        </div>
+        <div>
+          <label for="cardsLine">Cards Line (e.g., 4.5)</label>
+          <input id="cardsLine" placeholder="e.g., 4.5" />
+        </div>
+
+        <div>
+          <label for="cornersOver">Corners Odds (Over)</label>
+          <input id="cornersOver" placeholder="e.g., 1.90" />
+        </div>
+        <div>
+          <label for="cornersUnder">Corners Odds (Under)</label>
+          <input id="cornersUnder" placeholder="e.g., 1.95" />
+        </div>
+
+        <div>
+          <label for="cardsOver">Cards Odds (Over)</label>
+          <input id="cardsOver" placeholder="e.g., 1.85" />
+        </div>
+        <div>
+          <label for="cardsUnder">Cards Odds (Under)</label>
+          <input id="cardsUnder" placeholder="e.g., 2.05" />
+        </div>
+      </div>
+
+      <button class="btn" type="button" onclick="runPrediction()">Run Prediction</button>
+    </div>
+
+    <!-- ===== RESULT CARD ===== -->
+    <div class="card" style="margin-top:14px;">
+      <h2>Result</h2>
+
+      <div class="pill"><span>League:</span><b id="resLeague">—</b></div>
+      <div class="pill"><span>Match:</span><b id="resMatch">—</b></div>
+      <div class="pill"><span>xG Used:</span><b id="resXG">—</b></div>
+      <div class="pill"><span>Predicted Score:</span><b id="resScore">—</b></div>
+      <div class="pill"><span>O/U 2.5:</span><b id="resOU">—</b></div>
+      <div class="pill"><span>Asian Handicap:</span><b id="resAH">—</b></div>
+      <div class="pill"><span>Win Probabilities:</span><b id="resWin">—</b></div>
+      <div class="pill"><span>EV Flags:</span><b id="resEV">—</b></div>
+      <div class="pill"><span>Confidence Tier:</span><b id="resTier">—</b></div>
+      <div class="pill"><span>Top Scorelines (MC):</span><b id="resTop">—</b></div>
+
+      <!-- ===== TODAY + CHARTS ===== -->
+      <div class="sectionTitle" style="margin-top:18px;">Today’s Fixtures (auto)</div>
+      <div id="todayBox" class="small"></div>
+
+      <div class="sectionTitle" style="margin-top:18px;">Chart</div>
+      <canvas id="scoreChart" width="360" height="240"></canvas>
+
+      <div class="small" style="margin-top:10px;">
+        Tip: Tap a fixture above → it auto-fills teams and runs prediction.
+      </div>
     </div>
   </div>
 
-</div>
+  <!-- Your app code -->
+  <script src="app.js"></script>
 
-<script src="app.js"></script>
-<script>
-  // PWA Service Worker
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
-  }
-</script>
+  <!-- Optional: Service worker for install -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    }
+  </script>
 </body>
 </html>
