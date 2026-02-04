@@ -1,175 +1,409 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MatchQuant Soccer Engine</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MatchQuant Soccer Engine</title>
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(180deg,#08152b,#020617);
-  color: #fff;
-}
-.container {
-  max-width: 900px;
-  margin: auto;
-  padding: 20px;
-}
-.card {
-  background: #0f1f3a;
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 20px;
-}
-h1,h2 {
-  color: #4da3ff;
-  margin-top: 0;
-}
-input, select, button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 10px;
-  border-radius: 10px;
-  border: none;
-  font-size: 16px;
-}
-button {
-  background: #4da3ff;
-  color: #000;
-  font-weight: bold;
-  cursor: pointer;
-}
-.result-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #1e335c;
-}
-.good { color: #33ff99; }
-.warn { color: #ffcc66; }
-.bad  { color: #ff6666; }
-.small {
-  font-size: 13px;
-  opacity: 0.85;
-}
-</style>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    :root{
+      --bg1:#071429; --bg2:#020617;
+      --card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.10);
+      --text:#eaf2ff; --muted:rgba(234,242,255,.75);
+      --accent:#4da3ff;
+      --good:#2fe49a; --warn:#f7c65a; --bad:#ff6a6a; --na:#9aa8bf;
+      --shadow:0 18px 60px rgba(0,0,0,.40);
+      --r:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 50% 0%, #0b2a5b 0%, var(--bg1) 35%, var(--bg2) 100%);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 48px}
+    .topbar{display:flex;align-items:center;gap:12px;margin:8px 0 18px}
+    .homebtn{
+      appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.05);
+      color:var(--text); padding:10px 14px;border-radius:999px; font-weight:900;
+      box-shadow:var(--shadow); cursor:pointer;
+    }
+    .title{line-height:1.05}
+    .title h1{margin:0;font-size:36px;letter-spacing:.2px;color:var(--accent)}
+    .title p{margin:6px 0 0;color:var(--muted)}
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:var(--r);
+      box-shadow:var(--shadow); padding:16px; margin:14px 0;
+      backdrop-filter: blur(10px);
+    }
+    h2{margin:0 0 12px;color:var(--accent);font-size:26px}
+    label{display:block;margin-top:10px;color:var(--muted);font-weight:800}
+    input,select{
+      width:100%; padding:14px 14px; margin-top:8px;
+      border-radius:14px; border:1px solid var(--border);
+      background:rgba(0,0,0,.20); color:var(--text); outline:none;
+      font-size:16px;
+    }
+    input::placeholder{color:rgba(234,242,255,.45)}
+    .btn{
+      width:100%; margin-top:14px; padding:14px 14px; border-radius:999px;
+      border:0; background:linear-gradient(90deg,#2c7bff,#66c2ff);
+      color:#051022; font-weight:1000; font-size:18px; cursor:pointer;
+      box-shadow:0 18px 40px rgba(77,163,255,.25);
+    }
+    .btn.secondary{
+      background:rgba(255,255,255,.08); color:var(--text);
+      border:1px solid var(--border);
+      box-shadow:none;
+    }
+    .row{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:760px){ .row{grid-template-columns:1fr 1fr} }
+    .pillrow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    .pill{
+      padding:8px 12px;border-radius:999px;border:1px solid var(--border);
+      background:rgba(255,255,255,.06);font-weight:1000;
+    }
+    .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)} .na{color:var(--na)}
+    .mini{font-size:13px;color:var(--muted);line-height:1.35;margin-top:10px}
+    .resultGrid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+    .kv{
+      display:flex;justify-content:space-between;gap:12px;
+      padding:12px 14px;border-radius:14px;
+      background:rgba(0,0,0,.18); border:1px solid var(--border);
+      font-weight:900;
+    }
+    .k{color:var(--muted)}
+    .v{text-align:right;max-width:70%}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .table{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+    .trow{
+      display:grid;grid-template-columns:1.2fr .6fr .8fr .6fr .8fr;
+      gap:10px;padding:10px 12px;background:rgba(0,0,0,.16);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:14px;font-weight:900;
+    }
+    .thead{background:rgba(255,255,255,.07);color:var(--muted)}
+    .trow:last-child{border-bottom:0}
+    .right{text-align:right}
+    .tag{
+      display:inline-block; padding:5px 10px; border-radius:999px;
+      border:1px solid var(--border); background:rgba(255,255,255,.06);
+      font-weight:1000; margin-left:6px;
+    }
+  </style>
 </head>
 
 <body>
-<div class="container">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="homebtn" onclick="scrollTo(0,0)">← Home</button>
+      <div class="title">
+        <h1>MatchQuant</h1>
+        <p>Soccer Prediction Engine (xG lambdas + Monte Carlo 10,000 + EV flags + Auto fixtures + H2H)</p>
+      </div>
+    </div>
 
-<h1>MatchQuant</h1>
-<p class="small">xG-based Soccer Prediction Engine</p>
+    <div class="card">
+      <h2>Mode 1 — Manual Match Input</h2>
 
-<div class="card">
-<h2>Manual Match Input</h2>
+      <label>League</label>
+      <select id="league"></select>
+      <div class="mini">League list auto-loads from <span class="mono">xg_tables.json</span></div>
 
-<select id="league">
-  <option>EPL</option>
-  <option>LaLiga</option>
-  <option>SerieA</option>
-  <option>Bundesliga</option>
-  <option>Ligue1</option>
-  <option>Portugal</option>
-</select>
+      <button class="btn secondary" onclick="runAllLeagues()">Run ALL Leagues at Once</button>
+      <div class="mini">Uses <span class="mono">fixtures.json</span>. Add your real fixtures there.</div>
 
-<input id="home" placeholder="Home Team (e.g. Arsenal)">
-<input id="away" placeholder="Away Team (e.g. Aston Villa)">
+      <label>Home Team</label>
+      <input id="home" placeholder="type EXACT team name (case/spaces) e.g., Arsenal" />
 
-<button onclick="runPrediction()">Run Prediction</button>
-</div>
+      <label>Away Team</label>
+      <input id="away" placeholder="type EXACT team name (case/spaces) e.g., Aston Villa" />
 
-<div class="card">
-<h2>Result</h2>
+      <div class="pillrow">
+        <div class="pill">Monte Carlo sims</div>
+        <div class="pill mono" id="simsPill">10,000</div>
+      </div>
+      <div class="mini">Poisson goals + 10,000 simulations → score distribution + win probs</div>
 
-<div class="result-row"><span>League</span><span id="r_league">—</span></div>
-<div class="result-row"><span>Match</span><span id="r_match">—</span></div>
-<div class="result-row"><span>xG Used</span><span id="r_xg">—</span></div>
-<div class="result-row"><span>Predicted Score</span><span id="r_score">—</span></div>
-<div class="result-row"><span>O/U 2.5</span><span id="r_ou">—</span></div>
-<div class="result-row"><span>Asian Handicap</span><span id="r_ah">—</span></div>
-<div class="result-row"><span>Corners</span><span id="r_corners">—</span></div>
-<div class="result-row"><span>Cards</span><span id="r_cards">—</span></div>
-<div class="result-row"><span>Win Prob</span><span id="r_prob">—</span></div>
-<div class="result-row"><span>EV Flag</span><span id="r_ev">—</span></div>
+      <div class="card" style="margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div>
+            <div style="font-weight:1000">Optional Odds (for EV flags)</div>
+            <div class="mini">Enter decimal odds. EV flags: <span class="good">Green</span> / <span class="warn">Yellow</span> / <span class="bad">Red</span></div>
+          </div>
+          <div class="mini">decimal</div>
+        </div>
 
-<p class="small" id="status">Loading xG tables…</p>
-</div>
+        <div class="row">
+          <div>
+            <label>ML Home</label>
+            <input id="od_ml_h" placeholder="e.g., 1.95" inputmode="decimal" />
+          </div>
+          <div>
+            <label>ML Draw</label>
+            <input id="od_ml_d" placeholder="e.g., 3.60" inputmode="decimal" />
+          </div>
+          <div>
+            <label>ML Away</label>
+            <input id="od_ml_a" placeholder="e.g., 3.90" inputmode="decimal" />
+          </div>
+          <div>
+            <label>O/U 2.5 Over</label>
+            <input id="od_ou_o" placeholder="e.g., 1.85" inputmode="decimal" />
+          </div>
+          <div>
+            <label>O/U 2.5 Under</label>
+            <input id="od_ou_u" placeholder="e.g., 2.05" inputmode="decimal" />
+          </div>
+          <div>
+            <label>AH Home -0.5</label>
+            <input id="od_ah_h" placeholder="e.g., 2.05" inputmode="decimal" />
+          </div>
+        </div>
+      </div>
 
-<div class="card">
-<h2>Next Upgrades (Active)</h2>
-<ul class="small">
-<li>✔ Monte Carlo (10,000 sims)</li>
-<li>✔ Last H2H placeholder</li>
-<li>✔ EV flags (Green / Yellow / Red)</li>
-<li>✔ Auto fixtures ready</li>
-</ul>
-</div>
+      <button class="btn" onclick="runPrediction()">Run Prediction</button>
+      <div class="mini" id="status">Loading data…</div>
+    </div>
 
-</div>
+    <div class="card">
+      <h2>Result</h2>
+
+      <div class="resultGrid">
+        <div class="kv"><div class="k">League:</div><div class="v" id="r_league">—</div></div>
+        <div class="kv"><div class="k">Match:</div><div class="v" id="r_match">—</div></div>
+        <div class="kv"><div class="k">xG Used:</div><div class="v" id="r_xg">—</div></div>
+        <div class="kv"><div class="k">Predicted Score:</div><div class="v" id="r_score">—</div></div>
+        <div class="kv"><div class="k">O/U 2.5:</div><div class="v" id="r_ou">—</div></div>
+        <div class="kv"><div class="k">Asian Handicap:</div><div class="v" id="r_ah">—</div></div>
+        <div class="kv"><div class="k">Win Probabilities:</div><div class="v" id="r_prob">—</div></div>
+        <div class="kv"><div class="k">EV Flags:</div><div class="v" id="r_ev">—</div></div>
+        <div class="kv"><div class="k">Top Scorelines (MC):</div><div class="v" id="r_top">—</div></div>
+        <div class="kv"><div class="k">Last H2H:</div><div class="v" id="r_h2h">—</div></div>
+      </div>
+
+      <div class="mini" id="loadedNote">—</div>
+    </div>
+
+    <div class="card">
+      <h2>Auto Fixtures Output</h2>
+      <div class="mini">Press “Run ALL Leagues at Once”. Uses <span class="mono">fixtures.json</span>.</div>
+      <div id="allOut" class="table" style="display:none"></div>
+    </div>
+  </div>
 
 <script>
-let XG = {};
+  const SIMS = 10000;
+  const $ = (id) => document.getElementById(id);
 
-fetch("xg_tables.json")
-.then(r => r.json())
-.then(d => {
-  XG = d;
-  document.getElementById("status").innerText =
-    "xG tables loaded ✓ (" + Object.keys(XG).length + " leagues)";
-});
+  const toNum = (v) => {
+    const n = parseFloat(String(v||"").replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  };
 
-function runPrediction() {
-  const league = leagueSelect();
-  const home = val("home");
-  const away = val("away");
+  let XG = {};
+  let FIX = {};
+  let H2H = {};
+  let LEAGUES = [];
 
-  if (!XG[league] || !XG[league][home] || !XG[league][away]) {
-    alert("Team not found in xG table");
-    return;
+  async function loadAll(){
+    try{
+      const [xgRes, fxRes, h2Res] = await Promise.allSettled([
+        fetch("xg_tables.json").then(r=>r.json()),
+        fetch("fixtures.json").then(r=>r.json()),
+        fetch("h2h.json").then(r=>r.json())
+      ]);
+
+      if(xgRes.status !== "fulfilled") throw new Error("xg_tables.json missing");
+      XG = xgRes.value || {};
+      FIX = (fxRes.status === "fulfilled" ? fxRes.value : {}) || {};
+      H2H = (h2Res.status === "fulfilled" ? h2Res.value : {}) || {};
+
+      LEAGUES = Object.keys(XG);
+      const sel = $("league");
+      sel.innerHTML = LEAGUES.map(l => `<option value="${l}">${l}</option>`).join("");
+
+      $("simsPill").innerText = SIMS.toLocaleString();
+      $("status").innerText = "Loaded ✓ xG + fixtures + H2H (if present)";
+      $("loadedNote").innerText = `xG loaded ✓ (${LEAGUES.length} leagues)`;
+
+    }catch(e){
+      $("status").innerText = "Load error. Make sure xg_tables.json exists in repo root.";
+      $("loadedNote").innerText = "—";
+    }
+  }
+  loadAll();
+
+  function poisson(lambda){
+    // Knuth
+    let L = Math.exp(-lambda), k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L);
+    return k - 1;
   }
 
-  const hx = XG[league][home].home;
-  const ax = XG[league][away].away;
+  function simMatch(homeLambda, awayLambda){
+    let hw=0, dw=0, aw=0;
+    let over25=0, under25=0;
+    const scoreCounts = new Map();
 
-  // Monte Carlo
-  let hGoals = 0, aGoals = 0;
-  for (let i=0;i<10000;i++) {
-    hGoals += poisson(hx);
-    aGoals += poisson(ax);
+    for(let i=0;i<SIMS;i++){
+      const hg = poisson(homeLambda);
+      const ag = poisson(awayLambda);
+
+      if(hg>ag) hw++; else if(hg===ag) dw++; else aw++;
+
+      const tot = hg+ag;
+      if(tot>2.5) over25++; else under25++;
+
+      const key = `${hg}-${ag}`;
+      scoreCounts.set(key, (scoreCounts.get(key)||0)+1);
+    }
+
+    const H = hw/SIMS, D = dw/SIMS, A = aw/SIMS;
+    const O = over25/SIMS, U = under25/SIMS;
+
+    const top = [...scoreCounts.entries()]
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,5)
+      .map(([k,c])=> `${k} (${(c/SIMS*100).toFixed(1)}%)`)
+      .join(", ");
+
+    return {H,D,A,O,U, top};
   }
 
-  hGoals = (hGoals/10000).toFixed(2);
-  aGoals = (aGoals/10000).toFixed(2);
+  function evFlag(modelProb, odds){
+    if(modelProb == null || odds == null) return {txt:"—", cls:"na"};
+    const implied = 1/odds;
+    const edge = modelProb - implied;
+    const pct = edge * 100;
 
-  const score = Math.round(hGoals)+"-"+Math.round(aGoals);
-  const ou = (hGoals*1 + aGoals*1) > 2.5 ? "Over" : "Under";
-  const ah = hGoals > aGoals ? "Home -0.5" : "Away +0.5";
+    if(pct >= 3) return {txt:`GREEN (+${pct.toFixed(1)}%)`, cls:"good"};
+    if(pct <= -3) return {txt:`RED (${pct.toFixed(1)}%)`, cls:"bad"};
+    return {txt:`YELLOW (${pct.toFixed(1)}%)`, cls:"warn"};
+  }
 
-  const ev = hGoals > aGoals ? "GREEN" : "YELLOW";
+  function safeGetTeam(league, team){
+    return XG?.[league]?.[team] ?? null;
+  }
 
-  out("r_league",league);
-  out("r_match",home+" vs "+away);
-  out("r_xg","Home λ "+hx+" / Away λ "+ax);
-  out("r_score",score);
-  out("r_ou",ou);
-  out("r_ah",ah);
-  out("r_corners","Over 8.5");
-  out("r_cards","Over 3.5");
-  out("r_prob","H "+Math.round(hGoals*20)+"% / A "+Math.round(aGoals*20)+"%");
-  out("r_ev",ev, ev==="GREEN"?"good":"warn");
-}
+  function h2hText(league, home, away){
+    const k1 = `${league}|${home}|${away}`;
+    const k2 = `${league}|${away}|${home}`;
+    const d = H2H[k1] || H2H[k2];
+    if(!d) return "—";
+    const date = d.date || "";
+    const score = d.score || "";
+    const corners = (d.corners ?? "?");
+    const cards = (d.cards ?? "?");
+    return `${date}  ${score} | corners ${corners} | cards ${cards}`.trim();
+  }
 
-function poisson(l) {
-  let L = Math.exp(-l), k=0, p=1;
-  do { k++; p*=Math.random(); } while (p>L);
-  return k-1;
-}
-function out(id,v,c){const e=document.getElementById(id);e.innerText=v;e.className=c||"";}
-function val(id){return document.getElementById(id).value.trim();}
-function leagueSelect(){return document.getElementById("league").value;}
+  function runPrediction(){
+    const league = $("league").value;
+    const home = $("home").value.trim();
+    const away = $("away").value.trim();
+
+    const h = safeGetTeam(league, home);
+    const a = safeGetTeam(league, away);
+
+    if(!h || !a){
+      alert("Team not found. Spelling must match EXACTLY what’s in xg_tables.json");
+      return;
+    }
+
+    const homeLambda = h.home;
+    const awayLambda = a.away;
+
+    const sim = simMatch(homeLambda, awayLambda);
+
+    const predScore = `${Math.round(homeLambda)}-${Math.round(awayLambda)}`;
+    const ouLean = sim.O >= 0.5 ? `Over (${(sim.O*100).toFixed(0)}%)` : `Under (${(sim.U*100).toFixed(0)}%)`;
+    const ahLean = sim.H >= 0.5 ? `Home -0.5 (${(sim.H*100).toFixed(0)}%)` : `Away +0.5 (${(sim.A*100).toFixed(0)}%)`;
+
+    const od_ml_h = toNum($("od_ml_h").value);
+    const od_ml_d = toNum($("od_ml_d").value);
+    const od_ml_a = toNum($("od_ml_a").value);
+    const od_ou_o = toNum($("od_ou_o").value);
+    const od_ou_u = toNum($("od_ou_u").value);
+    const od_ah_h = toNum($("od_ah_h").value);
+
+    const mlH = evFlag(sim.H, od_ml_h);
+    const mlD = evFlag(sim.D, od_ml_d);
+    const mlA = evFlag(sim.A, od_ml_a);
+    const ouO = evFlag(sim.O, od_ou_o);
+    const ouU = evFlag(sim.U, od_ou_u);
+    const ahH = evFlag(sim.H, od_ah_h);
+
+    $("r_league").innerText = league;
+    $("r_match").innerText = `${home} vs ${away}`;
+    $("r_xg").innerText = `Home λ ${homeLambda.toFixed(2)} / Away λ ${awayLambda.toFixed(2)}`;
+    $("r_score").innerText = predScore;
+    $("r_ou").innerText = ouLean;
+    $("r_ah").innerText = ahLean;
+    $("r_prob").innerText = `H ${(sim.H*100).toFixed(0)}% / D ${(sim.D*100).toFixed(0)}% / A ${(sim.A*100).toFixed(0)}%`;
+    $("r_top").innerText = sim.top || "—";
+    $("r_h2h").innerText = h2hText(league, home, away);
+
+    const tags = [];
+    if(od_ml_h) tags.push(`<span class="tag ${mlH.cls}">ML(H) ${mlH.txt}</span>`);
+    if(od_ml_d) tags.push(`<span class="tag ${mlD.cls}">ML(D) ${mlD.txt}</span>`);
+    if(od_ml_a) tags.push(`<span class="tag ${mlA.cls}">ML(A) ${mlA.txt}</span>`);
+    if(od_ou_o) tags.push(`<span class="tag ${ouO.cls}">O2.5 ${ouO.txt}</span>`);
+    if(od_ou_u) tags.push(`<span class="tag ${ouU.cls}">U2.5 ${ouU.txt}</span>`);
+    if(od_ah_h) tags.push(`<span class="tag ${ahH.cls}">AH(H) ${ahH.txt}</span>`);
+
+    $("r_ev").innerHTML = tags.length ? tags.join(" ") : `<span class="na">— (enter odds to compute EV)</span>`;
+  }
+
+  function runAllLeagues(){
+    const out = $("allOut");
+    out.style.display = "block";
+    out.innerHTML = `
+      <div class="trow thead">
+        <div>Match</div>
+        <div class="right">Score</div>
+        <div class="right">H/D/A</div>
+        <div class="right">O2.5</div>
+        <div class="right">Top</div>
+      </div>
+    `;
+
+    const leagues = Object.keys(FIX || {});
+    if(leagues.length === 0){
+      alert("fixtures.json is missing/empty. Add fixtures there first.");
+      return;
+    }
+
+    for(const league of leagues){
+      const games = FIX[league] || [];
+      for(const g of games){
+        const home = g[0], away = g[1];
+        const h = safeGetTeam(league, home);
+        const a = safeGetTeam(league, away);
+        if(!h || !a) continue;
+
+        const sim = simMatch(h.home, a.away);
+        const score = `${Math.round(h.home)}-${Math.round(a.away)}`;
+        const hda = `H ${(sim.H*100).toFixed(0)} / D ${(sim.D*100).toFixed(0)} / A ${(sim.A*100).toFixed(0)}`;
+        const ou  = `${(sim.O*100).toFixed(0)}%`;
+        const top = (sim.top || "").split(", ").slice(0,2).join(", ");
+
+        out.innerHTML += `
+          <div class="trow">
+            <div>${league}: ${home} vs ${away}</div>
+            <div class="right mono">${score}</div>
+            <div class="right mono">${hda}</div>
+            <div class="right mono">${ou}</div>
+            <div class="right mono">${top}</div>
+          </div>
+        `;
+      }
+    }
+    window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+  }
 </script>
 </body>
 </html>
