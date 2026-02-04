@@ -2,57 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
   <style>
-    body {
-      margin: 0;
+    body{
+      margin:0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0b1020, #121c3f);
-      color: #ffffff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      background: radial-gradient(circle at top, #0b1633, #050814);
+      color:#fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      padding:16px;
     }
-    .card {
-      background: #121c3f;
-      padding: 32px;
-      border-radius: 18px;
-      max-width: 420px;
-      width: 90%;
-      text-align: center;
-      box-shadow: 0 0 30px rgba(0,0,0,0.4);
+    .card{
+      width:100%;
+      max-width:520px;
+      background:#0f1a3a;
+      border-radius:22px;
+      padding:28px;
+      box-shadow:0 20px 60px rgba(0,0,0,.55);
+      text-align:center;
     }
-    h1 {
-      margin-bottom: 10px;
-      color: #5aa9ff;
+    h1{
+      margin:0 0 10px 0;
+      font-size:44px;
+      letter-spacing:.5px;
+      color:#4da3ff;
     }
-    p {
-      margin-bottom: 24px;
-      opacity: 0.9;
+    p{
+      margin:0 0 22px 0;
+      line-height:1.45;
+      opacity:.92;
+      font-size:16px;
     }
-    button {
-      padding: 14px 26px;
-      border: none;
-      border-radius: 10px;
-      background: #5aa9ff;
-      color: #000;
-      font-size: 16px;
-      cursor: pointer;
+    .btn{
+      width:100%;
+      border:none;
+      padding:16px 18px;
+      border-radius:14px;
+      font-size:18px;
+      font-weight:700;
+      background:#4da3ff;
+      color:#001024;
+      cursor:pointer;
     }
-    button:hover {
-      opacity: 0.9;
+    .btn:active{ transform:scale(.99); }
+    .mini{
+      margin-top:14px;
+      font-size:12px;
+      opacity:.75;
     }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>MatchQuant</h1>
-    <p>Professional sports analytics & betting intelligence.</p>
-    <button onclick="window.location.href='app.html'">
-      Get Started
-    </button>
+    <p>Soccer-only picks dashboard (demo data). Built for pro-style analysis: score, O/U, corners, cards, AH, and ML.</p>
+    <button class="btn" onclick="window.location.href='app.html'">Get Started</button>
+    <div class="mini">Tip: If it doesn’t change, refresh the page once.</div>
   </div>
 </body>
 </html>
