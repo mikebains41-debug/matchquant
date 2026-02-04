@@ -6,142 +6,123 @@
   <title>MatchQuant Soccer Engine</title>
 
   <style>
-    body{
-      margin:0;
+    body {
+      margin: 0;
       font-family: Arial, sans-serif;
       background: radial-gradient(circle at top, #0b1633, #050814);
-      color:#fff;
-      min-height:100vh;
-      padding:16px;
-      display:flex;
-      justify-content:center;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
     }
-    .container{
-      width:100%;
-      max-width:620px;
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: #0f1a3a;
+      border-radius: 22px;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
     }
-    .card{
-      background:#0f1a3a;
-      border-radius:22px;
-      padding:24px;
-      box-shadow:0 20px 60px rgba(0,0,0,0.55);
-      margin-bottom:18px;
+
+    h1 {
+      margin-top: 0;
+      font-size: 2.2rem;
+      color: #6cb6ff;
     }
-    h1{
-      margin:0 0 10px 0;
-      color:#58a6ff;
-      text-align:center;
+
+    p {
+      opacity: 0.85;
+      margin-bottom: 18px;
     }
-    h2{
-      margin:14px 0 10px 0;
-      font-size:1.15rem;
-      color:#9ecbff;
+
+    button {
+      width: 100%;
+      background: #5fb0ff;
+      color: #000;
+      border: none;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-top: 12px;
+      font-weight: bold;
     }
-    input{
-      width:100%;
-      padding:12px;
-      margin:6px 0;
-      border-radius:10px;
-      border:none;
-      font-size:1rem;
+
+    .output {
+      margin-top: 18px;
+      text-align: left;
+      display: none;
     }
-    button{
-      width:100%;
-      padding:14px;
-      border:none;
-      border-radius:14px;
-      background:#58a6ff;
-      color:#0b1633;
-      font-size:1.1rem;
-      font-weight:700;
-      cursor:pointer;
-      margin-top:10px;
-    }
-    .pill{
+
+    .row {
       background: rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:14px;
-      padding:12px;
-      margin:8px 0;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-size: 15px;
     }
-    .back{
-      text-align:center;
-      margin-top:10px;
+
+    a {
+      display: block;
+      margin-top: 18px;
+      color: #6cb6ff;
+      text-decoration: none;
+      font-weight: bold;
+      text-align: center;
     }
-    a{ color:#9ecbff; text-decoration:none; }
   </style>
 </head>
 
 <body>
-  <div class="container">
+  <div class="card">
+    <h1>MatchQuant Soccer</h1>
+    <p>Professional soccer betting intelligence.<br>Model-driven predictions.</p>
 
-    <!-- HEADER -->
-    <div class="card">
-      <h1>MatchQuant Soccer Engine</h1>
-      <p style="text-align:center;opacity:0.9;">
-        Professional model-driven soccer predictions
-      </p>
+    <!-- MODE 1 -->
+    <button onclick="runPrediction()">Run Soccer Engine</button>
+
+    <!-- MODE 2 -->
+    <button onclick="loadDaily()">Load Today’s Picks</button>
+
+    <!-- MODE 3 -->
+    <button onclick="runFull()">Run Full Engine</button>
+
+    <div id="results" class="output">
+      <div class="row"><strong>Predicted Score:</strong> 2–1 Home</div>
+      <div class="row"><strong>Over / Under 2.5:</strong> Over</div>
+      <div class="row"><strong>Asian Handicap:</strong> Home -0.5</div>
+      <div class="row"><strong>Corners:</strong> Over 8.5</div>
+      <div class="row"><strong>Cards:</strong> Over 3.5</div>
     </div>
 
-    <!-- MODE 1: MANUAL -->
-    <div class="card">
-      <h2>Mode 1 — Manual Match Input</h2>
-      <input type="text" placeholder="Home Team" />
-      <input type="text" placeholder="Away Team" />
-      <button onclick="runManual()">Run Prediction</button>
-
-      <div id="manualResult"></div>
+    <div id="daily" class="output">
+      <div class="row">Arsenal vs Villa → Over 2.5</div>
+      <div class="row">Inter vs Torino → Inter -1.0</div>
+      <div class="row">Real Sociedad vs Betis → Under 2.5</div>
     </div>
 
-    <!-- MODE 2: AUTO DAILY PICKS -->
-    <div class="card">
-      <h2>Mode 2 — Auto Daily Picks</h2>
-      <button onclick="runAuto()">Load Today's Picks</button>
-
-      <div id="autoResult"></div>
-    </div>
-
-    <!-- MODE 3: COMBINED -->
-    <div class="card">
-      <h2>Mode 3 — Combined Engine Output</h2>
-      <button onclick="runCombined()">Run Full Engine</button>
-
-      <div id="combinedResult"></div>
-    </div>
-
-    <div class="back">
-      <a href="index.html">← Back Home</a>
-    </div>
-
+    <a href="index.html">← Back Home</a>
   </div>
 
-<script>
-  function predictionHTML(){
-    return `
-      <div class="pill"><b>Predicted Score:</b> 2–1 Home</div>
-      <div class="pill"><b>Over / Under 2.5:</b> Over</div>
-      <div class="pill"><b>Asian Handicap:</b> Home -0.5</div>
-      <div class="pill"><b>Corners:</b> Over 8.5</div>
-      <div class="pill"><b>Cards:</b> Over 3.5</div>
-    `;
-  }
+  <script>
+    function runPrediction() {
+      document.getElementById("results").style.display = "block";
+      document.getElementById("daily").style.display = "none";
+    }
 
-  function runManual(){
-    document.getElementById("manualResult").innerHTML = predictionHTML();
-  }
+    function loadDaily() {
+      document.getElementById("daily").style.display = "block";
+      document.getElementById("results").style.display = "none";
+    }
 
-  function runAuto(){
-    document.getElementById("autoResult").innerHTML = `
-      <div class="pill"><b>Arsenal vs Villa</b><br/>Score: 2–0<br/>AH: Arsenal -1</div>
-      <div class="pill"><b>Inter vs Genoa</b><br/>Score: 2–1<br/>Over 2.5</div>
-      <div class="pill"><b>Betis vs Getafe</b><br/>Score: 1–0<br/>Under 2.5</div>
-    `;
-  }
-
-  function runCombined(){
-    document.getElementById("combinedResult").innerHTML = predictionHTML();
-  }
-</script>
-
+    function runFull() {
+      document.getElementById("results").style.display = "block";
+      document.getElementById("daily").style.display = "block";
+    }
+  </script>
 </body>
 </html>
