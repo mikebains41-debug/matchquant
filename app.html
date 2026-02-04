@@ -1,1 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MatchQuant Engine</title>
 
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: #121c3f;
+      padding: 28px;
+      border-radius: 16px;
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #4da3ff;
+    }
+
+    p {
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background: #4da3ff;
+      color: #000;
+      border: none;
+      padding: 14px 22px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #79b8ff;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h1>MatchQuant Engine</h1>
+    <p>You are now inside the app.</p>
+
+    <button onclick="goHome()">← Back Home</button>
+  </div>
+
+  <script>
+    function goHome() {
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>
