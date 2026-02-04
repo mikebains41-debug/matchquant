@@ -1,38 +1,27 @@
 {
-  "leagues": {
-    "EPL": {
-      "Arsenal": { "xg_for": 1.72 },
-      "Aston Villa": { "xg_for": 1.18 },
-      "Man City": { "xg_for": 2.05 },
-      "Liverpool": { "xg_for": 1.95 },
-      "Chelsea": { "xg_for": 1.55 }
-    },
-    "LaLiga": {
-      "Barcelona": { "xg_for": 1.78 },
-      "Real Madrid": { "xg_for": 1.88 },
-      "Atletico Madrid": { "xg_for": 1.42 },
-      "Real Betis": { "xg_for": 1.35 }
-    },
-    "SerieA": {
-      "Inter": { "xg_for": 1.75 },
-      "Juventus": { "xg_for": 1.48 },
-      "Milan": { "xg_for": 1.52 },
-      "Genoa": { "xg_for": 1.05 }
-    },
-    "Bundesliga": {
-      "Bayern Munich": { "xg_for": 2.10 },
-      "Dortmund": { "xg_for": 1.72 },
-      "Leipzig": { "xg_for": 1.65 }
-    },
-    "Ligue1": {
-      "PSG": { "xg_for": 2.00 },
-      "Marseille": { "xg_for": 1.45 },
-      "Lyon": { "xg_for": 1.38 }
-    },
-    "Portugal": {
-      "Benfica": { "xg_for": 1.82 },
-      "Porto": { "xg_for": 1.75 },
-      "Sporting CP": { "xg_for": 1.78 }
-    }
+  "EPL": {
+    "Arsenal": { "home": 1.72, "away": 1.55 },
+    "Aston Villa": { "home": 1.48, "away": 1.25 },
+    "Man City": { "home": 2.05, "away": 1.85 },
+    "Liverpool": { "home": 1.95, "away": 1.70 }
+  },
+  "LaLiga": {
+    "Barcelona": { "home": 1.90, "away": 1.65 },
+    "Real Madrid": { "home": 2.00, "away": 1.75 }
+  },
+  "SerieA": {
+    "Inter": { "home": 1.85, "away": 1.60 },
+    "AC Milan": { "home": 1.70, "away": 1.45 }
+  },
+  "Bundesliga": {
+    "Bayern Munich": { "home": 2.10, "away": 1.90 },
+    "Dortmund": { "home": 1.80, "away": 1.55 }
+  },
+  "Ligue1": {
+    "PSG": { "home": 2.05, "away": 1.80 }
+  },
+  "Portugal": {
+    "Benfica": { "home": 1.90, "away": 1.60 },
+    "Porto": { "home": 1.85, "away": 1.55 }
   }
 }
