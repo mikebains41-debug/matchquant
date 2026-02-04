@@ -2,126 +2,235 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant Soccer Engine</title>
 
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1633" />
+
   <style>
-    body {
-      margin: 0;
+    body{
+      margin:0;
       font-family: Arial, sans-serif;
       background: radial-gradient(circle at top, #0b1633, #050814);
-      color: #ffffff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      color:#fff;
       padding: 16px;
     }
+    .wrap{
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .topbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin: 10px 0 14px 0;
+    }
+    .back{
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      background:#1a2c5f;
+      color:#fff;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .title{
+      font-size: 1.2rem;
+      font-weight: 800;
+      color:#62b0ff;
+    }
 
-    .card {
-      width: 100%;
-      max-width: 520px;
-      background: #0f1a3a;
+    .card{
+      background: rgba(15,26,58,0.92);
       border-radius: 22px;
-      padding: 28px;
-      text-align: center;
+      padding: 18px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      margin: 14px 0;
     }
-
-    h1 {
-      margin-top: 0;
-      font-size: 2.2rem;
-      color: #6cb6ff;
+    h2{
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+      color:#8cc7ff;
     }
-
-    p {
-      opacity: 0.85;
-      margin-bottom: 18px;
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
     }
-
-    button {
-      width: 100%;
-      background: #5fb0ff;
-      color: #000;
-      border: none;
-      padding: 14px;
-      font-size: 16px;
+    input{
+      flex:1;
+      min-width: 180px;
+      border:none;
       border-radius: 14px;
-      cursor: pointer;
-      margin-top: 12px;
-      font-weight: bold;
+      padding: 14px;
+      font-size: 1rem;
+      outline:none;
     }
-
-    .output {
-      margin-top: 18px;
-      text-align: left;
-      display: none;
+    .btn{
+      width:100%;
+      border:none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      background:#62b0ff;
+      color:#0b1633;
+      cursor:pointer;
+      margin-top: 10px;
     }
-
-    .row {
+    .pill{
       background: rgba(255,255,255,0.06);
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      font-size: 15px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 1.02rem;
     }
-
-    a {
-      display: block;
-      margin-top: 18px;
-      color: #6cb6ff;
-      text-decoration: none;
-      font-weight: bold;
-      text-align: center;
+    .label{
+      color: rgba(255,255,255,0.85);
+      font-weight: 800;
+    }
+    .muted{
+      color: rgba(255,255,255,0.7);
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+    .list .item{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-top: 10px;
+    }
+    .item b{
+      display:block;
+      font-size: 1.06rem;
+      margin-bottom: 4px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
-  <div class="card">
-    <h1>MatchQuant Soccer</h1>
-    <p>Professional soccer betting intelligence.<br>Model-driven predictions.</p>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="back" onclick="location.href='index.html'">← Home</button>
+      <div class="title">MatchQuant Soccer Engine</div>
+    </div>
 
     <!-- MODE 1 -->
-    <button onclick="runPrediction()">Run Soccer Engine</button>
+    <div class="card">
+      <h2>Mode 1 — Manual Match Input</h2>
+
+      <div class="row">
+        <input id="homeTeam" placeholder="Home Team" />
+        <input id="awayTeam" placeholder="Away Team" />
+      </div>
+
+      <button class="btn" onclick="runManual()">Run Prediction</button>
+
+      <div id="manualOut" class="grid"></div>
+      <div class="muted">Tip: this is demo logic right now — next upgrade is real data + xG.</div>
+    </div>
 
     <!-- MODE 2 -->
-    <button onclick="loadDaily()">Load Today’s Picks</button>
+    <div class="card">
+      <h2>Mode 2 — Auto Daily Picks</h2>
+      <button class="btn" onclick="loadTodaysPicks()">Load Today's Picks</button>
+      <div id="autoList" class="list"></div>
+    </div>
 
     <!-- MODE 3 -->
-    <button onclick="runFull()">Run Full Engine</button>
-
-    <div id="results" class="output">
-      <div class="row"><strong>Predicted Score:</strong> 2–1 Home</div>
-      <div class="row"><strong>Over / Under 2.5:</strong> Over</div>
-      <div class="row"><strong>Asian Handicap:</strong> Home -0.5</div>
-      <div class="row"><strong>Corners:</strong> Over 8.5</div>
-      <div class="row"><strong>Cards:</strong> Over 3.5</div>
+    <div class="card">
+      <h2>Mode 3 — Combined Engine Output</h2>
+      <button class="btn" onclick="runFullEngine()">Run Full Engine</button>
+      <div id="fullOut" class="grid"></div>
     </div>
-
-    <div id="daily" class="output">
-      <div class="row">Arsenal vs Villa → Over 2.5</div>
-      <div class="row">Inter vs Torino → Inter -1.0</div>
-      <div class="row">Real Sociedad vs Betis → Under 2.5</div>
-    </div>
-
-    <a href="index.html">← Back Home</a>
   </div>
 
   <script>
-    function runPrediction() {
-      document.getElementById("results").style.display = "block";
-      document.getElementById("daily").style.display = "none";
+    // --- Simple "demo engine" helpers ---
+    function makePrediction(seedText) {
+      // deterministic-ish demo based on text length
+      const n = (seedText || "").length;
+      const homeGoals = 1 + (n % 3);      // 1..3
+      const awayGoals = (n % 2);          // 0..1
+      const total = homeGoals + awayGoals;
+
+      const ou = total >= 3 ? "Over" : "Under";
+      const ah = homeGoals > awayGoals ? "Home -0.5" : "Home +0.5";
+      const corners = total >= 3 ? "Over 8.5" : "Under 9.5";
+      const cards = total >= 3 ? "Over 3.5" : "Under 4.5";
+
+      return {
+        score: `${homeGoals}–${awayGoals} Home`,
+        ou25: ou,
+        ah: ah,
+        corners: corners,
+        cards: cards
+      };
     }
 
-    function loadDaily() {
-      document.getElementById("daily").style.display = "block";
-      document.getElementById("results").style.display = "none";
+    function renderPredictions(targetId, p) {
+      const el = document.getElementById(targetId);
+      el.innerHTML = `
+        <div class="pill"><span class="label">Predicted Score:</span> ${p.score}</div>
+        <div class="pill"><span class="label">Over / Under 2.5:</span> ${p.ou25}</div>
+        <div class="pill"><span class="label">Asian Handicap:</span> ${p.ah}</div>
+        <div class="pill"><span class="label">Corners:</span> ${p.corners}</div>
+        <div class="pill"><span class="label">Cards:</span> ${p.cards}</div>
+      `;
     }
 
-    function runFull() {
-      document.getElementById("results").style.display = "block";
-      document.getElementById("daily").style.display = "block";
+    // --- MODE 1 ---
+    function runManual() {
+      const home = document.getElementById("homeTeam").value.trim();
+      const away = document.getElementById("awayTeam").value.trim();
+      const seed = `${home} vs ${away}`;
+      const p = makePrediction(seed);
+
+      // show output
+      const out = document.getElementById("manualOut");
+      out.innerHTML = `
+        <div class="pill"><span class="label">Match:</span> ${home || "Home"} vs ${away || "Away"}</div>
+        <div class="pill"><span class="label">Predicted Score:</span> ${p.score}</div>
+        <div class="pill"><span class="label">Over / Under 2.5:</span> ${p.ou25}</div>
+        <div class="pill"><span class="label">Asian Handicap:</span> ${p.ah}</div>
+        <div class="pill"><span class="label">Corners:</span> ${p.corners}</div>
+        <div class="pill"><span class="label">Cards:</span> ${p.cards}</div>
+      `;
+    }
+
+    // --- MODE 2 ---
+    function loadTodaysPicks() {
+      // demo list (you can replace later with real fixtures JSON)
+      const picks = [
+        { match: "Arsenal vs Villa", score: "2–0", lean: "AH: Arsenal -1" },
+        { match: "Inter vs Genoa", score: "2–1", lean: "Over 2.5" },
+        { match: "Betis vs Getafe", score: "1–0", lean: "Under 2.5" }
+      ];
+
+      const list = document.getElementById("autoList");
+      list.innerHTML = picks.map(p => `
+        <div class="item">
+          <b>${p.match}</b>
+          <div>Score: ${p.score}</div>
+          <div>${p.lean}</div>
+        </div>
+      `).join("");
+    }
+
+    // --- MODE 3 ---
+    function runFullEngine() {
+      const p = makePrediction("FULL_ENGINE");
+      renderPredictions("fullOut", p);
     }
   </script>
 </body>
