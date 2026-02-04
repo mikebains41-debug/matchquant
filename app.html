@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant Soccer Engine</title>
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json">
 
   <style>
     :root{
@@ -16,31 +16,69 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;padding:14px;}
     .topbar{display:flex;align-items:center;gap:12px;max-width:920px;margin:0 auto 12px auto;}
-    .homebtn{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;padding:10px 14px;border-radius:14px;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:8px;}
+    .homebtn{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;padding:10px 14px;border-radius:14px;text-decoration:none;font-weight:900;display:inline-flex;align-items:center;gap:8px;}
     .title{font-size:20px;font-weight:900;color:var(--accent);letter-spacing:.2px;margin:0;flex:1;text-align:center;}
     .wrap{max-width:920px;margin:0 auto;}
     .panel{background:rgba(15,26,58,.92);border:1px solid var(--border);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px;margin:14px 0;}
     h2{margin:0 0 12px 0;color:var(--accent);font-size:22px;font-weight:900;}
     .row{display:flex;gap:12px;flex-wrap:wrap;}
-    input, select{width:100%;padding:14px 14px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:#fff;outline:none;font-size:16px;}
+    input,select{width:100%;padding:14px 14px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.08);color:#fff;outline:none;font-size:16px;}
     input::placeholder{color:rgba(255,255,255,.6)}
     .btn{width:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border:none;color:#00102a;font-weight:900;padding:14px 18px;border-radius:16px;cursor:pointer;font-size:18px;margin-top:10px;}
+    .btn2{width:100%;background:rgba(255,255,255,.10);border:1px solid var(--border);color:#fff;font-weight:900;padding:14px 18px;border-radius:16px;cursor:pointer;font-size:16px;margin-top:10px;}
     .grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;}
-    .chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:16px;padding:12px 14px;font-size:16px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
+    .chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:16px;padding:12px 14px;font-size:18px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
     .k{font-weight:900;color:#eaf0ff}
-    .v{color:var(--muted);font-weight:800;text-align:right}
+    .v{color:var(--muted);font-weight:900;text-align:right}
     .note{margin-top:10px;color:rgba(255,255,255,.65);font-size:13px;line-height:1.35;}
     .mini{font-size:13px;color:rgba(255,255,255,.7);margin-top:8px;}
     .cards{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px;}
     .matchCard{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:18px;padding:14px;}
     .mcTitle{font-size:18px;font-weight:900}
-    .mcLine{margin-top:6px;color:rgba(255,255,255,.85);font-weight:700}
-    .pill{margin-top:10px;display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(88,166,255,.16);border:1px solid rgba(88,166,255,.22);color:#d9ecff;font-weight:900;font-size:12px;}
+    .mcLine{margin-top:6px;color:rgba(255,255,255,.85);font-weight:800}
+    .pill{margin-top:10px;display:inline-block;border-radius:999px;padding:6px 10px;background:rgba(88,166,255,.14);border:1px solid rgba(88,166,255,.22);color:#d9ecff;font-weight:900;font-size:12px;}
     .status{margin-top:10px;font-size:13px;color:rgba(255,255,255,.7)}
+    .split{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+    .split > div{flex:1;min-width:220px;}
+
+    /* ===== LOADER OVERLAY ===== */
+    .loaderWrap{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(5,8,20,.85);
+      z-index:9999;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      padding:20px;
+      text-align:center;
+    }
+    .loader{
+      width:64px; height:64px;
+      border:6px solid rgba(255,255,255,.2);
+      border-top:6px solid var(--accent);
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{transform:rotate(360deg)} }
+    .loaderText{
+      margin-top:14px;
+      font-weight:900;
+      color:#fff;
+      font-size:18px;
+      line-height:1.25;
+    }
   </style>
 </head>
 
 <body>
+  <!-- LOADER OVERLAY -->
+  <div id="loader" class="loaderWrap">
+    <div class="loader"></div>
+    <div id="loaderText" class="loaderText">Loading…</div>
+  </div>
+
   <div class="topbar">
     <a class="homebtn" href="./index.html">← Home</a>
     <h1 class="title">MatchQuant Soccer Engine</h1>
@@ -48,14 +86,25 @@
   </div>
 
   <div class="wrap">
-
     <div class="panel">
       <h2>Mode 1 — Manual Match Input</h2>
 
-      <div class="row">
-        <div style="flex:1; min-width:220px;">
-          <select id="leaguePick"></select>
-          <div class="mini">Pick a league → then type teams exactly as in xg_tables.json</div>
+      <div class="split">
+        <div>
+          <select id="leaguePick">
+            <option value="EPL">EPL</option>
+            <option value="LaLiga">LaLiga</option>
+            <option value="SerieA">SerieA</option>
+            <option value="Bundesliga">Bundesliga</option>
+            <option value="Ligue1">Ligue1</option>
+            <option value="Portugal">Portugal</option>
+          </select>
+          <div class="mini">Pick league (uses that league’s xG table)</div>
+        </div>
+
+        <div>
+          <button class="btn2" onclick="runAllLeagues()">Run ALL Leagues at Once</button>
+          <div class="mini">Runs each league fixture list and shows results below.</div>
         </div>
       </div>
 
@@ -70,7 +119,7 @@
 
       <button class="btn" onclick="runManual()">Run Prediction</button>
 
-      <div class="grid">
+      <div class="grid" id="manualOut">
         <div class="chip"><span class="k">League:</span><span class="v" id="m_league">—</span></div>
         <div class="chip"><span class="k">Match:</span><span class="v" id="m_match">—</span></div>
         <div class="chip"><span class="k">xG Used:</span><span class="v" id="m_xg">—</span></div>
@@ -84,19 +133,21 @@
 
       <div class="status" id="xgStatus">Loading xG tables…</div>
       <div class="note">
-        Multi-league loader reads <b>xg_tables.json</b> once, then uses the league dropdown to select the right team table.
+        Multi-league xG loader: reads <b>xg_tables.json</b> once.
+        Team name must match exactly (example: <b>Arsenal</b>, <b>Aston Villa</b>).
+        If not found, app uses fallback so it never breaks.
       </div>
     </div>
 
     <div class="panel">
-      <h2>Mode 2 — Auto Daily Picks (demo)</h2>
+      <h2>Mode 2 — Auto Daily Picks</h2>
       <button class="btn" onclick="loadDaily()">Load Today’s Picks</button>
-      <div class="mini">You will later replace the fixtures list with real schedule.</div>
+      <div class="mini">These are demo fixtures. You can replace TODAY_FIXTURES later.</div>
       <div class="cards" id="dailyList"></div>
     </div>
 
     <div class="panel">
-      <h2>Mode 3 — Combined Engine Output (demo)</h2>
+      <h2>Mode 3 — Combined Engine Output</h2>
       <button class="btn" onclick="runFull()">Run Full Engine</button>
       <div class="grid">
         <div class="chip"><span class="k">Predicted Score:</span><span class="v" id="f_score">—</span></div>
@@ -106,77 +157,52 @@
         <div class="chip"><span class="k">Cards:</span><span class="v" id="f_cards">—</span></div>
         <div class="chip"><span class="k">Win Probabilities:</span><span class="v" id="f_probs">—</span></div>
       </div>
+      <div class="note">Mode 3 runs the same model as Mode 1 using the currently selected league + teams.</div>
     </div>
 
+    <div class="panel">
+      <h2>All-Leagues Batch Results</h2>
+      <div class="mini">Shows when you press “Run ALL Leagues at Once”.</div>
+      <div class="cards" id="allLeagueResults"></div>
+    </div>
   </div>
 
 <script>
-/* =========================================================
-   MULTI-LEAGUE xG LOADER (JSON)
-   File: ./xg_tables.json
-   Shape:
-   {
-     "leagues": {
-       "EPL": { "teams": { "Arsenal": {"xg_for":1.8,"xg_against":1.0}, ... } },
-       "LaLiga": { "teams": { ... } }
-     }
-   }
-========================================================= */
-let XG_LEAGUES = {};   // all leagues
-let LEAGUE_KEYS = [];  // league names
+/* ================= LOADER ================= */
+function showLoader(msg){
+  document.getElementById("loaderText").textContent = msg || "Loading…";
+  document.getElementById("loader").style.display = "flex";
+}
+function hideLoader(){
+  document.getElementById("loader").style.display = "none";
+}
+
+/* ================= REAL xG MULTI-LEAGUE LOADER ================= */
+let XG_DB = null;
 
 (async function boot(){
-  const status = document.getElementById("xgStatus");
   try{
     const res = await fetch("./xg_tables.json", { cache: "no-store" });
     if(!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
+    const data = await res.json();
+    XG_DB = data?.leagues || {};
+    const leagueCount = Object.keys(XG_DB).length;
+    let teamCount = 0;
+    for(const lg of Object.keys(XG_DB)) teamCount += Object.keys(XG_DB[lg] || {}).length;
 
-    XG_LEAGUES = (json && json.leagues) ? json.leagues : {};
-    LEAGUE_KEYS = Object.keys(XG_LEAGUES);
-
-    // build dropdown
-    const sel = document.getElementById("leaguePick");
-    sel.innerHTML = "";
-    if(LEAGUE_KEYS.length === 0){
-      sel.innerHTML = "<option value=''>No leagues found</option>";
-      status.textContent = "xG tables NOT loaded ⚠️ (no leagues in JSON)";
-      return;
-    }
-    LEAGUE_KEYS.forEach(k=>{
-      const opt = document.createElement("option");
-      opt.value = k;
-      opt.textContent = k;
-      sel.appendChild(opt);
-    });
-
-    // default league
-    sel.value = LEAGUE_KEYS[0];
-
-    // show status
-    const teamCount = countAllTeams();
-    status.textContent = `xG tables loaded ✅ (${LEAGUE_KEYS.length} leagues, ${teamCount} teams)`;
+    document.getElementById("xgStatus").textContent =
+      `xG tables loaded ✅ (${leagueCount} leagues, ${teamCount} teams)`;
   }catch(e){
-    XG_LEAGUES = {};
-    LEAGUE_KEYS = [];
-    document.getElementById("leaguePick").innerHTML = "<option value=''>Loader failed</option>";
-    status.textContent = "xG tables NOT loaded ⚠️ Check xg_tables.json exists + valid JSON.";
+    XG_DB = null;
+    document.getElementById("xgStatus").textContent =
+      "xG tables NOT loaded ⚠️ (using fallback). Ensure xg_tables.json exists in repo.";
   }
 })();
 
-function countAllTeams(){
-  let n = 0;
-  for(const lg of Object.keys(XG_LEAGUES)){
-    const t = XG_LEAGUES[lg]?.teams || {};
-    n += Object.keys(t).length;
-  }
-  return n;
-}
-
-/* ====================== MODEL ====================== */
+/* ================= MODEL SETTINGS ================= */
 const HOME_XG_BONUS = 0.12;
 const BASE_XG_FALLBACK = 1.25;
-const SIMS = 9000; // phone safe
+const SIMS = 9000; // phone-safe
 
 function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
 function pct(x){ return Math.round(x*100) + "%"; }
@@ -184,151 +210,247 @@ function pct(x){ return Math.round(x*100) + "%"; }
 function poisson(lambda){
   const L = Math.exp(-lambda);
   let k=0, p=1;
-  do{ k++; p *= Math.random(); } while(p > L);
+  do{ k++; p *= Math.random(); }while(p > L);
   return k-1;
 }
 
-function getTeamRow(leagueKey, teamName){
-  const teams = XG_LEAGUES?.[leagueKey]?.teams || {};
-  return teams[teamName] || null;
+function getLeagueTable(league){
+  return XG_DB?.[league] || null;
 }
 
-function estimateLambdas(leagueKey, homeName, awayName){
-  const home = getTeamRow(leagueKey, homeName);
-  const away = getTeamRow(leagueKey, awayName);
-
-  // fallback if missing
-  const home_for = home?.xg_for ?? BASE_XG_FALLBACK;
-  const home_against = home?.xg_against ?? BASE_XG_FALLBACK;
-
-  const away_for = away?.xg_for ?? BASE_XG_FALLBACK;
-  const away_against = away?.xg_against ?? BASE_XG_FALLBACK;
-
-  // matchup blend
-  let lamHome = (Number(home_for) + Number(away_against)) / 2 + HOME_XG_BONUS;
-  let lamAway = (Number(away_for) + Number(home_against)) / 2;
-
-  lamHome = clamp(lamHome, 0.2, 3.2);
-  lamAway = clamp(lamAway, 0.2, 3.2);
-
-  const foundHome = !!home;
-  const foundAway = !!away;
-
-  return {
-    lamHome,
-    lamAway,
-    usedText: `Home λ ${lamHome.toFixed(2)} / Away λ ${lamAway.toFixed(2)} | Table: ${foundHome ? "home✓" : "home×"} ${foundAway ? "away✓" : "away×"}`
-  };
+function getTeamXG(league, name){
+  const table = getLeagueTable(league);
+  const row = table?.[name];
+  if(!row) return null;
+  const xg_for = Number(row.xg_for);
+  const xg_against = Number(row.xg_against);
+  if(!isFinite(xg_for) || !isFinite(xg_against)) return null;
+  return { xg_for, xg_against };
 }
 
-function simulateMatch(lamHome, lamAway){
-  let H=0,D=0,A=0;
-  let hGoals=0, aGoals=0;
+/* Real xG matchup:
+   home lambda = avg(home xg_for, away xg_against) + home bonus
+   away lambda = avg(away xg_for, home xg_against)
+*/
+function estimateXG(league, homeName, awayName){
+  const h = getTeamXG(league, homeName);
+  const a = getTeamXG(league, awayName);
 
-  for(let i=0;i<SIMS;i++){
-    const hg = poisson(lamHome);
-    const ag = poisson(lamAway);
-    hGoals += hg; aGoals += ag;
-    if(hg>ag) H++; else if(hg<ag) A++; else D++;
+  let homeLambda, awayLambda;
+  let used = "";
+
+  if(h && a){
+    homeLambda = (h.xg_for + a.xg_against) / 2 + HOME_XG_BONUS;
+    awayLambda = (a.xg_for + h.xg_against) / 2;
+    used = `Home λ ${homeLambda.toFixed(2)} / Away λ ${awayLambda.toFixed(2)} | Table: home✓ away✓`;
+  }else{
+    // fallback so app never breaks
+    homeLambda = BASE_XG_FALLBACK + HOME_XG_BONUS;
+    awayLambda = BASE_XG_FALLBACK;
+    used = `Home λ ${homeLambda.toFixed(2)} / Away λ ${awayLambda.toFixed(2)} | Table: home${h?"✓":"✗"} away${a?"✓":"✗"}`;
   }
 
-  const ph = H/SIMS, pd = D/SIMS, pa = A/SIMS;
+  homeLambda = clamp(homeLambda, 0.15, 3.20);
+  awayLambda = clamp(awayLambda, 0.15, 3.20);
+  return { homeLambda, awayLambda, used };
+}
 
-  // score pick: round to nearest “most likely-ish”
-  const predH = Math.max(0, Math.round(lamHome));
-  const predA = Math.max(0, Math.round(lamAway));
+function runSim(homeLambda, awayLambda){
+  let hW=0, d=0, aW=0;
+  const scoreCounts = new Map();
+  let totalGoals=0;
 
-  const total = lamHome + lamAway;
-  const ou = total >= 2.6 ? "Over" : "Under";
+  for(let i=0;i<SIMS;i++){
+    const hg = poisson(homeLambda);
+    const ag = poisson(awayLambda);
+    totalGoals += (hg+ag);
 
+    if(hg>ag) hW++; else if(hg<ag) aW++; else d++;
+
+    const key = hg + "-" + ag;
+    scoreCounts.set(key, (scoreCounts.get(key)||0)+1);
+  }
+
+  // modal score
+  let bestKey=null, bestV=-1;
+  for(const [k,v] of scoreCounts.entries()){
+    if(v>bestV){ bestV=v; bestKey=k; }
+  }
+
+  const avgGoals = totalGoals / SIMS;
+  const ou25 = avgGoals >= 2.5 ? "Over" : "Under";
+
+  const pH = hW/SIMS, pD = d/SIMS, pA = aW/SIMS;
+
+  // basic AH lean based on win probability
   let ah = "0 (Draw No Bet lean)";
-  if(ph - pa > 0.10) ah = "Home -0.5";
-  if(pa - ph > 0.10) ah = "Away +0.5";
+  if(pH >= 0.53) ah = "Home -0.5";
+  if(pH >= 0.60) ah = "Home -1";
+  if(pA >= 0.53) ah = "Away +0.5";
+  if(pA >= 0.60) ah = "Away -0.5";
 
-  // simple corners/cards heuristics (replace later with real data)
-  const corners = total >= 2.7 ? "Over 8.5" : "Under 9.5";
-  const cards = total >= 2.7 ? "Over 3.5" : "Under 4.5";
+  // corners/cards heuristic based on total xG
+  // (simple now; later you’ll plug real corner/card models)
+  const corners = (avgGoals >= 2.7) ? "Over 8.5" : "Under 9.5";
+  const cards = (avgGoals >= 2.7) ? "Over 3.5" : "Under 4.5";
 
   return {
-    predScore: `${predH}-${predA}`,
-    ou,
+    score: bestKey,
+    ou25,
     ah,
     corners,
     cards,
-    probs: `H ${pct(ph)} / D ${pct(pd)} / A ${pct(pa)}`
+    probs: `H ${pct(pH)} / D ${pct(pD)} / A ${pct(pA)}`,
+    avgGoals
   };
 }
 
-/* ====================== UI ACTIONS ====================== */
+/* ================= MODE 1 ================= */
 function runManual(){
-  const lg = document.getElementById("leaguePick").value || "—";
+  const league = document.getElementById("leaguePick").value;
   const home = (document.getElementById("homeTeam").value || "").trim();
   const away = (document.getElementById("awayTeam").value || "").trim();
 
-  document.getElementById("m_league").textContent = lg;
-  document.getElementById("m_match").textContent = `${home || "Home"} vs ${away || "Away"}`;
+  document.getElementById("m_league").textContent = league;
+  document.getElementById("m_match").textContent = (home && away) ? `${home} vs ${away}` : "—";
 
-  const { lamHome, lamAway, usedText } = estimateLambdas(lg, home, away);
-  document.getElementById("m_xg").textContent = usedText;
+  showLoader("Running prediction…");
 
-  const out = simulateMatch(lamHome, lamAway);
+  setTimeout(() => {
+    const { homeLambda, awayLambda, used } = estimateXG(league, home, away);
+    const out = runSim(homeLambda, awayLambda);
 
-  document.getElementById("m_score").textContent = out.predScore;
-  document.getElementById("m_ou").textContent = out.ou;
-  document.getElementById("m_ah").textContent = out.ah;
-  document.getElementById("m_corners").textContent = out.corners;
-  document.getElementById("m_cards").textContent = out.cards;
-  document.getElementById("m_probs").textContent = out.probs;
+    document.getElementById("m_xg").textContent = used;
+    document.getElementById("m_score").textContent = out.score;
+    document.getElementById("m_ou").textContent = out.ou25;
+    document.getElementById("m_ah").textContent = out.ah;
+    document.getElementById("m_corners").textContent = out.corners;
+    document.getElementById("m_cards").textContent = out.cards;
+    document.getElementById("m_probs").textContent = out.probs;
+
+    hideLoader();
+  }, 80);
 }
 
+/* ================= MODE 2 (DEMO FIXTURES) ================= */
 const TODAY_FIXTURES = [
   { league:"EPL", home:"Arsenal", away:"Aston Villa" },
   { league:"SerieA", home:"Inter", away:"Genoa" },
-  { league:"LaLiga", home:"Real Betis", away:"Getafe" },
+  { league:"LaLiga", home:"Real Betis", away:"Getafe" }
 ];
 
 function loadDaily(){
-  const list = document.getElementById("dailyList");
-  list.innerHTML = "";
+  showLoader("Loading daily picks…");
+  setTimeout(() => {
+    const list = document.getElementById("dailyList");
+    list.innerHTML = "";
 
-  TODAY_FIXTURES.forEach(f=>{
-    const { lamHome, lamAway, usedText } = estimateLambdas(f.league, f.home, f.away);
-    const out = simulateMatch(lamHome, lamAway);
+    for(const fx of TODAY_FIXTURES){
+      const { homeLambda, awayLambda } = estimateXG(fx.league, fx.home, fx.away);
+      const out = runSim(homeLambda, awayLambda);
 
-    const card = document.createElement("div");
-    card.className = "matchCard";
-    card.innerHTML = `
-      <div class="mcTitle">${f.home} vs ${f.away}</div>
-      <div class="mcLine">League: ${f.league}</div>
-      <div class="mcLine">xG: ${usedText}</div>
-      <div class="mcLine">Score: ${out.predScore}</div>
-      <div class="mcLine">O/U 2.5: ${out.ou}</div>
-      <div class="mcLine">AH: ${out.ah}</div>
-      <div class="mcLine">Corners: ${out.corners}</div>
-      <div class="mcLine">Cards: ${out.cards}</div>
-      <div class="pill">${out.probs}</div>
-    `;
-    list.appendChild(card);
-  });
+      const card = document.createElement("div");
+      card.className = "matchCard";
+      card.innerHTML = `
+        <div class="mcTitle">${fx.home} vs ${fx.away}</div>
+        <div class="mcLine">League: ${fx.league}</div>
+        <div class="mcLine">Score: ${out.score}</div>
+        <div class="mcLine">O/U 2.5: ${out.ou25}</div>
+        <div class="mcLine">AH: ${out.ah}</div>
+        <div class="mcLine">Corners: ${out.corners}</div>
+        <div class="mcLine">Cards: ${out.cards}</div>
+        <div class="pill">${out.probs}</div>
+      `;
+      list.appendChild(card);
+    }
+
+    hideLoader();
+  }, 80);
 }
 
+/* ================= MODE 3 ================= */
 function runFull(){
-  // demo: uses whatever user typed in Mode 1
-  const lg = document.getElementById("leaguePick").value || "EPL";
-  const home = (document.getElementById("homeTeam").value || "Arsenal").trim();
-  const away = (document.getElementById("awayTeam").value || "Aston Villa").trim();
+  const league = document.getElementById("leaguePick").value;
+  const home = (document.getElementById("homeTeam").value || "").trim() || "Home";
+  const away = (document.getElementById("awayTeam").value || "").trim() || "Away";
 
-  const { lamHome, lamAway } = estimateLambdas(lg, home, away);
-  const out = simulateMatch(lamHome, lamAway);
+  showLoader("Running full engine…");
 
-  document.getElementById("f_score").textContent = out.predScore;
-  document.getElementById("f_ou").textContent = out.ou;
-  document.getElementById("f_ah").textContent = out.ah;
-  document.getElementById("f_corners").textContent = out.corners;
-  document.getElementById("f_cards").textContent = out.cards;
-  document.getElementById("f_probs").textContent = out.probs;
+  setTimeout(() => {
+    const { homeLambda, awayLambda } = estimateXG(league, home, away);
+    const out = runSim(homeLambda, awayLambda);
+
+    document.getElementById("f_score").textContent = out.score;
+    document.getElementById("f_ou").textContent = out.ou25;
+    document.getElementById("f_ah").textContent = out.ah;
+    document.getElementById("f_corners").textContent = out.corners;
+    document.getElementById("f_cards").textContent = out.cards;
+    document.getElementById("f_probs").textContent = out.probs;
+
+    hideLoader();
+  }, 80);
+}
+
+/* ================= ALL LEAGUES AT ONCE ================= */
+const ALL_LEAGUE_FIXTURES = {
+  EPL: [
+    {home:"Arsenal", away:"Aston Villa"},
+    {home:"Man City", away:"Chelsea"}
+  ],
+  LaLiga: [
+    {home:"Barcelona", away:"Valencia"},
+    {home:"Real Madrid", away:"Sevilla"}
+  ],
+  SerieA: [
+    {home:"Inter", away:"Genoa"},
+    {home:"Juventus", away:"Lazio"}
+  ],
+  Bundesliga: [
+    {home:"Bayern", away:"Dortmund"},
+    {home:"Leverkusen", away:"RB Leipzig"}
+  ],
+  Ligue1: [
+    {home:"PSG", away:"Marseille"},
+    {home:"Lyon", away:"Monaco"}
+  ],
+  Portugal: [
+    {home:"Benfica", away:"Braga"},
+    {home:"Porto", away:"Sporting"}
+  ]
+};
+
+function runAllLeagues(){
+  showLoader("Running ALL leagues…");
+
+  setTimeout(() => {
+    const outWrap = document.getElementById("allLeagueResults");
+    outWrap.innerHTML = "";
+
+    for(const league of Object.keys(ALL_LEAGUE_FIXTURES)){
+      const fixtures = ALL_LEAGUE_FIXTURES[league] || [];
+      for(const fx of fixtures){
+        const { homeLambda, awayLambda } = estimateXG(league, fx.home, fx.away);
+        const out = runSim(homeLambda, awayLambda);
+
+        const card = document.createElement("div");
+        card.className = "matchCard";
+        card.innerHTML = `
+          <div class="mcTitle">${fx.home} vs ${fx.away}</div>
+          <div class="mcLine">League: ${league}</div>
+          <div class="mcLine">Score: ${out.score}</div>
+          <div class="mcLine">O/U 2.5: ${out.ou25}</div>
+          <div class="mcLine">AH: ${out.ah}</div>
+          <div class="mcLine">Corners: ${out.corners}</div>
+          <div class="mcLine">Cards: ${out.cards}</div>
+          <div class="pill">${out.probs}</div>
+        `;
+        outWrap.appendChild(card);
+      }
+    }
+
+    hideLoader();
+  }, 120);
 }
 </script>
-
 </body>
 </html>
