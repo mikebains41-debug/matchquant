@@ -1,25 +1,40 @@
 {
   "leagues": {
     "EPL": {
-      "teams": {
-        "Arsenal": { "xg_for": 1.85, "xg_against": 1.05 },
-        "Aston Villa": { "xg_for": 1.55, "xg_against": 1.30 }
-      }
+      "Arsenal": { "xg_for": 1.70, "xg_against": 1.05 },
+      "Aston Villa": { "xg_for": 1.35, "xg_against": 1.20 },
+      "Man City": { "xg_for": 2.00, "xg_against": 0.95 },
+      "Chelsea": { "xg_for": 1.55, "xg_against": 1.25 }
     },
     "LaLiga": {
-      "teams": {
-        "Real Betis": { "xg_for": 1.35, "xg_against": 1.20 },
-        "Getafe": { "xg_for": 1.05, "xg_against": 1.25 }
-      }
+      "Barcelona": { "xg_for": 1.75, "xg_against": 1.10 },
+      "Valencia": { "xg_for": 1.10, "xg_against": 1.35 },
+      "Real Madrid": { "xg_for": 1.85, "xg_against": 1.00 },
+      "Sevilla": { "xg_for": 1.20, "xg_against": 1.40 }
     },
     "SerieA": {
-      "teams": {
-        "Inter": { "xg_for": 1.75, "xg_against": 0.95 },
-        "Genoa": { "xg_for": 1.10, "xg_against": 1.35 }
-      }
+      "Inter": { "xg_for": 1.75, "xg_against": 1.00 },
+      "Genoa": { "xg_for": 1.05, "xg_against": 1.35 },
+      "Juventus": { "xg_for": 1.45, "xg_against": 1.10 },
+      "Lazio": { "xg_for": 1.30, "xg_against": 1.20 }
     },
-    "Bundesliga": { "teams": {} },
-    "Ligue1": { "teams": {} },
-    "Portugal": { "teams": {} }
+    "Bundesliga": {
+      "Bayern": { "xg_for": 2.05, "xg_against": 1.10 },
+      "Dortmund": { "xg_for": 1.70, "xg_against": 1.30 },
+      "Leverkusen": { "xg_for": 1.85, "xg_against": 1.10 },
+      "RB Leipzig": { "xg_for": 1.65, "xg_against": 1.20 }
+    },
+    "Ligue1": {
+      "PSG": { "xg_for": 2.00, "xg_against": 1.00 },
+      "Marseille": { "xg_for": 1.35, "xg_against": 1.25 },
+      "Lyon": { "xg_for": 1.40, "xg_against": 1.30 },
+      "Monaco": { "xg_for": 1.55, "xg_against": 1.20 }
+    },
+    "Portugal": {
+      "Benfica": { "xg_for": 1.85, "xg_against": 0.95 },
+      "Braga": { "xg_for": 1.45, "xg_against": 1.10 },
+      "Porto": { "xg_for": 1.75, "xg_against": 0.98 },
+      "Sporting": { "xg_for": 1.70, "xg_against": 1.00 }
+    }
   }
 }
