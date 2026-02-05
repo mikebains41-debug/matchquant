@@ -1,135 +1,104 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MatchQuant</title>
-
-  <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0b1220" />
-
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      background: radial-gradient(circle at top, #101827, #05070d);
-      color: #e5e7eb;
+    :root { color-scheme: dark; }
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:#0b1220; color:#e5e7eb;
     }
-    .container {
-      max-width: 420px;
-      margin: auto;
-      padding: 20px;
+    .wrap{ max-width:720px; margin:0 auto; padding:18px; }
+    h1{ margin:10px 0 6px; font-size:44px; letter-spacing:.5px; }
+    .sub{ opacity:.75; margin-bottom:18px; }
+    .card{
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      padding:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    h1 {
-      font-size: 36px;
-      font-weight: 800;
-      margin-bottom: 6px;
+    label{ display:block; margin:12px 0 6px; opacity:.85; }
+    select,input{
+      width:100%;
+      padding:14px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      color:#e5e7eb;
+      font-size:16px;
+      outline:none;
     }
-    h2 {
-      color: #3b82f6;
-      font-size: 28px;
-      margin-top: 30px;
+    button{
+      width:100%;
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:16px;
+      border:0;
+      background: #2f6fff;
+      color:white;
+      font-weight:700;
+      font-size:18px;
     }
-    .card {
-      background: rgba(255,255,255,0.04);
-      border-radius: 16px;
-      padding: 16px;
-      margin-top: 14px;
-      backdrop-filter: blur(10px);
+    .mini{ opacity:.75; font-size:13px; margin-top:8px; }
+    .ok{ color:#34d399; }
+    .bad{ color:#fb7185; }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width:520px){ .row{ grid-template-columns:1fr; } }
+    .result{
+      margin-top:16px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      padding:14px;
     }
-    label {
-      font-size: 13px;
-      opacity: 0.85;
-    }
-    select, input, button {
-      width: 100%;
-      margin-top: 6px;
-      margin-bottom: 14px;
-      padding: 12px;
-      border-radius: 12px;
-      border: none;
-      background: rgba(255,255,255,0.08);
-      color: white;
-      font-size: 14px;
-    }
-    button {
-      background: linear-gradient(135deg,#2563eb,#3b82f6);
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .result div {
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      font-size: 14px;
-    }
-    .small {
-      font-size: 12px;
-      opacity: 0.6;
-      margin-top: 10px;
-    }
+    .kv{ display:flex; justify-content:space-between; gap:14px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+    .kv:last-child{ border-bottom:0; }
+    .k{ opacity:.75; }
+    .v{ font-weight:700; text-align:right; }
   </style>
 </head>
-
 <body>
-  <div class="container">
-
+  <div class="wrap">
     <h1>MatchQuant</h1>
-    <div class="small">
-      Soccer Prediction Engine (xG + Monte Carlo + EV + Fixtures + H2H)
-    </div>
-
-    <h2>Mode 1 – Manual Match Input</h2>
+    <div class="sub">Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + H2H)</div>
 
     <div class="card">
-      <label>League</label>
-      <select id="leagueSelect">
+      <h2 style="margin:0 0 10px; color:#7aa7ff;">Mode 1 – Manual Match Input</h2>
+
+      <label for="league">League</label>
+      <select id="league">
         <option value="">Loading leagues…</option>
       </select>
+      <div id="leagueStatus" class="mini"></div>
 
-      <button id="runAll">Run ALL Leagues at Once</button>
+      <div class="row">
+        <div>
+          <label for="homeTeam">Home Team</label>
+          <input id="homeTeam" placeholder="Type home team (exact name in table)" />
+        </div>
+        <div>
+          <label for="awayTeam">Away Team</label>
+          <input id="awayTeam" placeholder="Type away team (exact name in table)" />
+        </div>
+      </div>
 
-      <label>Home Team</label>
-      <input id="homeTeam" placeholder="Start typing… e.g. Arsenal"/>
+      <button id="runBtn">Run Prediction</button>
+      <div class="mini">If dropdown doesn’t open: it was a loading/overlay issue. This version fixes that.</div>
 
-      <label>Away Team</label>
-      <input id="awayTeam" placeholder="Start typing… e.g. Aston Villa"/>
-
-      <div class="small">Monte Carlo sims: 10,000</div>
+      <div class="result" id="resultBox" style="display:none;">
+        <div class="kv"><div class="k">League</div><div class="v" id="rLeague">-</div></div>
+        <div class="kv"><div class="k">Match</div><div class="v" id="rMatch">-</div></div>
+        <div class="kv"><div class="k">xG Used (λ)</div><div class="v" id="rXg">-</div></div>
+        <div class="kv"><div class="k">Predicted Score</div><div class="v" id="rScore">-</div></div>
+        <div class="kv"><div class="k">Win Prob (H/D/A)</div><div class="v" id="rWdl">-</div></div>
+      </div>
     </div>
-
-    <button id="runBtn">Run Prediction</button>
-
-    <h2>Result</h2>
-    <div class="card result">
-      <div><b>League:</b> <span id="rLeague">—</span></div>
-      <div><b>Match:</b> <span id="rMatch">—</span></div>
-      <div><b>xG Used:</b> <span id="rXg">—</span></div>
-      <div><b>Predicted Score:</b> <span id="rScore">—</span></div>
-      <div><b>O/U 2.5:</b> <span id="rOU">—</span></div>
-      <div><b>Asian Handicap:</b> <span id="rAH">—</span></div>
-      <div><b>Win Probabilities:</b> <span id="rWin">—</span></div>
-      <div><b>EV Flags:</b> <span id="rEV">—</span></div>
-      <div><b>Confidence Tier:</b> <span id="rConf">—</span></div>
-      <div><b>Top Scorelines:</b> <span id="rTop">—</span></div>
-      <div><b>Last H2H:</b> <span id="rH2H">—</span></div>
-    </div>
-
-    <h2>Auto Fixtures Output</h2>
-    <div class="card small" id="fixturesOut">
-      Press “Run ALL Leagues at Once”
-    </div>
-
-    <div class="small" id="status">Loading xG…</div>
-
   </div>
 
-<script src="app.js"></script>
-
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
-}
-</script>
-
+  <script src="./app.js"></script>
 </body>
 </html>
