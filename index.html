@@ -2,129 +2,186 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>MatchQuant</title>
-
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="manifest.json" />
   <style>
-    :root { color-scheme: dark; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b0f14; color:#e9eef7; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 22px 14px 60px; }
-    .title { font-size: 44px; font-weight: 800; letter-spacing:.2px; margin: 10px 0 4px; }
-    .sub { opacity:.82; margin: 0 0 16px; }
-    .card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-radius: 18px; padding: 16px; box-shadow: 0 12px 50px rgba(0,0,0,.35); }
-    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 14px; }
-    .pills { display:flex; gap:10px; flex-wrap:wrap; }
-    .pill { display:inline-block; padding: 8px 12px; border-radius: 999px; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.12); font-size: 13px; }
-    .muted { opacity:.78; font-size: 13px; }
-    .row { display:grid; grid-template-columns: 1fr; gap: 12px; }
-    @media(min-width: 760px){ .row { grid-template-columns: 1fr 1fr; } }
-    label { display:block; font-size: 13px; opacity:.85; margin-bottom: 6px; }
-    select, input {
-      width: 100%;
-      padding: 14px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.25);
-      color: #e9eef7;
-      outline: none;
+    :root{
+      --bg:#0a0f1a; --card:#0f172a; --muted:#9aa4b2; --text:#e6eaf2; --line:#1f2a44;
+      --accent:#2b6cff; --good:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+      --pill:#0b1220;
     }
-    button {
-      width:100%;
-      padding: 16px 14px;
-      border-radius: 14px;
-      border: 0;
-      background: #2b6bff;
-      color: white;
-      font-weight: 800;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 12px;
-    }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-    .grid2 { display:grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
-    @media(min-width: 760px){ .grid2 { grid-template-columns: 1fr 1fr; } }
-    .box { background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; }
-    .h3 { font-weight: 800; margin: 0 0 6px; font-size: 16px; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#070b13, #0a0f1a); color:var(--text); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    header{padding:18px 16px 10px; max-width:1100px; margin:0 auto;}
+    h1{margin:0;font-size:34px; letter-spacing:0.2px}
+    .sub{margin-top:6px;color:var(--muted); font-size:14px}
+    .wrap{max-width:1100px; margin:0 auto; padding:12px 16px 40px;}
+    .grid{display:grid; grid-template-columns: 1fr; gap:12px;}
+    @media(min-width:920px){ .grid{grid-template-columns: 420px 1fr;} }
+
+    .card{background:rgba(15,23,42,.85); border:1px solid rgba(31,42,68,.8); border-radius:18px; padding:14px; box-shadow: 0 12px 40px rgba(0,0,0,.35); backdrop-filter: blur(6px);}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background:var(--pill); border:1px solid rgba(31,42,68,.9); color:var(--muted); font-size:13px}
+    .dot{width:8px;height:8px;border-radius:50%; background:var(--warn)}
+    .dot.ok{background:var(--good)}
+    .dot.bad{background:var(--bad)}
+    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px}
+    select,input{width:100%; padding:12px 12px; border-radius:12px; border:1px solid rgba(31,42,68,.9); background:#0b1220; color:var(--text); outline:none}
+    .two{display:grid; grid-template-columns:1fr; gap:10px}
+    @media(min-width:520px){ .two{grid-template-columns:1fr 1fr;} }
+
+    button{width:100%; padding:14px 14px; border-radius:14px; border:1px solid rgba(31,42,68,.9);
+      background: linear-gradient(180deg, rgba(43,108,255,.95), rgba(33,85,206,.95));
+      color:white; font-weight:700; letter-spacing:.2px; font-size:16px}
+    button:disabled{opacity:.55; filter:saturate(.7)}
+    .small{font-size:12px;color:var(--muted); margin-top:8px}
+    .out{margin-top:12px; padding:12px; border-radius:14px; border:1px solid rgba(31,42,68,.9); background:#0b1220}
+    .mono{font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+
+    table{width:100%; border-collapse: collapse; overflow:hidden; border-radius:16px; border:1px solid rgba(31,42,68,.9)}
+    th,td{padding:12px 10px; border-bottom:1px solid rgba(31,42,68,.7); vertical-align:top}
+    th{color:var(--muted); font-weight:600; font-size:12px; text-align:left; background: rgba(11,18,32,.7)}
+    tr:last-child td{border-bottom:0}
+    .match{font-weight:800}
+    .meta{color:var(--muted); font-size:12px; margin-top:4px}
+    .k{color:var(--muted); font-size:12px}
+    .badge{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid rgba(31,42,68,.9); background:#0b1220}
+    .b-good{color:var(--good)}
+    .b-warn{color:var(--warn)}
+    .b-bad{color:var(--bad)}
+    .split{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap}
+    .right{ text-align:right }
+    .note{color:var(--muted); font-size:12px; margin-top:10px; line-height:1.45}
+    .hr{height:1px; background:rgba(31,42,68,.8); margin:12px 0}
+    .mini{font-size:11px;color:var(--muted)}
   </style>
 </head>
-
 <body>
-  <div class="wrap">
-    <div class="title">MatchQuant</div>
-    <div class="sub">Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + fixtures + H2H)</div>
+<header>
+  <h1>MatchQuant</h1>
+  <div class="sub" id="statusLine">Loading…</div>
+</header>
 
+<div class="wrap">
+  <div class="grid">
     <div class="card">
-      <div class="topbar">
-        <div class="pills">
-          <div class="pill" id="xg-status">⏳ xG loading…</div>
-          <div class="pill" id="fx-status">⏳ fixtures loading…</div>
-          <div class="pill" id="h2h-status">⏳ H2H loading…</div>
-        </div>
-        <div class="pill">PRO</div>
+      <div class="row" style="justify-content:space-between">
+        <div class="pill"><span class="dot" id="dotXg"></span><span id="pillXg">xG loading…</span></div>
+        <div class="pill"><span class="dot" id="dotFix"></span><span id="pillFix">fixtures loading…</span></div>
+        <div class="pill"><span class="dot" id="dotH2h"></span><span id="pillH2h">H2H loading…</span></div>
       </div>
 
-      <div class="row">
-        <div>
-          <label>League</label>
-          <select id="league">
-            <option value="">Select a league…</option>
-          </select>
-        </div>
+      <div class="hr"></div>
 
-        <div>
-          <label>Fixture (optional)</label>
-          <select id="fixture">
-            <option value="">Select a fixture…</option>
-          </select>
-          <div class="muted mono" style="margin-top:6px;">Pick a fixture to auto-fill teams (from fixtures.json)</div>
-        </div>
+      <label>League</label>
+      <select id="leagueSelect">
+        <option value="">Select a league…</option>
+      </select>
 
+      <label>Fixture (optional)</label>
+      <select id="fixtureSelect" disabled>
+        <option value="">Select a fixture…</option>
+      </select>
+      <div class="small mono">Pick a fixture to auto-fill teams (from <span class="mono">fixtures.json</span>)</div>
+
+      <div class="two">
         <div>
           <label>Home Team</label>
-          <select id="home">
+          <select id="homeSelect" disabled>
             <option value="">Select home team…</option>
           </select>
         </div>
-
         <div>
           <label>Away Team</label>
-          <select id="away">
+          <select id="awaySelect" disabled>
             <option value="">Select away team…</option>
           </select>
         </div>
       </div>
 
-      <div class="grid2">
-        <div class="box">
-          <div class="h3">Monte Carlo sims</div>
-          <input id="sims" type="number" min="1000" step="1000" value="10000" />
-          <div class="muted mono" style="margin-top:6px;">Recommended: 10,000+</div>
+      <div class="two">
+        <div>
+          <label>Monte Carlo sims</label>
+          <input id="simsInput" type="number" min="2000" step="1000" value="10000" />
+          <div class="mini">Recommended: 10,000+</div>
         </div>
-
-        <div class="box">
-          <div class="h3">Output</div>
-          <div id="output" class="muted">Choose league + teams, then Run.</div>
-        </div>
-      </div>
-
-      <button id="run" onclick="runPrediction()">Run Prediction</button>
-
-      <div class="grid2">
-        <div class="box">
-          <div class="h3">Last H2H</div>
-          <div id="h2h" class="muted">—</div>
-        </div>
-        <div class="box">
-          <div class="h3">Today’s fixtures (loaded)</div>
-          <div id="today" class="muted">—</div>
+        <div>
+          <label>Home advantage</label>
+          <input id="homeAdvInput" type="number" step="0.01" value="1.10" />
+          <div class="mini">Typical: 1.06–1.12</div>
         </div>
       </div>
 
-      <div class="muted" style="margin-top:10px;">Tip: Use dropdowns only. Team names are normalized automatically.</div>
+      <div class="two">
+        <div>
+          <label>Base goals per team</label>
+          <input id="baseGoalsInput" type="number" step="0.01" value="1.35" />
+          <div class="mini">Typical: 1.20–1.45</div>
+        </div>
+        <div>
+          <label>Max goals (sim cap)</label>
+          <input id="maxGoalsInput" type="number" min="6" max="12" step="1" value="8" />
+          <div class="mini">Higher = slower</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <button id="runBtn" disabled>Run Prediction</button>
+      </div>
+
+      <div class="out" id="singleOut">
+        <div class="k">Output</div>
+        <div class="small">Choose league + teams (or a fixture), then Run.</div>
+      </div>
+
+      <div class="out" id="h2hOut">
+        <div class="k">Last H2H</div>
+        <div class="small" id="h2hText">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="split">
+        <div>
+          <div style="font-weight:800; font-size:18px">Fixtures</div>
+          <div class="mini" id="fixturesMeta">—</div>
+        </div>
+        <div class="row">
+          <span class="badge b-good">1X2 %</span>
+          <span class="badge b-warn">O/U 2.5</span>
+          <span class="badge b-bad">Model risk</span>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div style="overflow:auto">
+        <table id="fixturesTable">
+          <thead>
+          <tr>
+            <th style="width:44px">#</th>
+            <th>Match</th>
+            <th style="width:86px">Pred</th>
+            <th style="min-width:220px">1X2</th>
+            <th style="width:120px">O/U 2.5</th>
+          </tr>
+          </thead>
+          <tbody id="fixturesBody">
+            <tr><td colspan="5" class="k">Load leagues to populate fixtures…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        Notes: Pred score = most likely scoreline from simulations (not an average). 1X2 and O/U are Monte Carlo estimates.
+        If a team is missing in <span class="mono">xg_tables.json</span>, it falls back to neutral (1.00/1.00) and you’ll see weaker differentiation.
+      </div>
     </div>
   </div>
+</div>
 
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
