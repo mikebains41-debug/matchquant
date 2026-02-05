@@ -1,417 +1,135 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
-  <meta name="description" content="MatchQuant — Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + Auto fixtures + H2H)" />
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MatchQuant</title>
 
-  <!-- PWA -->
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="https://www.svgrepo.com/show/474258/soccer-ball.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1220" />
 
   <style>
-    :root{
-      --bg:#070b14;
-      --panel:#0b1220;
-      --panel2:#0e172a;
-      --text:#dbe7ff;
-      --muted:#91a4c7;
-      --blue:#2f86ff;
-      --blue2:#1f5fe0;
-      --line:rgba(255,255,255,.08);
-      --good:#22c55e;
-      --mid:#f59e0b;
-      --bad:#ef4444;
-      --radius:18px;
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: radial-gradient(circle at top, #101827, #05070d);
+      color: #e5e7eb;
     }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 20% 10%, rgba(47,134,255,.18), transparent 55%),
-                  radial-gradient(900px 500px at 80% 20%, rgba(34,197,94,.10), transparent 55%),
-                  var(--bg);
-      color:var(--text);
+    .container {
+      max-width: 420px;
+      margin: auto;
+      padding: 20px;
     }
-    .wrap{
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 18px 14px 48px;
-    }
-    .topbar{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding: 10px 0 18px;
-    }
-    .homeDot{
-      width:46px;height:46px;border-radius:50%;
-      display:grid;place-items:center;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--line);
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-      user-select:none;
-    }
-    .brand h1{
-      margin:0;
-      font-size: 42px;
-      letter-spacing:.5px;
-      line-height: 1.05;
-    }
-    .brand p{
-      margin:6px 0 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.3;
-      max-width: 760px;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-    @media(min-width: 900px){
-      .grid{ grid-template-columns: 1.15fr .85fr; align-items:start; }
-    }
-    .card{
-      background: rgba(11,18,32,.78);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: 0 18px 50px rgba(0,0,0,.45);
-      overflow:hidden;
-    }
-    .cardInner{ padding: 16px; }
-    .title{
-      font-size: 46px;
-      margin: 4px 0 10px;
-      color: var(--blue);
-      line-height: 1.0;
+    h1 {
+      font-size: 36px;
       font-weight: 800;
+      margin-bottom: 6px;
     }
-    .subtitle{
-      color: var(--muted);
-      font-size: 13px;
-      margin: 0 0 14px;
+    h2 {
+      color: #3b82f6;
+      font-size: 28px;
+      margin-top: 30px;
     }
-    label{
-      display:block;
-      color: var(--muted);
-      font-size: 13px;
-      margin: 12px 0 8px;
-    }
-    select, input{
-      width:100%;
-      padding: 14px 14px;
+    .card {
+      background: rgba(255,255,255,0.04);
       border-radius: 16px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      color: var(--text);
-      outline:none;
+      padding: 16px;
+      margin-top: 14px;
+      backdrop-filter: blur(10px);
     }
-    input::placeholder{ color: rgba(219,231,255,.35); }
-    .row{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .btn{
-      width:100%;
-      border:none;
-      border-radius: 18px;
-      padding: 14px 16px;
-      color:#fff;
-      font-weight: 800;
-      font-size: 16px;
-      cursor:pointer;
-      background: linear-gradient(180deg, var(--blue), var(--blue2));
-      box-shadow: 0 14px 30px rgba(47,134,255,.25);
-    }
-    .btn.secondary{
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--line);
-      box-shadow:none;
-      font-weight:700;
-    }
-    .pill{
-      display:inline-flex;
-      gap:10px;
-      align-items:center;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid var(--line);
-      color: var(--muted);
+    label {
       font-size: 13px;
-      margin-top: 10px;
+      opacity: 0.85;
     }
-    .pill strong{ color: var(--text); }
-    .sectionTitle{
-      font-size: 44px;
-      margin: 4px 0 12px;
-      color: var(--blue);
-      line-height: 1.0;
-      font-weight: 800;
-    }
-    .kv{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .kvRow{
-      display:flex;
-      justify-content:space-between;
-      gap: 12px;
-      padding: 14px 14px;
-      border-radius: 16px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid var(--line);
-      color: var(--text);
-      font-size: 14px;
-    }
-    .kvRow .k{ color: var(--muted); font-weight: 600; }
-    .kvRow .v{ font-weight: 800; text-align:right; }
-
-    .evBadge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-weight: 900;
-      font-size: 12px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.06);
-    }
-    .evGreen{ color: #0bff65; }
-    .evYellow{ color: #ffbf3a; }
-    .evRed{ color: #ff5b5b; }
-
-    .tableWrap{
-      overflow:auto;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,.03);
-    }
-    table{
+    select, input, button {
       width: 100%;
-      border-collapse: collapse;
-      min-width: 700px;
+      margin-top: 6px;
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 14px;
     }
-    th, td{
-      padding: 12px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      font-size: 13px;
-      color: var(--text);
-      white-space: nowrap;
+    button {
+      background: linear-gradient(135deg,#2563eb,#3b82f6);
+      font-weight: 700;
+      cursor: pointer;
     }
-    th{ color: var(--muted); text-align:left; font-weight: 800; }
-    .footerNote{
-      margin-top: 10px;
-      color: var(--muted);
+    .result div {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 14px;
+    }
+    .small {
       font-size: 12px;
+      opacity: 0.6;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
+  <div class="container">
 
-    <div class="topbar">
-      <div class="homeDot" title="Home">←<div style="width:8px"></div>Home</div>
-      <div class="brand">
-        <h1>MatchQuant</h1>
-        <p>Soccer Prediction Engine (xG lambdas + Monte Carlo 10,000 + EV flags + Auto fixtures + H2H)</p>
-      </div>
+    <h1>MatchQuant</h1>
+    <div class="small">
+      Soccer Prediction Engine (xG + Monte Carlo + EV + Fixtures + H2H)
     </div>
 
-    <div class="grid">
+    <h2>Mode 1 – Manual Match Input</h2>
 
-      <!-- LEFT: INPUTS -->
-      <div class="card">
-        <div class="cardInner">
-          <div class="title">Mode 1 – Manual Match Input</div>
-
-          <label for="leagueSelect">League</label>
-          <select id="leagueSelect">
-            <option value="" selected>Loading leagues…</option>
-          </select>
-          <div class="subtitle">League list auto-loads from <code>xg_tables.json</code></div>
-
-          <button id="runAllBtn" class="btn secondary">Run ALL Leagues at Once</button>
-          <div class="subtitle">
-            Uses <code>fixtures.json</code>. Add your real fixtures there (include dates for “today”).
-          </div>
-
-          <label for="homeTeamInput">Home Team (auto-suggest)</label>
-          <input id="homeTeamInput" type="text" placeholder="Start typing… e.g., Arsenal" autocomplete="off" />
-
-          <label for="awayTeamInput">Away Team (auto-suggest)</label>
-          <input id="awayTeamInput" type="text" placeholder="Start typing… e.g., Aston Villa" autocomplete="off" />
-
-          <div class="pill"><span>Monte Carlo sims</span> <strong id="mcCount">10,000</strong></div>
-          <div class="pill">Poisson goals + sims → score distribution + win probs</div>
-
-          <div style="height:14px"></div>
-
-          <div class="card" style="background:rgba(255,255,255,.03); box-shadow:none;">
-            <div class="cardInner">
-              <div style="display:flex; justify-content:space-between; gap:10px; align-items:baseline;">
-                <div style="font-weight:900; font-size:16px;">Optional Odds (for EV flags)</div>
-                <div style="color:var(--muted); font-size:12px;">decimal</div>
-              </div>
-              <div class="subtitle">Enter decimal odds. EV flags: <span class="evGreen">Green</span> / <span class="evYellow">Yellow</span> / <span class="evRed">Red</span></div>
-
-              <div class="row">
-                <div>
-                  <label for="oddsMlHome">ML Home</label>
-                  <input id="oddsMlHome" type="number" step="0.01" placeholder="e.g., 1.95" />
-                </div>
-                <div>
-                  <label for="oddsMlDraw">ML Draw</label>
-                  <input id="oddsMlDraw" type="number" step="0.01" placeholder="e.g., 3.60" />
-                </div>
-              </div>
-
-              <div class="row">
-                <div>
-                  <label for="oddsMlAway">ML Away</label>
-                  <input id="oddsMlAway" type="number" step="0.01" placeholder="e.g., 3.90" />
-                </div>
-                <div>
-                  <label for="oddsOUOver">O/U 2.5 Over</label>
-                  <input id="oddsOUOver" type="number" step="0.01" placeholder="e.g., 1.85" />
-                </div>
-              </div>
-
-              <div class="row">
-                <div>
-                  <label for="oddsOUUnder">O/U 2.5 Under</label>
-                  <input id="oddsOUUnder" type="number" step="0.01" placeholder="e.g., 2.05" />
-                </div>
-                <div>
-                  <label for="oddsAHHome">AH Home -0.5</label>
-                  <input id="oddsAHHome" type="number" step="0.01" placeholder="e.g., 2.05" />
-                </div>
-              </div>
-
-              <div class="row">
-                <div>
-                  <label for="cornersLine">Corners Line (e.g., 9.5)</label>
-                  <input id="cornersLine" type="number" step="0.5" placeholder="e.g., 9.5" />
-                </div>
-                <div>
-                  <label for="cornersOverOdds">Corners Odds (Over)</label>
-                  <input id="cornersOverOdds" type="number" step="0.01" placeholder="e.g., 1.90" />
-                </div>
-              </div>
-
-              <div class="row">
-                <div>
-                  <label for="cornersUnderOdds">Corners Odds (Under)</label>
-                  <input id="cornersUnderOdds" type="number" step="0.01" placeholder="e.g., 1.95" />
-                </div>
-                <div>
-                  <label for="cardsLine">Cards Line (e.g., 4.5)</label>
-                  <input id="cardsLine" type="number" step="0.5" placeholder="e.g., 4.5" />
-                </div>
-              </div>
-
-              <div class="row">
-                <div>
-                  <label for="cardsOverOdds">Cards Odds (Over)</label>
-                  <input id="cardsOverOdds" type="number" step="0.01" placeholder="e.g., 1.85" />
-                </div>
-                <div>
-                  <label for="cardsUnderOdds">Cards Odds (Under)</label>
-                  <input id="cardsUnderOdds" type="number" step="0.01" placeholder="e.g., 2.05" />
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <div style="height:14px"></div>
-
-          <button id="runBtn" class="btn">Run Prediction</button>
-
-        </div>
-      </div>
-
-      <!-- RIGHT: RESULTS -->
-      <div class="card">
-        <div class="cardInner">
-          <div class="sectionTitle">Result</div>
-
-          <div class="kv" id="resultKV">
-            <div class="kvRow"><div class="k">League:</div><div class="v" id="resLeague">—</div></div>
-            <div class="kvRow"><div class="k">Match:</div><div class="v" id="resMatch">—</div></div>
-            <div class="kvRow"><div class="k">xG Used:</div><div class="v" id="resXg">—</div></div>
-            <div class="kvRow"><div class="k">Predicted Score:</div><div class="v" id="resScore">—</div></div>
-            <div class="kvRow"><div class="k">O/U 2.5:</div><div class="v" id="resOU">—</div></div>
-            <div class="kvRow"><div class="k">Asian Handicap:</div><div class="v" id="resAH">—</div></div>
-            <div class="kvRow"><div class="k">Win Probabilities:</div><div class="v" id="resWin">—</div></div>
-            <div class="kvRow"><div class="k">EV Flags:</div><div class="v" id="resEV">—</div></div>
-            <div class="kvRow"><div class="k">Confidence Tier:</div><div class="v" id="resTier">—</div></div>
-            <div class="kvRow"><div class="k">Top Scorelines (MC):</div><div class="v" id="resTopLines">—</div></div>
-            <div class="kvRow"><div class="k">Last H2H:</div><div class="v" id="resH2H">—</div></div>
-          </div>
-
-          <div class="footerNote" id="xgStatus">xG loading…</div>
-        </div>
-      </div>
-
-    </div>
-
-    <div style="height:14px"></div>
-
-    <!-- AUTO FIXTURES OUTPUT -->
     <div class="card">
-      <div class="cardInner">
-        <div class="sectionTitle">Auto Fixtures Output</div>
-        <div class="subtitle">
-          Press “Run ALL Leagues at Once”. Uses <code>fixtures.json</code>. If you include a date like <code>2026-02-04</code>,
-          it will show “today” rows first.
-        </div>
+      <label>League</label>
+      <select id="leagueSelect">
+        <option value="">Loading leagues…</option>
+      </select>
 
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>MATCH</th>
-                <th>SCORE</th>
-                <th>H/D/A</th>
-                <th>O2.5</th>
-                <th>AH</th>
-                <th>EV</th>
-                <th>TIER</th>
-                <th>TOP SCORELINES</th>
-              </tr>
-            </thead>
-            <tbody id="autoFixturesBody">
-              <tr><td colspan="8" style="color:var(--muted);">—</td></tr>
-            </tbody>
-          </table>
-        </div>
+      <button id="runAll">Run ALL Leagues at Once</button>
 
-      </div>
+      <label>Home Team</label>
+      <input id="homeTeam" placeholder="Start typing… e.g. Arsenal"/>
+
+      <label>Away Team</label>
+      <input id="awayTeam" placeholder="Start typing… e.g. Aston Villa"/>
+
+      <div class="small">Monte Carlo sims: 10,000</div>
     </div>
+
+    <button id="runBtn">Run Prediction</button>
+
+    <h2>Result</h2>
+    <div class="card result">
+      <div><b>League:</b> <span id="rLeague">—</span></div>
+      <div><b>Match:</b> <span id="rMatch">—</span></div>
+      <div><b>xG Used:</b> <span id="rXg">—</span></div>
+      <div><b>Predicted Score:</b> <span id="rScore">—</span></div>
+      <div><b>O/U 2.5:</b> <span id="rOU">—</span></div>
+      <div><b>Asian Handicap:</b> <span id="rAH">—</span></div>
+      <div><b>Win Probabilities:</b> <span id="rWin">—</span></div>
+      <div><b>EV Flags:</b> <span id="rEV">—</span></div>
+      <div><b>Confidence Tier:</b> <span id="rConf">—</span></div>
+      <div><b>Top Scorelines:</b> <span id="rTop">—</span></div>
+      <div><b>Last H2H:</b> <span id="rH2H">—</span></div>
+    </div>
+
+    <h2>Auto Fixtures Output</h2>
+    <div class="card small" id="fixturesOut">
+      Press “Run ALL Leagues at Once”
+    </div>
+
+    <div class="small" id="status">Loading xG…</div>
 
   </div>
 
-  <!-- PWA: Service Worker -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
-      });
-    }
-  </script>
+<script src="app.js"></script>
 
-  <!-- IMPORTANT: Loads the engine -->
-  <script src="./app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+
 </body>
 </html>
