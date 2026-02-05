@@ -1,11 +1,14 @@
-[
-  {
-    "league": "Premier League",
-    "home": "Arsenal",
-    "away": "Aston Villa",
+{
+  "premier league__arsenal__aston villa": {
+    "date": "2025-11-02",
     "score": "2-1",
-    "corners": 10,
     "cards": 4,
-    "date": "2025-12-20"
+    "corners": 11
+  },
+  "premier league__liverpool__manchester city": {
+    "date": "2025-10-18",
+    "score": "1-1",
+    "cards": 5,
+    "corners": 10
   }
-]
+}
