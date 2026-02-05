@@ -4,13 +4,63 @@
     "home": "Arsenal",
     "away": "Aston Villa",
     "date": "2026-02-08",
-    "odds": { "home": 1.95, "draw": 3.60, "away": 3.90 }
+    "odds": { "home": 1.85, "draw": 3.70, "away": 4.20 }
   },
   {
     "league": "Premier League",
     "home": "Liverpool",
     "away": "Manchester City",
     "date": "2026-02-09",
-    "odds": { "home": 2.40, "draw": 3.40, "away": 2.75 }
+    "odds": { "home": 2.45, "draw": 3.40, "away": 2.70 }
+  },
+  {
+    "league": "Premier League",
+    "home": "Chelsea",
+    "away": "Manchester United",
+    "date": "2026-02-10",
+    "odds": { "home": 2.05, "draw": 3.35, "away": 3.60 }
+  },
+  {
+    "league": "Premier League",
+    "home": "Tottenham",
+    "away": "Newcastle United",
+    "date": "2026-02-11",
+    "odds": { "home": 2.15, "draw": 3.50, "away": 3.20 }
+  },
+  {
+    "league": "Premier League",
+    "home": "Brighton",
+    "away": "West Ham",
+    "date": "2026-02-12",
+    "odds": { "home": 2.10, "draw": 3.45, "away": 3.55 }
+  },
+
+  {
+    "league": "La Liga",
+    "home": "Real Madrid",
+    "away": "Barcelona",
+    "date": "2026-02-15",
+    "odds": { "home": 2.30, "draw": 3.60, "away": 2.85 }
+  },
+  {
+    "league": "La Liga",
+    "home": "Atletico Madrid",
+    "away": "Real Sociedad",
+    "date": "2026-02-16",
+    "odds": { "home": 1.95, "draw": 3.40, "away": 4.10 }
+  },
+  {
+    "league": "La Liga",
+    "home": "Betis",
+    "away": "Villarreal",
+    "date": "2026-02-17",
+    "odds": { "home": 2.55, "draw": 3.30, "away": 2.70 }
+  },
+  {
+    "league": "La Liga",
+    "home": "Valencia",
+    "away": "Sevilla",
+    "date": "2026-02-18",
+    "odds": { "home": 2.65, "draw": 3.10, "away": 2.85 }
   }
 ]
