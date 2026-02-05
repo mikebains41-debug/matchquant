@@ -1,37 +1,40 @@
-const CACHE = "matchquant-v1";
-
+const CACHE_NAME = "matchquant-v1";
 const ASSETS = [
+  "./",
   "./index.html",
   "./app.js",
+  "./manifest.json",
   "./xg_tables.json",
   "./fixtures.json",
   "./h2h.json",
-  "./manifest.json"
+  "./league-champ.csv"
 ];
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).catch(()=>{})
+  );
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.map((k) => (k !== CACHE ? caches.delete(k) : null)))
+      Promise.all(keys.map((k) => (k === CACHE_NAME ? null : caches.delete(k))))
     )
   );
+  self.clients.claim();
 });
 
-self.addEventListener("fetch", (e) => {
-  e.respondWith(
-    caches.match(e.request).then((res) => {
-      if (res) return res;
-      return fetch(e.request)
-        .then((net) => {
-          const copy = net.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy));
-          return net;
-        })
-        .catch(() => caches.match("./index.html"));
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(()=>{});
+        return resp;
+      }).catch(() => cached);
     })
   );
 });
