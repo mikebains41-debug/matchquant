@@ -1,75 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MatchQuant</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="manifest" href="manifest.json">
   <style>
-    body {
-      background:#0b1324;
-      color:#fff;
-      font-family:system-ui;
-      margin:0;
-      padding:20px;
-    }
-    h1 { font-size:32px; }
-    select, input, button {
-      width:100%;
-      padding:12px;
-      margin:10px 0;
-      border-radius:10px;
-      border:none;
-      font-size:16px;
-    }
-    button {
-      background:#2563eb;
-      color:white;
-      font-weight:bold;
-    }
-    .card {
-      background:#111c3a;
-      padding:16px;
-      border-radius:16px;
-      margin-top:16px;
-    }
-    .pill {
-      display:inline-block;
-      padding:6px 12px;
-      border-radius:999px;
-      margin:4px 4px 0 0;
-      background:#1f2a52;
-    }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#071a2b;color:#eaf2ff}
+    .wrap{max-width:720px;margin:0 auto;padding:22px}
+    h1{margin:8px 0 4px;font-size:46px;letter-spacing:.5px}
+    .sub{opacity:.8;margin:0 0 18px}
+    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:16px}
+    .row{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+    label{font-size:13px;opacity:.85}
+    select,input{width:100%;padding:14px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#eaf2ff;font-size:16px}
+    button{width:100%;padding:14px 14px;border-radius:14px;border:none;background:#2f6fff;color:white;font-weight:700;font-size:17px}
+    .muted{opacity:.75;font-size:13px;margin-top:10px}
+    .chips{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+    .chip{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);font-size:14px}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.ok{background:#1dd17d}
+    .dot.bad{background:#ff4d4d}
   </style>
 </head>
-
 <body>
+  <div class="wrap">
+    <h1>MatchQuant</h1>
+    <p class="sub">Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
 
-<h1>MatchQuant</h1>
-<p>Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
+    <div class="chips" id="chips"></div>
 
-<select id="leagueSelect">
-  <option value="">Select League</option>
-</select>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>League</label>
+          <select id="league">
+            <option value="">Select League</option>
+          </select>
+        </div>
 
-<select id="fixtureSelect">
-  <option value="">Select Fixture (optional)</option>
-</select>
+        <div>
+          <label>Fixture (optional)</label>
+          <select id="fixture">
+            <option value="">Select Fixture (optional)</option>
+          </select>
+        </div>
 
-<select id="homeSelect">
-  <option value="">Home Team</option>
-</select>
+        <div>
+          <label>Home Team</label>
+          <select id="homeTeam">
+            <option value="">Select home team</option>
+          </select>
+        </div>
 
-<select id="awaySelect">
-  <option value="">Away Team</option>
-</select>
+        <div>
+          <label>Away Team</label>
+          <select id="awayTeam">
+            <option value="">Select away team</option>
+          </select>
+        </div>
 
-<input id="sims" type="number" value="10000" />
+        <div>
+          <label>Monte Carlo sims</label>
+          <input id="sims" type="number" value="10000" min="1000" step="1000" />
+        </div>
 
-<button onclick="runPrediction()">Run Prediction</button>
+        <button id="runBtn">Run Prediction</button>
 
-<div id="output" class="card"></div>
+        <div class="muted" id="status">—</div>
+      </div>
+    </div>
+  </div>
 
-<script src="app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
