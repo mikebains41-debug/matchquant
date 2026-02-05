@@ -1,12 +1,9 @@
-// ===============================
-// MatchQuant Prediction Engine
-// ===============================
-
 (function () {
+
   function poisson(lambda) {
     let L = Math.exp(-lambda);
+    let p = 1.0;
     let k = 0;
-    let p = 1;
     do {
       k++;
       p *= Math.random();
@@ -14,43 +11,45 @@
     return k - 1;
   }
 
-  function simulateMatch(homeXg, awayXg, sims, cap) {
-    let homeWins = 0,
-      awayWins = 0,
-      draws = 0;
+  window.runPrediction = function (params) {
+    const {
+      home,
+      away,
+      sims,
+      homeAdv,
+      baseGoals
+    } = params;
 
-    let scoreCounts = {};
+    const homeLambda = baseGoals * homeAdv;
+    const awayLambda = baseGoals;
+
+    let homeWins = 0;
+    let awayWins = 0;
+    let draws = 0;
+    let scores = {};
 
     for (let i = 0; i < sims; i++) {
-      let h = Math.min(poisson(homeXg), cap);
-      let a = Math.min(poisson(awayXg), cap);
-
+      const h = poisson(homeLambda);
+      const a = poisson(awayLambda);
       const key = `${h}-${a}`;
-      scoreCounts[key] = (scoreCounts[key] || 0) + 1;
+      scores[key] = (scores[key] || 0) + 1;
 
       if (h > a) homeWins++;
       else if (a > h) awayWins++;
       else draws++;
     }
 
-    let bestScore = Object.entries(scoreCounts).sort(
-      (a, b) => b[1] - a[1]
-    )[0][0];
+    const mostLikely = Object.entries(scores)
+      .sort((a, b) => b[1] - a[1])[0][0];
 
-    return {
-      homeWin: (homeWins / sims) * 100,
-      draw: (draws / sims) * 100,
-      awayWin: (awayWins / sims) * 100,
-      bestScore,
-    };
-  }
+    alert(
+      `${home} vs ${away}\n\n` +
+      `Win Probabilities:\n` +
+      `${home}: ${(homeWins / sims * 100).toFixed(1)}%\n` +
+      `Draw: ${(draws / sims * 100).toFixed(1)}%\n` +
+      `${away}: ${(awayWins / sims * 100).toFixed(1)}%\n\n` +
+      `Most Likely Score: ${mostLikely}`
+    );
+  };
 
-  window.runPrediction = function (params) {
-    const {
-      league,
-      home,
-      away,
-      sims,
-      baseGoals,
-      homeAdv,
-      capGoals
+})();
