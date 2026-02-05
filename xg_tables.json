@@ -1,12 +1,20 @@
 {
   "Premier League": {
-    "Arsenal": { "xg_for": 1.85, "xg_against": 0.95 },
-    "Aston Villa": { "xg_for": 1.55, "xg_against": 1.20 },
-    "Manchester City": { "xg_for": 2.05, "xg_against": 0.90 },
-    "Liverpool": { "xg_for": 1.95, "xg_against": 1.05 }
+    "Arsenal": { "att": 1.85, "def": 0.95 },
+    "Man City": { "att": 2.10, "def": 0.90 }
   },
   "La Liga": {
-    "Real Madrid": { "xg_for": 2.00, "xg_against": 0.95 },
-    "Barcelona": { "xg_for": 1.90, "xg_against": 1.05 }
+    "Real Madrid": { "att": 2.00, "def": 0.92 },
+    "Barcelona": { "att": 1.90, "def": 1.00 }
+  },
+  "Serie A": {
+    "Inter": { "att": 1.88, "def": 0.97 },
+    "AC Milan": { "att": 1.72, "def": 1.02 }
+  },
+  "Bundesliga": {
+    "Bayern Munich": { "att": 2.15, "def": 0.98 }
+  },
+  "Ligue 1": {
+    "PSG": { "att": 2.05, "def": 0.96 }
   }
 }
