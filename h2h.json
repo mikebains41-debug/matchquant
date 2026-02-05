@@ -1,22 +1,11 @@
 [
   {
-    "date": "2025-12-15",
     "league": "Premier League",
     "home": "Arsenal",
-    "away": "Chelsea",
-    "home_goals": 2,
-    "away_goals": 1,
-    "cards": 5,
-    "corners": 10
-  },
-  {
-    "date": "2025-11-02",
-    "league": "Premier League",
-    "home": "Aston Villa",
-    "away": "Liverpool",
-    "home_goals": 1,
-    "away_goals": 1,
+    "away": "Aston Villa",
+    "score": "2-1",
+    "corners": 10,
     "cards": 4,
-    "corners": 9
+    "date": "2025-12-20"
   }
 ]
