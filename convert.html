@@ -1,1 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Understat → MatchQuant xg_tables.json (Current Season)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#0b1220; color:#e6e8ee; }
+    .wrap{ max-width:980px; margin:24px auto; padding:0 14px; }
+    .card{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:16px; box-shadow: 0 10px 35px rgba(0,0,0,.25); }
+    h1{ margin:0 0 6px; font-size:22px; }
+    p{ margin:6px 0; opacity:.9; line-height:1.35; }
+    .row{ display:grid; gap:12px; grid-template-columns:1fr; margin-top:12px; }
+    @media(min-width:900px){ .row{ grid-template-columns:1fr 1fr; } }
+    .box{ background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10); border-radius:14px; padding:14px; }
+    label{ display:block; font-size:12px; opacity:.75; margin-bottom:6px; }
+    input[type="file"]{ width:100%; padding:10px; border-radius:10px; border:1px dashed rgba(255,255,255,.18); background:rgba(0,0,0,.2); color:#e6e8ee;}
+    button{ width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:#2b6cff; color:#fff; font-weight:700; font-size:16px; cursor:pointer; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+    textarea{ width:100%; min-height:260px; resize:vertical; border-radius:12px; border:1px solid rgba(255,255,255,.12); padding:12px; background:rgba(0,0,0,.25); color:#e6e8ee; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; }
+    .small{ font-size:12px; opacity:.75; }
+    .ok{ color:#9cffb0; }
+    .warn{ color:#ffd57a; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Understat → MatchQuant <span class="small">(build xg_tables.json for ALL teams)</span></h1>
+      <p>Upload the <b>Understat “Table” CSV</b> for each league (current season). This generates <code>xg_tables.json</code> in the format your app expects: <code>{ league: { team: {att, def} } }</code>.</p>
+      <p class="small warn">Important: Use Understat season selector (ex: 2025/2026). Download the CSV from the table page.</p>
 
+      <div class="row">
+        <div class="box">
+          <label>Premier League (CSV)</label>
+          <input id="epl" type="file" accept=".csv,text/csv" />
+        </div>
+        <div class="box">
+          <label>La Liga (CSV)</label>
+          <input id="laliga" type="file" accept=".csv,text/csv" />
+        </div>
+        <div class="box">
+          <label>Bundesliga (CSV)</label>
+          <input id="bund" type="file" accept=".csv,text/csv" />
+        </div>
+        <div class="box">
+          <label>Serie A (CSV)</label>
+          <input id="seriea" type="file" accept=".csv,text/csv" />
+        </div>
+        <div class="box">
+          <label>Ligue 1 (CSV)</label>
+          <input id="ligue1" type="file" accept=".csv,text/csv" />
+        </div>
+
+        <div class="box">
+          <label>Generate</label>
+          <button id="build" disabled>Build xg_tables.json</button>
+          <p id="status" class="small"></p>
+          <p class="small">Tip: You can upload 1–5 leagues now. Add the rest later and re-generate.</p>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="box" style="grid-column:1/-1;">
+          <label>Output (copy & replace your repo file: matchquant/xg_tables.json)</label>
+          <textarea id="out" spellcheck="false" placeholder="Output will appear here..."></textarea>
+          <div class="row" style="grid-template-columns:1fr 1fr; margin-top:10px;">
+            <button id="copy" disabled>Copy JSON</button>
+            <button id="download" disabled>Download xg_tables.json</button>
+          </div>
+          <p class="small ok">After you paste into GitHub and commit, hard refresh your site.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const inputs = ["epl","laliga","bund","seriea","ligue1"].map(id => document.getElementById(id));
+  const buildBtn = document.getElementById("build");
+  const out = document.getElementById("out");
+  const statusEl = document.getElementById("status");
+  const copyBtn = document.getElementById("copy");
+  const dlBtn = document.getElementById("download");
+
+  const leagueMap = {
+    epl: "Premier League",
+    laliga: "La Liga",
+    bund: "Bundesliga",
+    seriea: "Serie A",
+    ligue1: "Ligue 1"
+  };
+
+  function anyFiles() {
+    return inputs.some(i => i.files && i.files.length);
+  }
+
+  inputs.forEach(i => i.addEventListener("change", () => {
+    buildBtn.disabled = !anyFiles();
+    statusEl.textContent = anyFiles() ? "Ready to build." : "";
+  }));
+
+  function parseCSV(text) {
+    // minimal CSV parser for Understat table exports
+    // handles commas inside quotes
+    const rows = [];
+    let row = [], cur = "", inQ = false;
+    for (let c of text) {
+      if (c === '"') { inQ = !inQ; continue; }
+      if (c === "," && !inQ) { row.push(cur); cur=""; continue; }
+      if ((c === "\n" || c === "\r") && !inQ) {
+        if (cur.length || row.length) { row.push(cur); rows.push(row); }
+        row = []; cur = ""; continue;
+      }
+      cur += c;
+    }
+    if (cur.length || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(r => r.some(x => (x||"").trim().length));
+  }
+
+  function colIndex(headers, nameOptions) {
+    const lower = headers.map(h => (h||"").trim().toLowerCase());
+    for (const opt of nameOptions) {
+      const idx = lower.indexOf(opt.toLowerCase());
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  }
+
+  function toNum(v) {
+    const n = Number(String(v).replace(/[^0-9.\-]/g,""));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function buildLeague(rows) {
+    const headers = rows[0].map(x => (x||"").trim());
+    const iTeam = colIndex(headers, ["team"]);
+    const iXG   = colIndex(headers, ["xg"]);
+    const iXGA  = colIndex(headers, ["xga"]);
+
+    if (iTeam === -1 || iXG === -1 || iXGA === -1) {
+      throw new Error("Could not find required columns. Need: Team, xG, xGA.");
+    }
+
+    const leagueObj = {};
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      const team = (row[iTeam] || "").trim();
+      if (!team) continue;
+
+      const xg = toNum(row[iXG]);
+      const xga = toNum(row[iXGA]);
+      if (xg == null || xga == null) continue;
+
+      // "att" and "def" are just the two numbers your app uses.
+      // We'll store current-season team xG + xGA directly.
+      leagueObj[team] = { att: round2(xg), def: round2(xga) };
+    }
+
+    return leagueObj;
+  }
+
+  function round2(n) { return Math.round(n * 100) / 100; }
+
+  async function readFile(file) {
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result);
+      fr.onerror = () => rej(fr.error);
+      fr.readAsText(file);
+    });
+  }
+
+  buildBtn.addEventListener("click", async () => {
+    try {
+      statusEl.textContent = "Building...";
+      const result = {};
+      for (const inp of inputs) {
+        if (!inp.files || !inp.files.length) continue;
+        const key = inp.id;
+        const leagueName = leagueMap[key];
+        const text = await readFile(inp.files[0]);
+        const rows = parseCSV(text);
+        const leagueObj = buildLeague(rows);
+        result[leagueName] = leagueObj;
+      }
+
+      out.value = JSON.stringify(result, null, 2);
+      copyBtn.disabled = false;
+      dlBtn.disabled = false;
+
+      // quick counts
+      const leagues = Object.keys(result).length;
+      const teams = Object.values(result).reduce((a, obj) => a + Object.keys(obj).length, 0);
+      statusEl.textContent = `Done. Leagues: ${leagues}, Teams: ${teams}. Now copy/paste into matchquant/xg_tables.json`;
+    } catch (e) {
+      statusEl.textContent = "Error: " + (e && e.message ? e.message : String(e));
+    }
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(out.value);
+      statusEl.textContent = "Copied to clipboard. Paste into matchquant/xg_tables.json and commit.";
+    } catch {
+      out.focus();
+      out.select();
+      statusEl.textContent = "Clipboard blocked. Long-press → Select all → Copy.";
+    }
+  });
+
+  dlBtn.addEventListener("click", () => {
+    const blob = new Blob([out.value], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "xg_tables.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>
+</body>
+</html>
