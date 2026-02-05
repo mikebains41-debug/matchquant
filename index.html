@@ -1,162 +1,75 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
   <title>MatchQuant</title>
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json">
   <style>
-    :root{
-      --bg:#0b1220; --panel:#0e1726; --card:#0f1b2e; --text:#e8eefc; --muted:#9fb0d0;
-      --line:#1c2b49; --blue:#2b6fff; --green:#2de38f; --yellow:#ffd166; --red:#ff4d6d;
-      --chip:#121f36; --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 18px;
+    body {
+      background:#0b1324;
+      color:#fff;
+      font-family:system-ui;
+      margin:0;
+      padding:20px;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 700px at 20% 0%, #142449, transparent 60%),
-                  radial-gradient(900px 500px at 80% 10%, #1a2c58, transparent 60%),
-                  var(--bg);
-      color:var(--text);
+    h1 { font-size:32px; }
+    select, input, button {
+      width:100%;
+      padding:12px;
+      margin:10px 0;
+      border-radius:10px;
+      border:none;
+      font-size:16px;
     }
-    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 40px}
-    h1{font-size:44px;letter-spacing:.5px;margin:8px 0 6px}
-    .sub{color:var(--muted);font-size:16px;margin:0 0 16px}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .pill{
-      display:flex;align-items:center;gap:10px;
-      padding:10px 14px;border:1px solid var(--line);background:rgba(15,27,46,.65);
-      border-radius:999px; box-shadow: var(--shadow);
-      color:var(--muted); font-size:14px;
+    button {
+      background:#2563eb;
+      color:white;
+      font-weight:bold;
     }
-    .dot{width:10px;height:10px;border-radius:999px;background:#3a4b6b}
-    .dot.ok{background:var(--green)}
-    .card{
-      margin-top:16px;background:rgba(15,27,46,.75);border:1px solid var(--line);
-      border-radius:var(--radius); box-shadow: var(--shadow);
-      padding:14px;
+    .card {
+      background:#111c3a;
+      padding:16px;
+      border-radius:16px;
+      margin-top:16px;
     }
-    label{display:block;color:var(--muted);font-size:13px;margin:10px 0 6px}
-    select,input{
-      width:100%;padding:12px 12px;border-radius:14px;
-      border:1px solid var(--line);background:rgba(12,20,35,.85);
-      color:var(--text);outline:none;
+    .pill {
+      display:inline-block;
+      padding:6px 12px;
+      border-radius:999px;
+      margin:4px 4px 0 0;
+      background:#1f2a52;
     }
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width:720px){ .grid2{grid-template-columns:1fr} h1{font-size:40px} }
-    .btn{
-      width:100%;margin-top:12px;padding:14px 14px;border-radius:16px;
-      border:1px solid rgba(43,111,255,.45);
-      background: linear-gradient(180deg, rgba(43,111,255,.95), rgba(32,88,216,.95));
-      color:white;font-weight:700;font-size:16px;
-    }
-    .btn:active{transform:translateY(1px)}
-    .out{
-      margin-top:12px;padding:14px;border-radius:16px;background:rgba(12,20,35,.75);
-      border:1px solid var(--line);
-    }
-    .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.8px}
-    .big{font-size:22px;font-weight:800;margin:2px 0 0}
-    .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .chip{
-      padding:10px 12px;border-radius:999px;background:rgba(18,31,54,.85);
-      border:1px solid var(--line); color:var(--text); font-size:13px;
-    }
-    .chip.good{border-color:rgba(45,227,143,.45)}
-    .chip.warn{border-color:rgba(255,209,102,.45)}
-    .chip.bad{border-color:rgba(255,77,109,.45)}
-    .tableCard{margin-top:14px}
-    .tableTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 10px}
-    .tableTop .hint{color:var(--muted);font-size:12px}
-    table{
-      width:100%;border-collapse:separate;border-spacing:0;
-      overflow:hidden;border-radius:16px;border:1px solid var(--line);
-      background:rgba(12,20,35,.65);
-    }
-    th,td{padding:12px 10px;border-bottom:1px solid rgba(28,43,73,.75);vertical-align:top}
-    th{color:var(--muted);font-size:12px;text-align:left;background:rgba(15,27,46,.75)}
-    tr:last-child td{border-bottom:none}
-    .muted{color:var(--muted)}
-    .badge{
-      display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;
-      border:1px solid var(--line); background:rgba(18,31,54,.85)
-    }
-    .A{border-color:rgba(45,227,143,.55)}
-    .B{border-color:rgba(255,209,102,.55)}
-    .C{border-color:rgba(255,77,109,.55)}
-    .evP{border-color:rgba(45,227,143,.55)}
-    .evN{border-color:rgba(255,209,102,.55)}
-    .evM{border-color:rgba(255,77,109,.55)}
-    .clickRow{cursor:pointer}
-    .clickRow:hover{background:rgba(18,31,54,.35)}
-    .notes{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>MatchQuant</h1>
-    <p class="sub">Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + fixtures + H2H)</p>
 
-    <div class="row">
-      <div class="pill"><span id="dotXg" class="dot"></span><span id="statusXg">xG loading…</span></div>
-      <div class="pill"><span id="dotFix" class="dot"></span><span id="statusFix">fixtures loading…</span></div>
-      <div class="pill"><span id="dotH2h" class="dot"></span><span id="statusH2h">H2H loading…</span></div>
-      <div class="pill"><span class="badge">PRO</span></div>
-    </div>
+<h1>MatchQuant</h1>
+<p>Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
 
-    <div class="card">
-      <div class="grid2">
-        <div>
-          <label>League</label>
-          <select id="selectLeague"></select>
+<select id="leagueSelect">
+  <option value="">Select League</option>
+</select>
 
-          <label>Fixture (optional)</label>
-          <select id="selectFixture"></select>
+<select id="fixtureSelect">
+  <option value="">Select Fixture (optional)</option>
+</select>
 
-          <label>Home Team</label>
-          <select id="selectHome"></select>
+<select id="homeSelect">
+  <option value="">Home Team</option>
+</select>
 
-          <label>Away Team</label>
-          <select id="selectAway"></select>
-        </div>
+<select id="awaySelect">
+  <option value="">Away Team</option>
+</select>
 
-        <div>
-          <label>Monte Carlo sims</label>
-          <input id="inputSims" type="number" value="10000" min="1000" step="1000" />
+<input id="sims" type="number" value="10000" />
 
-          <label>Home advantage</label>
-          <input id="inputHomeAdv" type="number" value="1.10" step="0.01" />
+<button onclick="runPrediction()">Run Prediction</button>
 
-          <label>Base goals (league)</label>
-          <input id="inputBaseGoals" type="number" value="1.35" step="0.01" />
+<div id="output" class="card"></div>
 
-          <label>Max goals cap</label>
-          <input id="inputMaxGoals" type="number" value="8" min="5" max="12" step="1" />
-
-          <button id="btnRun" class="btn">Run Prediction</button>
-        </div>
-      </div>
-
-      <div id="output" class="out">
-        <div class="k">Output</div>
-        <div class="muted">Choose league + teams, then Run.</div>
-      </div>
-
-      <div class="tableCard">
-        <div class="tableTop">
-          <div class="k">Fixtures</div>
-          <div class="hint">Tap a row to auto-fill predictor</div>
-        </div>
-        <div id="fixturesTable"></div>
-        <div class="notes">
-          Notes: Score = most likely score from simulations (mode). Probabilities are Monte Carlo estimates.
-          EV requires decimal odds in fixtures.json (optional).
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
