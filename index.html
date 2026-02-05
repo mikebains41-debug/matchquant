@@ -2,69 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: #e5e7eb;
+      padding: 20px;
+    }
+    h1 { font-size: 32px; margin-bottom: 5px; }
+    h2 { font-size: 14px; color: #9ca3af; margin-bottom: 20px; }
+    label { display: block; margin-top: 12px; }
+    select, input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border-radius: 6px;
+      border: none;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    .status {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #22c55e;
+    }
+  </style>
 </head>
 
 <body>
-  <div class="app">
 
-    <h1>MatchQuant</h1>
-    <p class="subtitle">Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
+  <h1>MatchQuant</h1>
+  <h2>Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</h2>
 
-    <div class="data-buttons">
-      <button disabled>fixtures.json</button>
-      <button disabled>xg_tables.json</button>
-      <button disabled>h2h.json</button>
-    </div>
+  <label>League</label>
+  <select id="league"></select>
 
-    <div class="card">
+  <label>Fixture (optional)</label>
+  <select id="fixture"></select>
 
-      <label>League</label>
-      <select id="leagueSelect"></select>
+  <label>Home Team</label>
+  <select id="home"></select>
 
-      <label>Fixture (optional)</label>
-      <select id="fixtureSelect"></select>
+  <label>Away Team</label>
+  <select id="away"></select>
 
-      <label>Home Team</label>
-      <select id="homeSelect"></select>
+  <label>Monte Carlo sims</label>
+  <input id="sims" type="number" value="10000">
 
-      <label>Away Team</label>
-      <select id="awaySelect"></select>
+  <label>Home advantage</label>
+  <input id="homeAdv" type="number" step="0.01" value="1.10">
 
-      <label>Monte Carlo sims</label>
-      <input id="simsInput" type="number" value="10000" />
+  <label>Base goals</label>
+  <input id="baseGoals" type="number" step="0.01" value="1.35">
 
-      <label>Home advantage</label>
-      <input id="homeAdvInput" type="number" step="0.01" value="1.10" />
+  <label>Max goals cap</label>
+  <input id="capGoals" type="number" value="8">
 
-      <label>Base goals</label>
-      <input id="baseGoalsInput" type="number" step="0.01" value="1.35" />
+  <button id="runBtn">Run Prediction</button>
 
-      <label>Max goals cap</label>
-      <input id="capGoalsInput" type="number" value="8" />
+  <div class="status" id="status">Loading…</div>
 
-      <button id="runBtn">Run Prediction</button>
-
-      <div class="status">
-        <span id="statusFixtures"></span>
-        <span id="statusXg"></span>
-        <span id="statusH2H"></span>
-        <span id="readyLine"></span>
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- 🔴 CRITICAL ORDER 🔴 -->
-  <!-- ENGINE FIRST -->
-  <script src="engine.js"></script>
-
-  <!-- APP SECOND -->
-  <script src="app.js"></script>
+  <!-- IMPORTANT: ENGINE FIRST -->
+  <script src="./engine.js"></script>
+  <script src="./app.js"></script>
 
 </body>
 </html>
