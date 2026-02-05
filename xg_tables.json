@@ -1,1 +1,32 @@
-
+[
+  {
+    "date": "2026-02-04",
+    "league": "Premier League",
+    "home": "Leeds",
+    "away": "Nottm Forest"
+  },
+  {
+    "date": "2026-02-04",
+    "league": "La Liga",
+    "home": "Celta Vigo",
+    "away": "Osasuna"
+  },
+  {
+    "date": "2026-02-04",
+    "league": "Serie A",
+    "home": "Verona",
+    "away": "Pisa"
+  },
+  {
+    "date": "2026-02-04",
+    "league": "Bundesliga",
+    "home": "Union Berlin",
+    "away": "Eintracht Frankfurt"
+  },
+  {
+    "date": "2026-02-04",
+    "league": "Ligue 1",
+    "home": "Metz",
+    "away": "Lille"
+  }
+]
