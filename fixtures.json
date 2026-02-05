@@ -1,12 +1,14 @@
-{
-  "EPL": [
-    { "home": "Arsenal", "away": "Aston Villa", "date": "2026-02-04" },
-    { "home": "Liverpool", "away": "Man City", "date": "2026-02-04" },
-    { "home": "Chelsea", "away": "Tottenham", "date": "2026-02-04" },
-    { "home": "Newcastle", "away": "Man United", "date": "2026-02-04" }
-  ],
-  "LaLiga": [
-    { "home": "Barcelona", "away": "Real Madrid", "date": "2026-02-04" },
-    { "home": "Atletico Madrid", "away": "Sevilla", "date": "2026-02-04" }
-  ]
-}
+[
+  {
+    "date": "2026-02-04",
+    "league": "Serie A",
+    "home": "Verona",
+    "away": "Pisa"
+  },
+  {
+    "date": "2026-02-04",
+    "league": "Ligue 1",
+    "home": "Metz",
+    "away": "Lille"
+  }
+]
