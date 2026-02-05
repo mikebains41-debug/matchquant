@@ -1,32 +1,49 @@
-[
-  {
-    "date": "2026-02-04",
-    "league": "Premier League",
-    "home": "Leeds",
-    "away": "Nottm Forest"
+{
+  "Premier League": {
+    "Arsenal": { "xg_for": 1.85, "xg_against": 1.05 },
+    "Manchester City": { "xg_for": 2.10, "xg_against": 0.95 },
+    "Liverpool": { "xg_for": 1.95, "xg_against": 1.10 },
+    "Chelsea": { "xg_for": 1.60, "xg_against": 1.30 },
+    "Manchester United": { "xg_for": 1.55, "xg_against": 1.40 }
   },
-  {
-    "date": "2026-02-04",
-    "league": "La Liga",
-    "home": "Celta Vigo",
-    "away": "Osasuna"
+
+  "La Liga": {
+    "Real Madrid": { "xg_for": 2.00, "xg_against": 1.00 },
+    "Barcelona": { "xg_for": 1.90, "xg_against": 1.05 },
+    "Atletico Madrid": { "xg_for": 1.55, "xg_against": 0.95 },
+    "Real Betis": { "xg_for": 1.45, "xg_against": 1.20 },
+    "Sevilla": { "xg_for": 1.40, "xg_against": 1.25 }
   },
-  {
-    "date": "2026-02-04",
-    "league": "Serie A",
-    "home": "Verona",
-    "away": "Pisa"
+
+  "Serie A": {
+    "Inter": { "xg_for": 1.95, "xg_against": 0.90 },
+    "AC Milan": { "xg_for": 1.70, "xg_against": 1.10 },
+    "Juventus": { "xg_for": 1.60, "xg_against": 1.00 },
+    "Napoli": { "xg_for": 1.75, "xg_against": 1.15 },
+    "Roma": { "xg_for": 1.50, "xg_against": 1.30 }
   },
-  {
-    "date": "2026-02-04",
-    "league": "Bundesliga",
-    "home": "Union Berlin",
-    "away": "Eintracht Frankfurt"
+
+  "Bundesliga": {
+    "Bayern Munich": { "xg_for": 2.20, "xg_against": 1.00 },
+    "Borussia Dortmund": { "xg_for": 1.85, "xg_against": 1.20 },
+    "RB Leipzig": { "xg_for": 1.75, "xg_against": 1.10 },
+    "Eintracht Frankfurt": { "xg_for": 1.55, "xg_against": 1.35 },
+    "Union Berlin": { "xg_for": 1.30, "xg_against": 1.40 }
   },
-  {
-    "date": "2026-02-04",
-    "league": "Ligue 1",
-    "home": "Metz",
-    "away": "Lille"
+
+  "Ligue 1": {
+    "PSG": { "xg_for": 2.10, "xg_against": 0.95 },
+    "Marseille": { "xg_for": 1.65, "xg_against": 1.20 },
+    "Lille": { "xg_for": 1.55, "xg_against": 1.10 },
+    "Monaco": { "xg_for": 1.70, "xg_against": 1.25 },
+    "Lyon": { "xg_for": 1.50, "xg_against": 1.30 }
+  },
+
+  "Portugal Primeira Liga": {
+    "Benfica": { "xg_for": 1.95, "xg_against": 0.95 },
+    "Porto": { "xg_for": 1.85, "xg_against": 1.00 },
+    "Sporting": { "xg_for": 1.90, "xg_against": 1.05 },
+    "Braga": { "xg_for": 1.60, "xg_against": 1.20 },
+    "Vitoria Guimaraes": { "xg_for": 1.45, "xg_against": 1.30 }
   }
-]
+}
