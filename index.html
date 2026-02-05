@@ -1,109 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
-  <style>
-    body{margin:0;background:#071225;color:#e7eefc;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .wrap{max-width:880px;margin:0 auto;padding:18px}
-    h1{margin:8px 0 4px;font-size:44px;letter-spacing:.5px}
-    .sub{opacity:.75;margin:0 0 14px}
-    .card{background:rgba(13,26,49,.75);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:14px;margin:12px 0}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:720px){.grid{grid-template-columns:1fr}}
-    label{opacity:.7;font-size:13px}
-    select,input,button{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#e7eefc}
-    button{background:#2563eb;border:none;font-weight:700;cursor:pointer}
-    button:active{transform:scale(.99)}
-    .pillRow{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-    .pill{padding:10px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);font-size:14px;opacity:.9}
-    .muted{opacity:.7;font-size:13px}
-    .big{font-size:20px;font-weight:800}
 
-    /* custom modal (replaces alert) */
-    .mqModalBg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
-    .mqModal{width:min(560px,96vw);background:#0b1630;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:16px}
-    .mqModalTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .mqModalTitle{font-size:18px;font-weight:800}
-    .mqClose{width:auto;padding:10px 12px;border-radius:12px}
-    .mqBody{white-space:pre-line;line-height:1.35;margin-top:10px}
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <div class="wrap">
+  <div class="app">
+
     <h1>MatchQuant</h1>
-    <p class="sub">Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
+    <p class="subtitle">Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
 
-    <div class="pillRow">
-      <div class="pill">fixtures.json</div>
-      <div class="pill">xg_tables.json</div>
-      <div class="pill">h2h.json</div>
+    <div class="data-buttons">
+      <button disabled>fixtures.json</button>
+      <button disabled>xg_tables.json</button>
+      <button disabled>h2h.json</button>
     </div>
 
-    <div class="card grid">
-      <div>
-        <label>League</label>
-        <select id="leagueSelect"></select>
+    <div class="card">
+
+      <label>League</label>
+      <select id="leagueSelect"></select>
+
+      <label>Fixture (optional)</label>
+      <select id="fixtureSelect"></select>
+
+      <label>Home Team</label>
+      <select id="homeSelect"></select>
+
+      <label>Away Team</label>
+      <select id="awaySelect"></select>
+
+      <label>Monte Carlo sims</label>
+      <input id="simsInput" type="number" value="10000" />
+
+      <label>Home advantage</label>
+      <input id="homeAdvInput" type="number" step="0.01" value="1.10" />
+
+      <label>Base goals</label>
+      <input id="baseGoalsInput" type="number" step="0.01" value="1.35" />
+
+      <label>Max goals cap</label>
+      <input id="capGoalsInput" type="number" value="8" />
+
+      <button id="runBtn">Run Prediction</button>
+
+      <div class="status">
+        <span id="statusFixtures"></span>
+        <span id="statusXg"></span>
+        <span id="statusH2H"></span>
+        <span id="readyLine"></span>
       </div>
 
-      <div>
-        <label>Fixture (optional)</label>
-        <select id="fixtureSelect"></select>
-      </div>
-
-      <div>
-        <label>Home Team</label>
-        <select id="homeSelect"></select>
-      </div>
-
-      <div>
-        <label>Away Team</label>
-        <select id="awaySelect"></select>
-      </div>
-
-      <div>
-        <label>Monte Carlo sims</label>
-        <input id="simsInput" type="number" value="10000" />
-      </div>
-
-      <div>
-        <label>Home advantage</label>
-        <input id="homeAdvInput" type="number" step="0.01" value="1.10" />
-      </div>
-
-      <div>
-        <label>Base goals</label>
-        <input id="baseGoalsInput" type="number" step="0.01" value="1.35" />
-      </div>
-
-      <div>
-        <label>Max goals cap</label>
-        <input id="capGoalsInput" type="number" value="8" />
-      </div>
-
-      <div style="grid-column:1/-1">
-        <button id="runBtn">Run Prediction</button>
-        <div id="statusLine" class="muted" style="margin-top:10px"></div>
-      </div>
     </div>
 
-    <div id="outputCard" class="card" style="display:none"></div>
   </div>
 
-  <!-- Custom modal -->
-  <div id="mqModalBg" class="mqModalBg">
-    <div class="mqModal">
-      <div class="mqModalTop">
-        <div class="mqModalTitle">MatchQuant says</div>
-        <button id="mqClose" class="mqClose">OK</button>
-      </div>
-      <div id="mqBody" class="mqBody"></div>
-    </div>
-  </div>
+  <!-- 🔴 CRITICAL ORDER 🔴 -->
+  <!-- ENGINE FIRST -->
+  <script src="engine.js"></script>
 
-  <!-- IMPORTANT: engine.js MUST load BEFORE app.js -->
-  <script src="engine.js?v=7"></script>
-  <script src="app.js?v=7"></script>
+  <!-- APP SECOND -->
+  <script src="app.js"></script>
+
 </body>
 </html>
