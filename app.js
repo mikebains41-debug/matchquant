@@ -1,7 +1,7 @@
-/* MatchQuant - single-file client engine (no build tools).
+/* MatchQuant - PRO build
    Loads:
-   - xg_tables.json  (league -> team -> {att, def})
-   - fixtures.json   (array of fixtures)
+   - xg_tables.json  (league -> team -> {att, def, corners_for?, corners_against?, cards_for?, cards_against?})
+   - fixtures.json   (array of fixtures; can optionally include odds)
    - h2h.json        (optional)
    - league-champ.csv (league factor table)
 */
@@ -77,8 +77,6 @@ function parseCSV(csvText){
 }
 
 function buildLeagueFactor(rows){
-  // flexible: tries to find league name + factor columns
-  // accepted column names: league, League, competition, name ; factor, Factor, lf
   const leagueKeys = ["league","League","competition","Competition","name","Name"];
   const factorKeys = ["factor","Factor","lf","LF","league_factor","LeagueFactor"];
   const m = new Map();
@@ -87,8 +85,6 @@ function buildLeagueFactor(rows){
     let lk=null, fk=null;
     for (const k of leagueKeys) if (k in r) { lk = r[k]; break; }
     for (const k of factorKeys) if (k in r) { fk = r[k]; break; }
-
-    // fallback: first 2 columns
     if (!lk || !fk){
       const keys = Object.keys(r);
       if (keys.length >= 2){
@@ -103,14 +99,8 @@ function buildLeagueFactor(rows){
   return m;
 }
 
-function uniq(arr){
-  return [...new Set(arr)];
-}
-
-function sortAlpha(arr){
-  return [...arr].sort((a,b)=>a.localeCompare(b));
-}
-
+function uniq(arr){ return [...new Set(arr)]; }
+function sortAlpha(arr){ return [...arr].sort((a,b)=>a.localeCompare(b)); }
 function scorelineKey(h,a){ return `${h}-${a}`; }
 
 // Poisson sampler (Knuth)
@@ -118,18 +108,22 @@ function poisson(lambda){
   const L = Math.exp(-lambda);
   let k = 0;
   let p = 1.0;
-  do {
-    k++;
-    p *= Math.random();
-  } while (p > L && k < 64);
+  do { k++; p *= Math.random(); } while (p > L && k < 64);
   return k - 1;
 }
 
 function simMatch({lambdaH, lambdaA, sims, maxGoals}){
-  // returns distributions + derived markets
   const scoreCounts = new Map();
   let homeW=0, draw=0, awayW=0;
   let over25=0, under25=0;
+  let bttsYes=0;
+  let totalGoalsSum=0;
+  let goalDiffSum=0;
+
+  // AH lines we’ll evaluate (common)
+  const ahLines = [-2.0,-1.5,-1.0,-0.75,-0.5,-0.25,0,0.25,0.5,0.75,1.0,1.5,2.0];
+  const ahWinCounts = new Map(ahLines.map(l => [String(l), 0])); // P(home covers)
+  const ahLoseCounts = new Map(ahLines.map(l => [String(l), 0])); // P(home fails)
 
   for (let i=0;i<sims;i++){
     let hg = poisson(lambdaH);
@@ -145,17 +139,55 @@ function simMatch({lambdaH, lambdaA, sims, maxGoals}){
     else awayW++;
 
     const tot = hg + ag;
+    totalGoalsSum += tot;
+    goalDiffSum += (hg - ag);
+
     if (tot > 2) over25++;
     else under25++;
+
+    if (hg > 0 && ag > 0) bttsYes++;
+
+    // AH eval (approx: treat “cover” as hg + line > ag)
+    for (const line of ahLines){
+      const adj = hg + line;
+      if (adj > ag) ahWinCounts.set(String(line), ahWinCounts.get(String(line)) + 1);
+      else ahLoseCounts.set(String(line), ahLoseCounts.get(String(line)) + 1);
+    }
   }
 
-  // most likely scoreline
   let bestKey="0-0", bestC=-1;
   for (const [k,c] of scoreCounts.entries()){
-    if (c > bestC){ bestC = c; bestKey = k; }
+    if (c > bestC){ bestC = c; bestKey = k; bestC = c; }
   }
 
   const pct = (n)=> Math.round((n / sims) * 100);
+
+  // Choose an “AH lean” line: closest to 50/50 cover probability but >50
+  let bestAh = null;
+  let bestAhP = 0;
+  for (const [k,v] of ahWinCounts.entries()){
+    const p = v / sims;
+    if (p >= 0.50){
+      // prefer nearer to 0.55 (safer)
+      const score = Math.abs(p - 0.55);
+      if (!bestAh || score < bestAh.score){
+        bestAh = { line: Number(k), pCover: p, score };
+        bestAhP = p;
+      }
+    }
+  }
+  if (!bestAh){
+    // if none >= 50, take closest to 45 (dog-ish)
+    let alt = null;
+    for (const [k,v] of ahWinCounts.entries()){
+      const p = v / sims;
+      const score = Math.abs(p - 0.45);
+      if (!alt || score < alt.score) alt = { line: Number(k), pCover:p, score };
+    }
+    bestAh = alt;
+    bestAhP = alt?.pCover ?? 0.5;
+  }
+
   return {
     bestScore: bestKey,
     pH: pct(homeW),
@@ -163,29 +195,51 @@ function simMatch({lambdaH, lambdaA, sims, maxGoals}){
     pA: pct(awayW),
     pOver25: pct(over25),
     pUnder25: pct(under25),
+    pBTTS: pct(bttsYes),
+    meanGoals: +(totalGoalsSum / sims).toFixed(2),
+    meanDiff: +(goalDiffSum / sims).toFixed(2),
+    ahLean: bestAh ? { line: bestAh.line, pCover: Math.round(bestAhP*100) } : { line: -0.5, pCover: 50 }
   };
 }
 
-function getTeamXg(league, team){
+function getTeamRow(league, team){
   const L = state.xg?.[league];
-  if (!L) return { att: 1.0, def: 1.0, missing: true };
+  if (!L) return { missing:true };
   const t = L[team];
-  if (!t) return { att: 1.0, def: 1.0, missing: true };
+  if (!t) return { missing:true };
+  return { ...t, missing:false };
+}
+
+function getTeamXg(league, team){
+  const t = getTeamRow(league, team);
   const att = Number(t.att);
   const def = Number(t.def);
-  if (!Number.isFinite(att) || !Number.isFinite(def)) return { att: 1.0, def: 1.0, missing: true };
-  return { att, def, missing: false };
+  if (!Number.isFinite(att) || !Number.isFinite(def)) return { att:1.0, def:1.0, missing:true };
+  return { att, def, missing:false };
+}
+
+function getTeamExtras(league, team){
+  const t = getTeamRow(league, team);
+  // optional fields (if you add them later)
+  const cf = Number(t.corners_for);
+  const ca = Number(t.corners_against);
+  const kf = Number(t.cards_for);
+  const ka = Number(t.cards_against);
+
+  return {
+    corners_for: Number.isFinite(cf) ? cf : null,
+    corners_against: Number.isFinite(ca) ? ca : null,
+    cards_for: Number.isFinite(kf) ? kf : null,
+    cards_against: Number.isFinite(ka) ? ka : null,
+    missing: !!t.missing
+  };
 }
 
 function computeLambdas({league, home, away, baseGoals, homeAdv}){
   const lf = state.leagueFactor.get(league) ?? 1.0;
-
   const hx = getTeamXg(league, home);
   const ax = getTeamXg(league, away);
 
-  // Model:
-  // home lambda: base * leagueFactor * homeAdv * homeAtt * awayDef
-  // away lambda: base * leagueFactor * awayAtt * homeDef
   const lambdaH = clamp(baseGoals * lf * homeAdv * hx.att * ax.def, 0.05, 4.25);
   const lambdaA = clamp(baseGoals * lf * ax.att * hx.def, 0.05, 4.25);
 
@@ -199,10 +253,6 @@ function matchId(league, home, away){
 function readLastH2H(league, home, away){
   if (!state.h2h) return null;
 
-  // support multiple shapes:
-  // 1) key-based: "league__home__away": {...}
-  // 2) array of objects
-  // 3) nested maps
   const id1 = matchId(league, home, away);
   const id2 = matchId(league, away, home);
 
@@ -219,7 +269,6 @@ function readLastH2H(league, home, away){
     return found || null;
   }
 
-  // nested: h2h[league][home][away]
   if (state.h2h[league]?.[home]?.[away]) return state.h2h[league][home][away];
   if (state.h2h[league]?.[away]?.[home]) return state.h2h[league][away][home];
 
@@ -228,8 +277,6 @@ function readLastH2H(league, home, away){
 
 function formatH2H(h2hObj){
   if (!h2hObj) return "—";
-
-  // try to read common fields
   const score = h2hObj.score || h2hObj.Score || h2hObj.result || h2hObj.Result;
   const cards = h2hObj.cards || h2hObj.Cards;
   const corners = h2hObj.corners || h2hObj.Corners;
@@ -240,7 +287,6 @@ function formatH2H(h2hObj){
   if (cards != null && cards !== "") parts.push(`Cards: ${cards}`);
   if (corners != null && corners !== "") parts.push(`Corners: ${corners}`);
   if (date) parts.push(`Date: ${date}`);
-
   return parts.length ? parts.join(" • ") : JSON.stringify(h2hObj).slice(0, 160);
 }
 
@@ -261,23 +307,108 @@ function updateRunEnabled(){
   els.runBtn.disabled = !ok;
 }
 
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+// -------- PRO METRICS (corners/cards + EV + confidence) --------
+
+function predictCornersCards({league, home, away, meanGoals}){
+  // If you later add corners/cards in xg_tables.json, we use them.
+  // Otherwise we use a safe proxy from meanGoals.
+  const hEx = getTeamExtras(league, home);
+  const aEx = getTeamExtras(league, away);
+
+  let corners = null;
+  let cards = null;
+
+  // corners: (home corners for + away corners against)/2 + (away for + home against)/2
+  if (hEx.corners_for != null && aEx.corners_against != null && aEx.corners_for != null && hEx.corners_against != null){
+    const hC = (hEx.corners_for + aEx.corners_against) / 2;
+    const aC = (aEx.corners_for + hEx.corners_against) / 2;
+    corners = +(hC + aC).toFixed(1);
+  } else {
+    // proxy: 8.6 baseline + 0.7 per expected goal above 2.5
+    corners = +(8.6 + 0.7 * (meanGoals - 2.5)).toFixed(1);
+    corners = clamp(corners, 6.5, 13.5);
+  }
+
+  // cards: proxy from intensity: baseline 3.8 + 0.3 per expected goal above 2.5
+  if (hEx.cards_for != null && aEx.cards_against != null && aEx.cards_for != null && hEx.cards_against != null){
+    const hK = (hEx.cards_for + aEx.cards_against) / 2;
+    const aK = (aEx.cards_for + hEx.cards_against) / 2;
+    cards = +(hK + aK).toFixed(1);
+  } else {
+    cards = +(3.8 + 0.3 * (meanGoals - 2.5)).toFixed(1);
+    cards = clamp(cards, 2.5, 6.5);
+  }
+
+  return { corners, cards, usedProxy: (hEx.corners_for==null || hEx.cards_for==null) };
+}
+
+function impliedProbFromDecimal(odds){
+  const o = Number(odds);
+  if (!Number.isFinite(o) || o <= 1) return null;
+  return 1 / o;
+}
+
+function evFlag({pModel, oddsDecimal}){
+  const ip = impliedProbFromDecimal(oddsDecimal);
+  if (ip == null) return { flag:"—", edge:0 };
+
+  const edge = pModel - ip; // positive = value
+  const edgePct = Math.round(edge * 100);
+
+  if (edge >= 0.05) return { flag:`✅ +EV (${edgePct}%)`, edge };
+  if (edge <= -0.05) return { flag:`❌ -EV (${edgePct}%)`, edge };
+  return { flag:`≈ Fair (${edgePct}%)`, edge };
+}
+
+function confidenceTag({pMain, separation, edge}){
+  // pMain: main lean probability (0-1)
+  // separation: how far from 33/34/33 (or 50/50)
+  // edge: value edge vs implied prob if present
+  const score = (pMain - 0.50) + (separation * 0.5) + (edge ? edge : 0);
+  if (score >= 0.18) return "Tier 1";
+  if (score >= 0.10) return "Tier 2";
+  return "Tier 3";
+}
+
+function pickMainMarket(res){
+  // choose main lean from 1X2 probabilities
+  const pH = res.pH/100, pD = res.pD/100, pA = res.pA/100;
+  let main = { key:"H", p:pH };
+  if (pD > main.p) main = { key:"D", p:pD };
+  if (pA > main.p) main = { key:"A", p:pA };
+  const separation = main.p - ( (pH+pD+pA - main.p) / 2 ); // rough “gap”
+  return { main, separation };
+}
+
+// -------- UI RENDERING --------
+
 function renderSingleOutput(payload){
   const { league, home, away, sims, baseGoals, homeAdv, maxGoals } = payload;
   const { lambdaH, lambdaA, lf, hx, ax } = computeLambdas({ league, home, away, baseGoals, homeAdv });
   const res = simMatch({ lambdaH, lambdaA, sims, maxGoals });
 
-  const missingNote = (hx.missing || ax.missing) ? `<div class="mini" style="margin-top:6px;color:#f59e0b">⚠ Missing xG for ${hx.missing ? home : ""}${hx.missing && ax.missing ? " & " : ""}${ax.missing ? away : ""} → using neutral 1.00/1.00</div>` : "";
+  const missingNote = (hx.missing || ax.missing)
+    ? `<div class="mini" style="margin-top:6px;color:#f59e0b">⚠ Missing xG for ${hx.missing ? home : ""}${hx.missing && ax.missing ? " & " : ""}${ax.missing ? away : ""} → using neutral 1.00/1.00</div>`
+    : "";
+
+  const pro = predictCornersCards({ league, home, away, meanGoals: res.meanGoals });
 
   els.singleOut.innerHTML = `
     <div class="split">
       <div>
         <div class="k">Model</div>
-        <div style="font-weight:800;font-size:16px">${home} vs ${away}</div>
-        <div class="mini">${league} • League factor ${lf.toFixed(2)} • λ ${lambdaH.toFixed(2)} / ${lambdaA.toFixed(2)}</div>
+        <div style="font-weight:800;font-size:16px">${escapeHtml(home)} vs ${escapeHtml(away)}</div>
+        <div class="mini">${escapeHtml(league)} • League factor ${lf.toFixed(2)} • λ ${lambdaH.toFixed(2)} / ${lambdaA.toFixed(2)}</div>
       </div>
       <div class="right">
         <div class="k">Pred</div>
-        <div style="font-weight:900;font-size:18px" class="mono">${res.bestScore}</div>
+        <div style="font-weight:900;font-size:18px" class="mono">${escapeHtml(res.bestScore)}</div>
       </div>
     </div>
     <div class="hr"></div>
@@ -285,7 +416,17 @@ function renderSingleOutput(payload){
       <div class="badge b-good">1X2: H ${res.pH}% • D ${res.pD}% • A ${res.pA}%</div>
       <div class="badge b-warn">O/U 2.5: Over ${res.pOver25}% • Under ${res.pUnder25}%</div>
     </div>
+    <div class="row" style="justify-content:space-between; margin-top:8px">
+      <div class="badge">BTTS Yes: ${res.pBTTS}%</div>
+      <div class="badge">AH lean: Home ${res.ahLean.line >= 0 ? "+" : ""}${res.ahLean.line.toFixed(2)} (${res.ahLean.pCover}% cover)</div>
+    </div>
+    <div class="row" style="justify-content:space-between; margin-top:8px">
+      <div class="badge">Corners: ${pro.corners}</div>
+      <div class="badge">Cards: ${pro.cards}</div>
+      <div class="badge">Mean goals: ${res.meanGoals}</div>
+    </div>
     ${missingNote}
+    ${pro.usedProxy ? `<div class="mini" style="margin-top:6px;color:#9aa4b2">Corners/Cards are proxies (add corners/cards fields in xg_tables.json to upgrade)</div>` : ""}
   `;
 
   const h2hObj = readLastH2H(league, home, away);
@@ -297,7 +438,7 @@ function renderFixturesTable(league){
   els.fixturesMeta.textContent = `${league} • ${list.length} fixture(s)`;
 
   if (!list.length){
-    els.fixturesBody.innerHTML = `<tr><td colspan="5" class="k">No fixtures found for this league in fixtures.json</td></tr>`;
+    els.fixturesBody.innerHTML = `<tr><td colspan="9" class="k">No fixtures found for this league in fixtures.json</td></tr>`;
     return;
   }
 
@@ -320,9 +461,34 @@ function renderFixturesTable(league){
     const { lambdaH, lambdaA } = computeLambdas({ league: comp, home, away, baseGoals, homeAdv });
     const r = simMatch({ lambdaH, lambdaA, sims, maxGoals });
 
-    const ou = (r.pOver25 >= 55) ? `<span class="badge b-warn">Over ${r.pOver25}%</span>`
-             : (r.pUnder25 >= 55) ? `<span class="badge b-warn">Under ${r.pUnder25}%</span>`
-             : `<span class="badge">Lean: Over ${r.pOver25}%</span>`;
+    // PRO metrics
+    const pro = predictCornersCards({ league: comp, home, away, meanGoals: r.meanGoals });
+    const { main, separation } = pickMainMarket(r);
+
+    // Optional odds fields from fixtures.json:
+    // You can store them like:
+    // f.odds_home, f.odds_draw, f.odds_away (decimal)
+    // Or nested f.odds = { home, draw, away }
+    const oddsHome = Number(f.odds_home ?? f.odds?.home);
+    const oddsDraw = Number(f.odds_draw ?? f.odds?.draw);
+    const oddsAway = Number(f.odds_away ?? f.odds?.away);
+
+    let oddsForMain = null;
+    if (main.key === "H") oddsForMain = oddsHome;
+    if (main.key === "D") oddsForMain = oddsDraw;
+    if (main.key === "A") oddsForMain = oddsAway;
+
+    const pModel = main.p; // 0-1
+    const ev = evFlag({ pModel, oddsDecimal: oddsForMain });
+    const conf = confidenceTag({ pMain: pModel, separation, edge: ev.edge });
+
+    const ouText = (r.pOver25 >= 55) ? `Over ${r.pOver25}%`
+                 : (r.pUnder25 >= 55) ? `Under ${r.pUnder25}%`
+                 : `Lean O${r.pOver25}%`;
+
+    const bttsText = (r.pBTTS >= 55) ? `Yes ${r.pBTTS}%` : `Yes ${r.pBTTS}%`;
+
+    const ahText = `H ${r.ahLean.line >= 0 ? "+" : ""}${r.ahLean.line.toFixed(2)} (${r.ahLean.pCover}%)`;
 
     html += `
       <tr data-home="${escapeHtml(home)}" data-away="${escapeHtml(away)}" data-league="${escapeHtml(comp)}" style="cursor:pointer">
@@ -334,12 +500,16 @@ function renderFixturesTable(league){
         </td>
         <td class="mono" style="font-weight:900">${escapeHtml(r.bestScore)}</td>
         <td class="k">H ${r.pH}% • D ${r.pD}% • A ${r.pA}%</td>
-        <td>${ou}</td>
+        <td class="k">${ouText}<div class="mini">μG ${r.meanGoals}</div></td>
+        <td class="k">${bttsText}</td>
+        <td class="k">${ahText}</td>
+        <td class="k">C ${pro.corners} • K ${pro.cards}</td>
+        <td class="k">${escapeHtml(ev.flag)}<div class="mini">${conf}</div></td>
       </tr>
     `;
   }
 
-  els.fixturesBody.innerHTML = html || `<tr><td colspan="5" class="k">No usable fixtures (missing home/away names)</td></tr>`;
+  els.fixturesBody.innerHTML = html || `<tr><td colspan="9" class="k">No usable fixtures (missing home/away names)</td></tr>`;
 
   // tap row -> fill single predictor
   for (const tr of els.fixturesBody.querySelectorAll("tr[data-home]")){
@@ -349,7 +519,7 @@ function renderFixturesTable(league){
       const away = tr.getAttribute("data-away");
 
       els.leagueSelect.value = comp;
-      onLeagueChange(); // rebuild team lists
+      onLeagueChange();
 
       els.homeSelect.value = home;
       els.awaySelect.value = away;
@@ -364,12 +534,6 @@ function renderFixturesTable(league){
       });
     });
   }
-}
-
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
 }
 
 function onLeagueChange(){
@@ -410,7 +574,7 @@ function onLeagueChange(){
     addOption(els.awaySelect, t, t);
   }
 
-  // if fixtures include teams not in xg list, still add them so UI works
+  // include fixture-only teams
   const extra = uniq(list.flatMap(x => [x.home, x.away])).filter(t => !teams.includes(t));
   for (const t of sortAlpha(extra)){
     addOption(els.homeSelect, t, `${t} (no xG)`);
@@ -473,14 +637,10 @@ async function boot(){
 
     const leagues = Object.keys(state.xg || {});
     state.leagues = sortAlpha(leagues);
-
-    // populate league select
     for (const l of state.leagues) addOption(els.leagueSelect, l, l);
 
-    // count teams with xG
     let teamCount = 0;
     for (const l of leagues) teamCount += Object.keys(state.xg[l] || {}).length;
-
     setPill(els.dotXg, els.pillXg, true, `xG loaded (${teamCount} teams)`);
   } catch (e){
     setPill(els.dotXg, els.pillXg, false, `xG failed`);
@@ -504,7 +664,6 @@ async function boot(){
     state.ready.h2h = true;
     setPill(els.dotH2h, els.pillH2h, true, `H2H loaded`);
   } catch (e){
-    // Not fatal
     state.h2h = null;
     setPill(els.dotH2h, els.pillH2h, false, `H2H missing`);
   }
@@ -520,19 +679,16 @@ async function boot(){
     state.ready.lf = false;
   }
 
-  // status line
   const fixN = state.fixtures.length;
   let xgTeams = 0;
   for (const l of Object.keys(state.xg || {})) xgTeams += Object.keys(state.xg[l] || {}).length;
 
   const lfExample = state.leagues.length ? (state.leagueFactor.get(state.leagues[0]) ?? 1.00) : 1.00;
-  els.statusLine.textContent = `Loaded. Fixtures: ${fixN} | Teams with xG: ${xgTeams} | League factor example: ${lfExample.toFixed(2)}`;
+  els.statusLine.textContent = `Loaded. Fixtures: ${fixN} | Teams with xG: ${xgTeams} | League factor example: ${lfExample.toFixed(2)} | PRO: BTTS/AH/Corners/Cards/EV`;
 
-  // Enable if we have at least xg + fixtures
   const ok = state.ready.xg && state.ready.fix;
   els.leagueSelect.disabled = !ok;
 
-  // If fixtures exist but leagues missing, build leagues from fixtures
   if (!state.leagues.length && state.fixtures.length){
     const leagues = sortAlpha(uniq(state.fixtures.map(f => f.league || f.League || "").filter(Boolean)));
     state.leagues = leagues;
@@ -540,15 +696,13 @@ async function boot(){
     for (const l of leagues) addOption(els.leagueSelect, l, l);
   }
 
-  // If only one league, auto-select it
   if (state.leagues.length === 1){
     els.leagueSelect.value = state.leagues[0];
     onLeagueChange();
   }
 
-  // If not ready, show in table
   if (!ok){
-    els.fixturesBody.innerHTML = `<tr><td colspan="5" class="k">Missing required files. Need xg_tables.json + fixtures.json</td></tr>`;
+    els.fixturesBody.innerHTML = `<tr><td colspan="9" class="k">Missing required files. Need xg_tables.json + fixtures.json</td></tr>`;
   }
 }
 
