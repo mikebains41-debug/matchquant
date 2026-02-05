@@ -1,152 +1,62 @@
-/* MatchQuant app.js — FULL REPLACEMENT */
+/* MatchQuant app.js — FULL REPLACEMENT (FINAL) */
 
 (() => {
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-
-  const uniq = (arr) =>
-    [...new Set(arr.filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b)
-    );
-
-  const abs = (f) => new URL(f, location.href).toString();
-
-  async function loadJSON(file) {
-    const res = await fetch(abs(file) + `?cb=${Date.now()}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`${file} failed`);
-    return res.json();
-  }
+  const uniq = (a) => [...new Set(a)].sort((x, y) => x.localeCompare(y));
 
   let fixtures = [];
-  let xg = {};
-  let h2h = {};
+  let xgRaw = {};
+  let h2hRaw = {};
+
+  const leagueSel = $("league");
+  const fixtureSel = $("fixture");
+  const homeSel = $("home");
+  const awaySel = $("away");
+  const runBtn = $("runBtn");
+
+  function abs(file) {
+    return new URL(file, location.href).toString();
+  }
+
+  async function loadJSON(file) {
+    const res = await fetch(abs(file) + `?v=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(file + " failed");
+    return res.json();
+  }
 
   function normalizeFixtures(raw) {
     const arr = Array.isArray(raw) ? raw : raw.fixtures || [];
     return arr
+      .filter(f => f.league && f.home && f.away)
       .map((f, i) => ({
-        id: f.id || `${f.league}_${i}`,
+        id: `${f.league}__${f.home}__${f.away}__${i}`,
         league: f.league,
         home: f.home,
         away: f.away,
-        date: f.date || "",
-      }))
-      .filter(f => f.league && f.home && f.away);
+        date: f.date || ""
+      }));
   }
 
   function leaguesFromFixtures() {
     return uniq(fixtures.map(f => f.league));
   }
 
-  function teamsFromLeague(league) {
-    let teams = [];
+  function teamsForLeague(league) {
+    const teamsFromFixtures = fixtures
+      .filter(f => f.league === league)
+      .flatMap(f => [f.home, f.away]);
 
-    if (xg[league]) {
-      teams = Object.keys(xg[league]).filter(
-        t => !t.startsWith("__")
-      );
-    }
+    const teamsFromXG =
+      xgRaw[league]
+        ? Object.keys(xgRaw[league]).filter(k => !k.startsWith("__"))
+        : [];
 
-    if (!teams.length) {
-      fixtures
-        .filter(f => f.league === league)
-        .forEach(f => {
-          teams.push(f.home, f.away);
-        });
-    }
-
-    return uniq(teams);
+    return uniq([...teamsFromFixtures, ...teamsFromXG]);
   }
 
-  function fillSelect(el, items, label) {
-    el.innerHTML = "";
-    const o = document.createElement("option");
-    o.value = "";
-    o.textContent = label;
-    el.appendChild(o);
-
-    items.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      el.appendChild(opt);
-    });
-  }
-
-  function rebuildLeague() {
-    fillSelect($("league"), leaguesFromFixtures(), "Select league");
-  }
-
-  function rebuildFixtures(league) {
-    const list = fixtures.filter(f => f.league === league);
-    $("fixture").innerHTML = "<option value=''>Select fixture (optional)</option>";
-    list.forEach(f => {
-      const o = document.createElement("option");
-      o.value = f.id;
-      o.textContent = `${f.home} vs ${f.away} ${f.date ? `(${f.date})` : ""}`;
-      $("fixture").appendChild(o);
-    });
-  }
-
-  function rebuildTeams(league) {
-    const teams = teamsFromLeague(league);
-    fillSelect($("home"), teams, "Select home");
-    fillSelect($("away"), teams, "Select away");
-  }
-
-  function run() {
-    if (!window.runPrediction) {
-      alert("Engine not loaded");
-      return;
-    }
-
-    window.runPrediction({
-      league: $("league").value,
-      home: $("home").value,
-      away: $("away").value,
-      sims: +$("sims").value,
-      homeAdv: +$("homeAdv").value,
-      baseGoals: +$("baseGoals").value,
-      capGoals: +$("capGoals").value,
-      xg,
-      fixtures,
-      h2h,
-    });
-  }
-
-  async function init() {
-    try {
-      fixtures = normalizeFixtures(await loadJSON("fixtures.json"));
-      xg = await loadJSON("xg_tables.json");
-      h2h = await loadJSON("h2h.json");
-
-      rebuildLeague();
-
-      $("league").onchange = () => {
-        rebuildFixtures($("league").value);
-        rebuildTeams($("league").value);
-      };
-
-      $("fixture").onchange = () => {
-        const f = fixtures.find(x => x.id === $("fixture").value);
-        if (f) {
-          $("home").value = f.home;
-          $("away").value = f.away;
-        }
-      };
-
-      $("runBtn").onclick = run;
-
-      $("footerLoaded").textContent =
-        `Loaded: ${leaguesFromFixtures().length} leagues • ${fixtures.length} fixtures`;
-    } catch (e) {
-      console.error(e);
-      alert("Data failed to load");
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-})();
+  function rebuildSelect(sel, items, label) {
+    sel.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
