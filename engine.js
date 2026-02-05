@@ -1,81 +1,105 @@
-window.runPrediction = function ({
-  league,
-  home,
-  away,
-  sims,
-  homeAdv,
-  baseGoals,
-  maxGoals,
-  xgHome,
-  xgAway
-}) {
+/* MatchQuant engine.js
+   - Defines window.runPrediction(params)
+   - Uses Poisson + Monte Carlo
+   - Safe defaults (no crashes)
+*/
 
-  // --- Monte Carlo ---
-  let homeWins = 0, awayWins = 0, draws = 0;
-  let totalGoals = 0;
-
-  for (let i = 0; i < sims; i++) {
-    const h = Math.min(
-      maxGoals,
-      Math.round(randomPoisson(xgHome * homeAdv))
-    );
-    const a = Math.min(
-      maxGoals,
-      Math.round(randomPoisson(xgAway))
-    );
-
-    totalGoals += h + a;
-
-    if (h > a) homeWins++;
-    else if (a > h) awayWins++;
-    else draws++;
+(function () {
+  function poisson(lambda) {
+    let L = Math.exp(-lambda);
+    let p = 1.0;
+    let k = 0;
+    do {
+      k++;
+      p *= Math.random();
+    } while (p > L);
+    return k - 1;
   }
 
-  const homePct = (homeWins / sims) * 100;
-  const drawPct = (draws / sims) * 100;
-  const awayPct = (awayWins / sims) * 100;
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
 
-  const avgGoals = totalGoals / sims;
+  window.runPrediction = function (params) {
+    const {
+      league,
+      home,
+      away,
+      sims = 10000,
+      homeAdv = 1.1,
+      baseGoals = 1.35,
+      capGoals = 8,
+      xgRaw,
+      h2hRaw,
+    } = params || {};
 
-  // --- Build output ---
-  const output = `
-    <div class="card">
-      <h2>MatchQuant – Prediction</h2>
+    if (!league || !home || !away) {
+      throw new Error("Missing league / home / away");
+    }
 
-      <p><strong>${home} vs ${away}</strong> (${league})</p>
+    // ---- Extract xG safely ----
+    let homeXg = baseGoals;
+    let awayXg = baseGoals;
 
-      <p><strong>xG λ</strong><br>
-      ${home}: ${xgHome.toFixed(2)}<br>
-      ${away}: ${xgAway.toFixed(2)}</p>
+    try {
+      const root = xgRaw?.leagues || xgRaw?.data || xgRaw || {};
+      const lg = root[league] || {};
 
-      <p><strong>Win Probabilities</strong><br>
-      ${home}: ${homePct.toFixed(1)}%<br>
-      Draw: ${drawPct.toFixed(1)}%<br>
-      ${away}: ${awayPct.toFixed(1)}%</p>
+      const hRow = lg[home];
+      const aRow = lg[away];
 
-      <p><strong>Markets</strong><br>
-      O/U 2.5 Goals → ${avgGoals > 2.5 ? "Over" : "Under"}<br>
-      Asian Handicap Lean → ${homePct > awayPct ? home : away}<br>
-      Corners (avg): ${(avgGoals * 3.2).toFixed(1)}<br>
-      Cards (avg): ${(avgGoals * 1.5).toFixed(1)}
-      </p>
-    </div>
-  `;
+      if (hRow) homeXg = Number(hRow.xg || hRow.xGF || baseGoals);
+      if (aRow) awayXg = Number(aRow.xg || aRow.xGF || baseGoals);
+    } catch (e) {
+      console.warn("xG fallback used");
+    }
 
-  document.getElementById("outputCard").innerHTML = output;
-};
+    // Apply home advantage
+    homeXg *= homeAdv;
 
+    // ---- Monte Carlo ----
+    let homeWins = 0;
+    let awayWins = 0;
+    let draws = 0;
+    let totalGoals = 0;
 
-// --- Poisson helper ---
-function randomPoisson(lambda) {
-  let L = Math.exp(-lambda);
-  let p = 1.0;
-  let k = 0;
+    for (let i = 0; i < sims; i++) {
+      const hg = clamp(poisson(homeXg), 0, capGoals);
+      const ag = clamp(poisson(awayXg), 0, capGoals);
 
-  do {
-    k++;
-    p *= Math.random();
-  } while (p > L);
+      totalGoals += hg + ag;
 
-  return k - 1;
-}
+      if (hg > ag) homeWins++;
+      else if (ag > hg) awayWins++;
+      else draws++;
+    }
+
+    const result = {
+      fixture: `${home} vs ${away} (${league})`,
+      xg: {
+        home: homeXg.toFixed(2),
+        away: awayXg.toFixed(2),
+      },
+      probabilities: {
+        home: ((homeWins / sims) * 100).toFixed(1),
+        draw: ((draws / sims) * 100).toFixed(1),
+        away: ((awayWins / sims) * 100).toFixed(1),
+      },
+      markets: {
+        over25: totalGoals / sims > 2.5 ? "Over" : "Under",
+        asianLean: homeWins > awayWins ? home : away,
+      },
+    };
+
+    // ---- OUTPUT (NO browser alert branding later) ----
+    alert(
+      `MatchQuant says:\n\n` +
+        `${result.fixture}\n\n` +
+        `xG:\n${home}: ${result.xg.home}\n${away}: ${result.xg.away}\n\n` +
+        `Win %:\n${home}: ${result.probabilities.home}%\nDraw: ${result.probabilities.draw}%\n${away}: ${result.probabilities.away}%\n\n` +
+        `Markets:\nO/U 2.5 → ${result.markets.over25}\nAsian Lean → ${result.markets.asianLean}`
+    );
+
+    return result;
+  };
+})();
