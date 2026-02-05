@@ -1,105 +1,100 @@
 /* MatchQuant engine.js
-   - Defines window.runPrediction(params)
-   - Uses Poisson + Monte Carlo
-   - Safe defaults (no crashes)
+   Exposes: window.runPrediction(params) -> returns result object
+   Does NOT use alert() (app.js shows custom modal)
 */
-
 (function () {
   function poisson(lambda) {
-    let L = Math.exp(-lambda);
-    let p = 1.0;
-    let k = 0;
-    do {
-      k++;
-      p *= Math.random();
-    } while (p > L);
+    const L = Math.exp(-lambda);
+    let p = 1, k = 0;
+    do { k++; p *= Math.random(); } while (p > L);
     return k - 1;
   }
 
-  function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function pickXgNumber(row, fallback) {
+    if (!row) return fallback;
+    const candidates = [row.xg, row.xGF, row.for, row.attack, row.xG, row.xg_for];
+    for (const c of candidates) {
+      const n = Number(c);
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+    return fallback;
   }
 
   window.runPrediction = function (params) {
     const {
-      league,
-      home,
-      away,
+      league, home, away,
       sims = 10000,
-      homeAdv = 1.1,
+      homeAdv = 1.10,
       baseGoals = 1.35,
       capGoals = 8,
       xgRaw,
-      h2hRaw,
     } = params || {};
 
-    if (!league || !home || !away) {
-      throw new Error("Missing league / home / away");
-    }
+    if (!league || !home || !away) throw new Error("Pick league + home + away");
 
-    // ---- Extract xG safely ----
+    // xG lookup (supports many shapes)
     let homeXg = baseGoals;
     let awayXg = baseGoals;
 
     try {
       const root = xgRaw?.leagues || xgRaw?.data || xgRaw || {};
-      const lg = root[league] || {};
+      const lg = root[league] || root[league?.toLowerCase?.()] || {};
+      const hRow = lg[home] || lg[home?.toLowerCase?.()] || null;
+      const aRow = lg[away] || lg[away?.toLowerCase?.()] || null;
 
-      const hRow = lg[home];
-      const aRow = lg[away];
-
-      if (hRow) homeXg = Number(hRow.xg || hRow.xGF || baseGoals);
-      if (aRow) awayXg = Number(aRow.xg || aRow.xGF || baseGoals);
-    } catch (e) {
-      console.warn("xG fallback used");
+      homeXg = pickXgNumber(hRow, baseGoals);
+      awayXg = pickXgNumber(aRow, baseGoals);
+    } catch {
+      // keep fallbacks
     }
 
-    // Apply home advantage
-    homeXg *= homeAdv;
+    homeXg *= Number(homeAdv) || 1.10;
 
-    // ---- Monte Carlo ----
-    let homeWins = 0;
-    let awayWins = 0;
-    let draws = 0;
+    const N = clamp(Number(sims) || 10000, 500, 250000);
+    const cap = clamp(Number(capGoals) || 8, 5, 12);
+
+    let homeWins = 0, awayWins = 0, draws = 0;
     let totalGoals = 0;
 
-    for (let i = 0; i < sims; i++) {
-      const hg = clamp(poisson(homeXg), 0, capGoals);
-      const ag = clamp(poisson(awayXg), 0, capGoals);
+    // scoreline counts for most common score
+    const scoreCount = new Map();
+
+    for (let i = 0; i < N; i++) {
+      const hg = clamp(poisson(homeXg), 0, cap);
+      const ag = clamp(poisson(awayXg), 0, cap);
 
       totalGoals += hg + ag;
+
+      const key = `${hg}-${ag}`;
+      scoreCount.set(key, (scoreCount.get(key) || 0) + 1);
 
       if (hg > ag) homeWins++;
       else if (ag > hg) awayWins++;
       else draws++;
     }
 
-    const result = {
+    // most common score
+    let bestScore = "—";
+    let bestC = -1;
+    for (const [k, c] of scoreCount.entries()) {
+      if (c > bestC) { bestC = c; bestScore = k; }
+    }
+
+    const pHome = (homeWins / N) * 100;
+    const pDraw = (draws / N) * 100;
+    const pAway = (awayWins / N) * 100;
+
+    return {
       fixture: `${home} vs ${away} (${league})`,
-      xg: {
-        home: homeXg.toFixed(2),
-        away: awayXg.toFixed(2),
-      },
-      probabilities: {
-        home: ((homeWins / sims) * 100).toFixed(1),
-        draw: ((draws / sims) * 100).toFixed(1),
-        away: ((awayWins / sims) * 100).toFixed(1),
-      },
+      xg: { home: homeXg, away: awayXg },
+      probs: { home: pHome, draw: pDraw, away: pAway },
       markets: {
-        over25: totalGoals / sims > 2.5 ? "Over" : "Under",
-        asianLean: homeWins > awayWins ? home : away,
+        ou25: (totalGoals / N) > 2.5 ? "Over" : "Under",
+        asianLean: homeWins >= awayWins ? home : away
       },
+      mostLikelyScore: bestScore
     };
-
-    // ---- OUTPUT (NO browser alert branding later) ----
-    alert(
-      `MatchQuant says:\n\n` +
-        `${result.fixture}\n\n` +
-        `xG:\n${home}: ${result.xg.home}\n${away}: ${result.xg.away}\n\n` +
-        `Win %:\n${home}: ${result.probabilities.home}%\nDraw: ${result.probabilities.draw}%\n${away}: ${result.probabilities.away}%\n\n` +
-        `Markets:\nO/U 2.5 → ${result.markets.over25}\nAsian Lean → ${result.markets.asianLean}`
-    );
-
-    return result;
   };
 })();
