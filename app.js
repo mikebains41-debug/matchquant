@@ -60,3 +60,69 @@
     sel.innerHTML = "";
     const ph = document.createElement("option");
     ph.value = "";
+    ph.textContent = label;
+    sel.appendChild(ph);
+
+    items.forEach(v => {
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = v;
+      sel.appendChild(o);
+    });
+  }
+
+  function onLeagueChange() {
+    const lg = leagueSel.value;
+    rebuildSelect(fixtureSel,
+      fixtures.filter(f => f.league === lg)
+        .map(f => `${f.home} vs ${f.away}${f.date ? " (" + f.date + ")" : ""}`),
+      "Select fixture (optional)"
+    );
+
+    const teams = teamsForLeague(lg);
+    rebuildSelect(homeSel, teams, "Select home");
+    rebuildSelect(awaySel, teams, "Select away");
+  }
+
+  function runPrediction() {
+    if (!window.runPrediction) {
+      alert("Engine not loaded");
+      return;
+    }
+
+    window.runPrediction({
+      league: leagueSel.value,
+      home: homeSel.value,
+      away: awaySel.value,
+      sims: Number($("sims").value),
+      homeAdv: Number($("homeAdv").value),
+      baseGoals: Number($("baseGoals").value),
+      capGoals: Number($("capGoals").value),
+      xg: xgRaw,
+      fixtures,
+      h2h: h2hRaw
+    });
+  }
+
+  async function init() {
+    try {
+      fixtures = normalizeFixtures(await loadJSON("fixtures.json"));
+      xgRaw = await loadJSON("xg_tables.json");
+      h2hRaw = await loadJSON("h2h.json");
+
+      rebuildSelect(leagueSel, leaguesFromFixtures(), "Select league");
+
+      leagueSel.addEventListener("change", onLeagueChange);
+      runBtn.addEventListener("click", runPrediction);
+
+      $("footerLoaded").textContent =
+        `Loaded: ${leaguesFromFixtures().length} leagues • ${fixtures.length} fixtures`;
+
+    } catch (e) {
+      console.error(e);
+      alert("MatchQuant says\n\nData failed to load.");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
