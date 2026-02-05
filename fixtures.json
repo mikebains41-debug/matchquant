@@ -1,4 +1,16 @@
 [
-  { "league": "Premier League", "home": "Arsenal", "away": "Aston Villa", "date": "2026-02-08" },
-  { "league": "Premier League", "home": "Liverpool", "away": "Manchester City", "date": "2026-02-09" }
+  {
+    "league": "Premier League",
+    "home": "Arsenal",
+    "away": "Aston Villa",
+    "date": "2026-02-08",
+    "odds": { "home": 1.95, "draw": 3.60, "away": 3.90 }
+  },
+  {
+    "league": "Premier League",
+    "home": "Liverpool",
+    "away": "Manchester City",
+    "date": "2026-02-09",
+    "odds": { "home": 2.40, "draw": 3.40, "away": 2.75 }
+  }
 ]
