@@ -1,9 +1,12 @@
-/* MatchQuant app.js — FULL REPLACEMENT
-   Fixes: "Data failed to load" on GitHub Pages + robust dropdown rebuilds
-   Assumes these files exist in SAME folder as index.html:
-   - fixtures.json
-   - xg_tables.json
-   - h2h.json
+/* MatchQuant app.js — FULL REPLACEMENT (PASTE ENTIRE FILE)
+   Fixes:
+   - "Data failed to load" reliability on GitHub Pages (cache bust + absolute URL)
+   - "Engine not found" guard
+   - Removes __league_factor / _meta / any "_*" keys from Team dropdowns
+   - Builds teams from xG first (complete), falls back to fixtures
+   Notes:
+   - Keep these 3 JSON files in SAME folder as index.html (root):
+     fixtures.json, xg_tables.json, h2h.json
 */
 
 (() => {
@@ -12,13 +15,8 @@
   // ---------- Helpers ----------
   const $ = (id) => document.getElementById(id);
 
-  function byText(a, b) {
-    return String(a).localeCompare(String(b));
-  }
-
-  function uniqSorted(arr) {
-    return Array.from(new Set(arr)).filter(Boolean).sort(byText);
-  }
+  const byText = (a, b) => String(a).localeCompare(String(b));
+  const uniqSorted = (arr) => Array.from(new Set(arr)).filter(Boolean).sort(byText);
 
   function setSelectOptions(selectEl, items, placeholder) {
     if (!selectEl) return;
@@ -41,11 +39,11 @@
     if (!el) return;
     el.textContent = msg || "";
     el.style.opacity = ok ? "1" : "0.9";
-    el.style.color = ok ? "#22c55e" : "#ef4444"; // green/red
+    el.style.color = ok ? "#22c55e" : "#ef4444";
   }
 
   function absUrl(fileName) {
-    // Always load JSON relative to the *current page* (works on GitHub Pages subpaths)
+    // Always relative to current page URL (works for GitHub Pages subpaths)
     return new URL(fileName, window.location.href).toString();
   }
 
@@ -55,7 +53,6 @@
 
     for (let i = 0; i < tries; i++) {
       try {
-        // cache bust avoids stale GitHub Pages caching
         const bust = `cb=${Date.now()}_${Math.random().toString(16).slice(2)}`;
         const res = await fetch(url + (url.includes("?") ? "&" : "?") + bust, {
           cache: "no-store",
@@ -71,11 +68,10 @@
     throw lastErr;
   }
 
-  // ---------- Data model ----------
-  let fixtures = []; // normalized: [{id, league, home, away, date?}]
+  // ---------- Data ----------
+  let fixtures = []; // [{id, league, home, away, date?}]
   let xgRaw = null;
   let h2hRaw = null;
-
   let leagues = [];
 
   // ---------- Elements ----------
@@ -94,14 +90,12 @@
     statusXg: $("statusXg"),
     statusH2H: $("statusH2H"),
     statusReady: $("statusReady"),
-    footerLoaded: $("footerLoaded"), // optional element
+    footerLoaded: $("footerLoaded"), // optional
   };
 
   // ---------- Parsing ----------
   function normalizeFixtures(raw) {
-    // Accepts many shapes; produces [{id, league, home, away}]
     const out = [];
-
     const arr =
       Array.isArray(raw) ? raw :
       Array.isArray(raw?.fixtures) ? raw.fixtures :
@@ -130,33 +124,41 @@
     return uniqSorted(fixturesArr.map((f) => f.league));
   }
 
+  function fixturesForLeague(leagueName) {
+    if (!leagueName) return fixtures.slice();
+    return fixtures.filter((f) => f.league === leagueName);
+  }
+
   function teamsFromXg(leagueName) {
-    // supports:
-    // 1) xgRaw.leagues[league][team] = {xGF,xGA,...}
-    // 2) xgRaw.data = [{league, team, xGF, xGA}, ...]
-    // 3) xgRaw = [{league, team, xGF, xGA}, ...]
+    // Supports:
+    // 1) xgRaw.leagues[league][team] = {...} plus meta keys like "__league_factor"
+    // 2) xgRaw.data = [{league, team, ...}, ...]
+    // 3) xgRaw = [{league, team, ...}, ...]
     if (!xgRaw) return [];
 
     const root = xgRaw.leagues || xgRaw.data || xgRaw;
 
+    // Array form
     if (Array.isArray(root)) {
       return uniqSorted(
         root
           .filter((r) => (r.league === leagueName || r.competition === leagueName))
           .map((r) => r.team || r.squad)
+          .filter((t) => t && !String(t).startsWith("_")) // safety
       );
     }
 
+    // Object form
     if (root && root[leagueName]) {
-      return uniqSorted(Object.keys(root[leagueName]));
+      return uniqSorted(
+        Object.keys(root[leagueName]).filter((k) => {
+          // IMPORTANT: hide internal/meta keys (like "__league_factor")
+          return k && !String(k).startsWith("_");
+        })
+      );
     }
 
     return [];
-  }
-
-  function fixturesForLeague(leagueName) {
-    if (!leagueName) return fixtures.slice();
-    return fixtures.filter((f) => f.league === leagueName);
   }
 
   // ---------- UI rebuild ----------
@@ -166,10 +168,6 @@
 
   function rebuildFixtureSelect(leagueName) {
     const list = fixturesForLeague(leagueName);
-    const labels = list.map((f) => ({
-      id: f.id,
-      label: `${f.home} vs ${f.away}` + (f.date ? ` (${f.date})` : ""),
-    }));
 
     if (!els.fixture) return;
     els.fixture.innerHTML = "";
@@ -179,10 +177,10 @@
     ph.textContent = "Select Fixture (optional)";
     els.fixture.appendChild(ph);
 
-    for (const item of labels) {
+    for (const f of list) {
       const opt = document.createElement("option");
-      opt.value = item.id;
-      opt.textContent = item.label;
+      opt.value = f.id;
+      opt.textContent = `${f.home} vs ${f.away}` + (f.date ? ` (${f.date})` : "");
       els.fixture.appendChild(opt);
     }
   }
@@ -223,7 +221,6 @@
     const f = fixtures.find((x) => String(x.id) === String(id));
     if (!f) return;
 
-    // set league to fixture league if needed
     if (els.league && els.league.value !== f.league) {
       els.league.value = f.league;
       rebuildFixtureSelect(f.league);
@@ -240,9 +237,13 @@
   // ---------- Run ----------
   function runPrediction() {
     try {
-      if (!fixtures.length || !xgRaw) {
+      if (!fixtures.length || !xgRaw || !h2hRaw) {
         alert("MatchQuant says\n\nPrediction error. Data failed to load.\n\nOpen Console for details.");
-        console.error("[MatchQuant] Missing data:", { fixtures: fixtures.length, xgRaw: !!xgRaw, h2hRaw: !!h2hRaw });
+        console.error("[MatchQuant] Missing data:", {
+          fixtures: fixtures.length,
+          xgRaw: !!xgRaw,
+          h2hRaw: !!h2hRaw,
+        });
         return;
       }
 
@@ -268,6 +269,7 @@
         h2hRaw,
       };
 
+      // Engine hook
       if (typeof window.runPrediction === "function") {
         window.runPrediction(params);
       } else {
@@ -282,7 +284,6 @@
 
   // ---------- Init ----------
   async function init() {
-    // clear statuses
     setStatus(els.statusFixtures, false, "fixtures loading…");
     setStatus(els.statusXg, false, "xg loading…");
     setStatus(els.statusH2H, false, "h2h loading…");
@@ -303,18 +304,16 @@
 
       setStatus(els.statusFixtures, true, `fixtures OK (${fixtures.length})`);
       setStatus(els.statusXg, true, `xg OK (${leagues.length} leagues)`);
-      setStatus(els.statusH2H, true, `h2h OK`);
+      setStatus(els.statusH2H, true, "h2h OK");
 
       rebuildLeagueSelect();
       rebuildFixtureSelect("");
       rebuildTeamSelects("");
 
-      // wire events
       els.league?.addEventListener("change", onLeagueChange);
       els.fixture?.addEventListener("change", onFixtureChange);
       els.runBtn?.addEventListener("click", runPrediction);
 
-      // footer line if you have it
       if (els.footerLoaded) {
         els.footerLoaded.textContent = `Loaded: ${leagues.length} leagues • ${fixtures.length} fixtures`;
       }
@@ -322,6 +321,7 @@
       syncReadyState();
     } catch (e) {
       console.error("[MatchQuant] DATA LOAD FAILED:", e);
+
       setStatus(els.statusFixtures, false, "fixtures FAIL");
       setStatus(els.statusXg, false, "xg FAIL");
       setStatus(els.statusH2H, false, "h2h FAIL");
@@ -329,11 +329,11 @@
 
       alert(
         "MatchQuant says\n\nPrediction error. Data failed to load.\n\n" +
-        "Fix checklist:\n" +
-        "1) Make sure fixtures.json, xg_tables.json, h2h.json are in the SAME folder as index.html\n" +
-        "2) Filenames must match EXACTLY (lowercase)\n" +
-        "3) After pushing to GitHub, wait 1-2 minutes then hard refresh\n\n" +
-        "Open Console for details."
+          "Fix checklist:\n" +
+          "1) fixtures.json, xg_tables.json, h2h.json are in SAME folder as index.html\n" +
+          "2) Filenames match EXACTLY (lowercase)\n" +
+          "3) After pushing to GitHub Pages, wait a minute then hard refresh\n\n" +
+          "Open Console for details."
       );
     }
   }
