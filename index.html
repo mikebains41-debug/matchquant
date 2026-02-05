@@ -2,319 +2,161 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MatchQuant</title>
-
+  <meta name="theme-color" content="#0b1220" />
   <style>
     :root{
-      --bg:#0b0f14;
-      --panel:#0f1621;
-      --panel2:#0c121b;
-      --line:#1b2636;
-      --text:#e7eefc;
-      --muted:#9aa4b2;
-      --accent:#3b82f6;
-      --good:#22c55e;
-      --warn:#f59e0b;
-      --bad:#ef4444;
-      --chip:#111a26;
-      --shadow: 0 10px 30px rgba(0,0,0,.45);
-      --radius:18px;
-      --radius2:22px;
-      font-synthesis-weight:none;
+      --bg:#0b1220; --panel:#0e1726; --card:#0f1b2e; --text:#e8eefc; --muted:#9fb0d0;
+      --line:#1c2b49; --blue:#2b6fff; --green:#2de38f; --yellow:#ffd166; --red:#ff4d6d;
+      --chip:#121f36; --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
     }
     *{box-sizing:border-box}
     body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 900px at 20% 0%, #111b2a 0%, var(--bg) 40%, #070b10 100%);
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 20% 0%, #142449, transparent 60%),
+                  radial-gradient(900px 500px at 80% 10%, #1a2c58, transparent 60%),
+                  var(--bg);
       color:var(--text);
     }
-    .wrap{
-      max-width:1100px;
-      margin:0 auto;
-      padding:18px 14px 40px;
+    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 40px}
+    h1{font-size:44px;letter-spacing:.5px;margin:8px 0 6px}
+    .sub{color:var(--muted);font-size:16px;margin:0 0 16px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .pill{
+      display:flex;align-items:center;gap:10px;
+      padding:10px 14px;border:1px solid var(--line);background:rgba(15,27,46,.65);
+      border-radius:999px; box-shadow: var(--shadow);
+      color:var(--muted); font-size:14px;
     }
-    h1{
-      margin:6px 0 0;
-      font-size:44px;
-      letter-spacing:-.03em;
-      line-height:1.05;
-    }
-    .sub{
-      margin:8px 0 16px;
-      color:var(--muted);
-      font-size:14px;
-    }
-    .row{display:flex; gap:12px; flex-wrap:wrap;}
+    .dot{width:10px;height:10px;border-radius:999px;background:#3a4b6b}
+    .dot.ok{background:var(--green)}
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      border:1px solid rgba(255,255,255,.06);
-      border-radius: var(--radius2);
-      box-shadow: var(--shadow);
+      margin-top:16px;background:rgba(15,27,46,.75);border:1px solid var(--line);
+      border-radius:var(--radius); box-shadow: var(--shadow);
       padding:14px;
     }
-    .card.big{padding:16px}
-    .card.flex1{flex:1; min-width:320px}
-    .card.flex2{flex:2; min-width:320px}
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 12px;
-      background: rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:999px;
-      color:var(--muted);
-      font-size:13px;
-      margin-right:10px;
-      margin-bottom:10px;
-    }
-    .dot{width:10px;height:10px;border-radius:99px;background:var(--warn)}
-    .dot.ok{background:var(--good)}
-    .dot.bad{background:var(--bad)}
-    label{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin:10px 0 6px;
-    }
+    label{display:block;color:var(--muted);font-size:13px;margin:10px 0 6px}
     select,input{
-      width:100%;
-      background: rgba(255,255,255,.02);
-      border:1px solid rgba(255,255,255,.08);
-      color:var(--text);
-      border-radius:14px;
-      padding:12px 12px;
-      font-size:14px;
-      outline:none;
+      width:100%;padding:12px 12px;border-radius:14px;
+      border:1px solid var(--line);background:rgba(12,20,35,.85);
+      color:var(--text);outline:none;
     }
-    input[type="number"]{font-variant-numeric: tabular-nums}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:720px){ .grid2{grid-template-columns:1fr} h1{font-size:40px} }
     .btn{
-      width:100%;
-      border:none;
-      background: var(--accent);
-      color:white;
-      padding:14px 12px;
-      border-radius:16px;
-      font-weight:800;
-      font-size:16px;
-      cursor:pointer;
-      margin-top:12px;
+      width:100%;margin-top:12px;padding:14px 14px;border-radius:16px;
+      border:1px solid rgba(43,111,255,.45);
+      background: linear-gradient(180deg, rgba(43,111,255,.95), rgba(32,88,216,.95));
+      color:white;font-weight:700;font-size:16px;
     }
-    .btn:disabled{opacity:.5; cursor:not-allowed}
-    .mini{font-size:12px;color:var(--muted)}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
-    .hr{height:1px;background:rgba(255,255,255,.08);margin:12px 0}
-    .split{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
-    .k{color:var(--muted); font-size:12px}
-    .right{text-align:right}
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.06);
-      font-size:12px;
-      color:var(--text);
-      white-space:nowrap;
+    .btn:active{transform:translateY(1px)}
+    .out{
+      margin-top:12px;padding:14px;border-radius:16px;background:rgba(12,20,35,.75);
+      border:1px solid var(--line);
     }
-    .b-good{border-color: rgba(34,197,94,.35)}
-    .b-warn{border-color: rgba(245,158,11,.35)}
-    .b-bad{border-color: rgba(239,68,68,.35)}
-    .grid2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
+    .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.8px}
+    .big{font-size:22px;font-weight:800;margin:2px 0 0}
+    .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .chip{
+      padding:10px 12px;border-radius:999px;background:rgba(18,31,54,.85);
+      border:1px solid var(--line); color:var(--text); font-size:13px;
     }
-    .grid3{
-      display:grid;
-      grid-template-columns:1fr 1fr 1fr;
-      gap:12px;
-    }
-    @media (max-width:860px){
-      .grid2,.grid3{grid-template-columns:1fr}
-      h1{font-size:38px}
-    }
-
+    .chip.good{border-color:rgba(45,227,143,.45)}
+    .chip.warn{border-color:rgba(255,209,102,.45)}
+    .chip.bad{border-color:rgba(255,77,109,.45)}
+    .tableCard{margin-top:14px}
+    .tableTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 10px}
+    .tableTop .hint{color:var(--muted);font-size:12px}
     table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      overflow:hidden;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.06);
-      background: rgba(255,255,255,.02);
+      width:100%;border-collapse:separate;border-spacing:0;
+      overflow:hidden;border-radius:16px;border:1px solid var(--line);
+      background:rgba(12,20,35,.65);
     }
-    thead th{
-      text-align:left;
-      font-size:12px;
-      color:var(--muted);
-      padding:12px 12px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      background: rgba(255,255,255,.02);
+    th,td{padding:12px 10px;border-bottom:1px solid rgba(28,43,73,.75);vertical-align:top}
+    th{color:var(--muted);font-size:12px;text-align:left;background:rgba(15,27,46,.75)}
+    tr:last-child td{border-bottom:none}
+    .muted{color:var(--muted)}
+    .badge{
+      display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;
+      border:1px solid var(--line); background:rgba(18,31,54,.85)
     }
-    tbody td{
-      padding:12px 12px;
-      border-bottom:1px solid rgba(255,255,255,.04);
-      vertical-align:top;
-      font-size:13px;
-    }
-    tbody tr:hover{background: rgba(255,255,255,.03)}
-    .match{font-weight:800}
-    .meta{color:var(--muted); font-size:12px; margin-top:2px}
-    .topbar{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
-    .proTag{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      background: rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.06);
-      color:var(--muted);
-      font-size:12px;
-    }
+    .A{border-color:rgba(45,227,143,.55)}
+    .B{border-color:rgba(255,209,102,.55)}
+    .C{border-color:rgba(255,77,109,.55)}
+    .evP{border-color:rgba(45,227,143,.55)}
+    .evN{border-color:rgba(255,209,102,.55)}
+    .evM{border-color:rgba(255,77,109,.55)}
+    .clickRow{cursor:pointer}
+    .clickRow:hover{background:rgba(18,31,54,.35)}
+    .notes{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar">
-      <div>
-        <h1>MatchQuant</h1>
-        <div class="sub">Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + fixtures + H2H)</div>
-      </div>
-      <div class="proTag">PRO</div>
-    </div>
+    <h1>MatchQuant</h1>
+    <p class="sub">Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + fixtures + H2H)</p>
 
     <div class="row">
-      <div class="pill"><span id="dotXg" class="dot"></span><span id="pillXg">xG loading...</span></div>
-      <div class="pill"><span id="dotFix" class="dot"></span><span id="pillFix">fixtures loading...</span></div>
-      <div class="pill"><span id="dotH2h" class="dot"></span><span id="pillH2h">H2H loading...</span></div>
+      <div class="pill"><span id="dotXg" class="dot"></span><span id="statusXg">xG loading…</span></div>
+      <div class="pill"><span id="dotFix" class="dot"></span><span id="statusFix">fixtures loading…</span></div>
+      <div class="pill"><span id="dotH2h" class="dot"></span><span id="statusH2h">H2H loading…</span></div>
+      <div class="pill"><span class="badge">PRO</span></div>
     </div>
 
-    <div class="sub" id="statusLine">Loading…</div>
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label>League</label>
+          <select id="selectLeague"></select>
 
-    <div class="row">
-      <div class="card big flex1">
-        <div class="grid2">
-          <div>
-            <label>League</label>
-            <select id="leagueSelect" disabled>
-              <option value="">Select a league…</option>
-            </select>
-          </div>
+          <label>Fixture (optional)</label>
+          <select id="selectFixture"></select>
 
-          <div>
-            <label>Fixture (optional)</label>
-            <select id="fixtureSelect" disabled>
-              <option value="">Select a fixture…</option>
-            </select>
-          </div>
+          <label>Home Team</label>
+          <select id="selectHome"></select>
+
+          <label>Away Team</label>
+          <select id="selectAway"></select>
         </div>
 
-        <div class="grid2">
-          <div>
-            <label>Home Team</label>
-            <select id="homeSelect" disabled>
-              <option value="">Select home team…</option>
-            </select>
-          </div>
-          <div>
-            <label>Away Team</label>
-            <select id="awaySelect" disabled>
-              <option value="">Select away team…</option>
-            </select>
-          </div>
-        </div>
+        <div>
+          <label>Monte Carlo sims</label>
+          <input id="inputSims" type="number" value="10000" min="1000" step="1000" />
 
-        <div class="grid3">
-          <div>
-            <label>Monte Carlo sims</label>
-            <input id="simsInput" type="number" value="10000" min="2000" max="200000" />
-            <div class="mini">Recommended: 10,000+</div>
-          </div>
-          <div>
-            <label>Home advantage</label>
-            <input id="homeAdvInput" type="number" value="1.10" step="0.01" min="1.00" max="1.25" />
-            <div class="mini">Default: 1.10</div>
-          </div>
-          <div>
-            <label>Base goals</label>
-            <input id="baseGoalsInput" type="number" value="1.35" step="0.01" min="0.80" max="1.80" />
-            <div class="mini">Default: 1.35</div>
-          </div>
-        </div>
+          <label>Home advantage</label>
+          <input id="inputHomeAdv" type="number" value="1.10" step="0.01" />
 
-        <div class="grid2">
-          <div>
-            <label>Max goals cap</label>
-            <input id="maxGoalsInput" type="number" value="8" min="6" max="12" />
-            <div class="mini">Caps Poisson tail</div>
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <button id="runBtn" class="btn" disabled>Run Prediction</button>
-          </div>
-        </div>
+          <label>Base goals (league)</label>
+          <input id="inputBaseGoals" type="number" value="1.35" step="0.01" />
 
-        <div class="hr"></div>
+          <label>Max goals cap</label>
+          <input id="inputMaxGoals" type="number" value="8" min="5" max="12" step="1" />
 
-        <div class="card" style="background:rgba(255,255,255,.02); border-radius:16px">
-          <div class="split">
-            <div>
-              <div class="k">Output</div>
-              <div class="mini">Choose league + teams, then Run.</div>
-            </div>
-          </div>
-          <div id="singleOut" style="margin-top:10px"></div>
-
-          <div class="hr"></div>
-          <div class="k">Last H2H</div>
-          <div class="mini" id="h2hText">—</div>
+          <button id="btnRun" class="btn">Run Prediction</button>
         </div>
       </div>
 
-      <div class="card big flex2">
-        <div class="split">
-          <div>
-            <div class="k">Fixtures</div>
-            <div class="mini" id="fixturesMeta">—</div>
-          </div>
-          <div class="mini">Tap a row to auto-fill predictor</div>
+      <div id="output" class="out">
+        <div class="k">Output</div>
+        <div class="muted">Choose league + teams, then Run.</div>
+      </div>
+
+      <div class="tableCard">
+        <div class="tableTop">
+          <div class="k">Fixtures</div>
+          <div class="hint">Tap a row to auto-fill predictor</div>
         </div>
-
-        <div class="hr"></div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width:44px">#</th>
-              <th>Match</th>
-              <th style="width:86px">Pred</th>
-              <th style="min-width:220px">1X2</th>
-              <th style="width:140px">O/U 2.5</th>
-              <th style="width:120px">BTTS</th>
-              <th style="width:160px">AH lean</th>
-              <th style="width:150px">Corners/Cards</th>
-              <th style="width:170px">EV / Tier</th>
-            </tr>
-          </thead>
-          <tbody id="fixturesBody">
-            <tr><td colspan="9" class="k">Loading…</td></tr>
-          </tbody>
-        </table>
-
-        <div class="mini" style="margin-top:12px">
-          Notes: Score = most likely score from simulations (not an average). Probabilities are Monte Carlo estimates.
-          EV works if fixtures.json contains decimal odds (optional).
+        <div id="fixturesTable"></div>
+        <div class="notes">
+          Notes: Score = most likely score from simulations (mode). Probabilities are Monte Carlo estimates.
+          EV requires decimal odds in fixtures.json (optional).
         </div>
       </div>
     </div>
   </div>
 
-  <script src="./app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
