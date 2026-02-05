@@ -1,20 +1,45 @@
 {
   "Premier League": {
     "Arsenal": { "att": 1.85, "def": 0.95 },
-    "Man City": { "att": 2.10, "def": 0.90 }
+    "Aston Villa": { "att": 1.65, "def": 1.10 },
+    "Chelsea": { "att": 1.55, "def": 1.15 },
+    "Liverpool": { "att": 1.95, "def": 0.98 },
+    "Man City": { "att": 2.10, "def": 0.90 },
+    "Man United": { "att": 1.60, "def": 1.20 },
+    "Newcastle": { "att": 1.70, "def": 1.15 },
+    "Tottenham": { "att": 1.80, "def": 1.25 }
   },
   "La Liga": {
     "Real Madrid": { "att": 2.00, "def": 0.92 },
-    "Barcelona": { "att": 1.90, "def": 1.00 }
+    "Barcelona": { "att": 1.90, "def": 1.00 },
+    "Atletico Madrid": { "att": 1.60, "def": 0.95 },
+    "Real Sociedad": { "att": 1.35, "def": 1.05 },
+    "Villarreal": { "att": 1.50, "def": 1.20 },
+    "Real Betis": { "att": 1.40, "def": 1.10 },
+    "Sevilla": { "att": 1.30, "def": 1.15 },
+    "Valencia": { "att": 1.15, "def": 1.15 }
   },
   "Serie A": {
     "Inter": { "att": 1.88, "def": 0.97 },
-    "AC Milan": { "att": 1.72, "def": 1.02 }
+    "AC Milan": { "att": 1.72, "def": 1.02 },
+    "Juventus": { "att": 1.55, "def": 0.98 },
+    "Napoli": { "att": 1.60, "def": 1.05 },
+    "Roma": { "att": 1.45, "def": 1.10 },
+    "Lazio": { "att": 1.42, "def": 1.12 },
+    "Atalanta": { "att": 1.65, "def": 1.15 }
   },
   "Bundesliga": {
-    "Bayern Munich": { "att": 2.15, "def": 0.98 }
+    "Bayern Munich": { "att": 2.15, "def": 0.98 },
+    "Borussia Dortmund": { "att": 1.75, "def": 1.20 },
+    "RB Leipzig": { "att": 1.70, "def": 1.10 },
+    "Bayer Leverkusen": { "att": 1.85, "def": 1.05 },
+    "Eintracht Frankfurt": { "att": 1.45, "def": 1.25 }
   },
   "Ligue 1": {
-    "PSG": { "att": 2.05, "def": 0.96 }
+    "PSG": { "att": 2.05, "def": 0.96 },
+    "Marseille": { "att": 1.45, "def": 1.10 },
+    "Monaco": { "att": 1.55, "def": 1.15 },
+    "Lille": { "att": 1.35, "def": 1.05 },
+    "Lyon": { "att": 1.40, "def": 1.20 }
   }
 }
