@@ -2,271 +2,416 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b1220" />
+  <meta name="description" content="MatchQuant — Soccer Prediction Engine (xG lambdas + Monte Carlo + EV flags + Auto fixtures + H2H)" />
+
   <title>MatchQuant</title>
 
+  <!-- PWA -->
   <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="https://www.svgrepo.com/show/532999/soccer-ball.svg" />
+  <link rel="icon" href="https://www.svgrepo.com/show/474258/soccer-ball.svg" />
 
   <style>
     :root{
-      --bg1:#060b16;
-      --bg2:#0b1220;
-      --card:#0f1a2e;
-      --card2:#0b1426;
+      --bg:#070b14;
+      --panel:#0b1220;
+      --panel2:#0e172a;
       --text:#dbe7ff;
-      --muted:#9fb3d9;
-      --accent:#2e7cff;
-      --accent2:#57a2ff;
-      --good:#27d17f;
-      --warn:#f7c948;
-      --bad:#ff4d4d;
-      --stroke:rgba(255,255,255,.08);
-      --shadow: 0 12px 35px rgba(0,0,0,.45);
-      --radius: 18px;
+      --muted:#91a4c7;
+      --blue:#2f86ff;
+      --blue2:#1f5fe0;
+      --line:rgba(255,255,255,.08);
+      --good:#22c55e;
+      --mid:#f59e0b;
+      --bad:#ef4444;
+      --radius:18px;
     }
-    *{box-sizing:border-box}
+    *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(47,134,255,.18), transparent 55%),
+                  radial-gradient(900px 500px at 80% 20%, rgba(34,197,94,.10), transparent 55%),
+                  var(--bg);
       color:var(--text);
-      background:
-        radial-gradient(1200px 700px at 30% 0%, rgba(46,124,255,.22), transparent 55%),
-        radial-gradient(900px 600px at 85% 25%, rgba(87,162,255,.18), transparent 55%),
-        linear-gradient(180deg,var(--bg1),var(--bg2));
-      min-height:100vh;
     }
-    .wrap{max-width:920px;margin:0 auto;padding:18px 14px 50px}
-    .top{
-      display:flex;align-items:center;gap:12px;margin:10px 2px 12px;
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px 14px 48px;
     }
-    .pill{
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--stroke);
-      border-radius:999px;
-      padding:10px 14px;
-      display:inline-flex;align-items:center;gap:10px;
-      box-shadow: var(--shadow);
-    }
-    .pill b{font-size:14px;letter-spacing:.2px}
-    .brand{margin:10px 2px 14px;}
-    .brand h1{
-      margin:0;
-      font-size:54px;
-      line-height:1;
-      letter-spacing:-1px;
-      color: #e8f0ff;
-      text-shadow: 0 10px 35px rgba(0,0,0,.45);
-    }
-    .brand p{margin:8px 0 0;color:var(--muted);max-width:780px}
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
-      border:1px solid var(--stroke);
-      border-radius:var(--radius);
-      padding:16px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(8px);
-    }
-    .card h2{
-      margin:0 0 8px;
-      font-size:44px;
-      letter-spacing:-.6px;
-      color: var(--accent2);
-    }
-    .sub{color:var(--muted);margin:0 0 12px}
-    label{display:block;color:var(--muted);font-size:14px;margin:12px 2px 8px}
-    select,input,button{
-      width:100%;
-      padding:14px 14px;
-      border-radius:16px;
-      border:1px solid var(--stroke);
-      background: rgba(10,18,34,.72);
-      color:var(--text);
-      outline:none;
-      font-size:16px;
-    }
-    input::placeholder{color:rgba(219,231,255,.35)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    .btn{
-      background: linear-gradient(180deg, var(--accent), #1e5fe0);
-      border:none;
-      font-weight:800;
-      letter-spacing:.3px;
-      cursor:pointer;
-      padding:15px 16px;
-      border-radius:18px;
-      margin-top:14px;
-    }
-    .btn:active{transform: translateY(1px)}
-    .btnGhost{
-      background: rgba(255,255,255,.06);
-      border:1px solid var(--stroke);
-      font-weight:700;
-      cursor:pointer;
-    }
-    .hint{
-      margin:10px 2px 0;
-      color:rgba(219,231,255,.55);
-      font-size:13px;
-    }
-    .sectionTitle{
-      font-size:34px;color:var(--accent2);margin:18px 0 10px;
-      letter-spacing:-.4px;
-    }
-    .resultGrid{display:grid;grid-template-columns:1fr;gap:10px}
-    .field{
-      background: rgba(10,18,34,.62);
-      border:1px solid var(--stroke);
-      border-radius:16px;
-      padding:14px 14px;
+    .topbar{
       display:flex;
-      justify-content:space-between;
       align-items:center;
       gap:12px;
+      padding: 10px 0 18px;
     }
-    .field .k{color:var(--muted);font-weight:700}
-    .field .v{font-weight:900;text-align:right}
-    .badge{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 12px;border-radius:999px;
-      border:1px solid var(--stroke);
+    .homeDot{
+      width:46px;height:46px;border-radius:50%;
+      display:grid;place-items:center;
       background: rgba(255,255,255,.06);
-      font-weight:800;
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      user-select:none;
     }
-    .good{color:var(--good)}
-    .warn{color:var(--warn)}
-    .bad{color:var(--bad)}
-    .spacer{height:14px}
-    .tiny{font-size:12px;color:rgba(219,231,255,.55);margin-top:6px}
-    @media (max-width:700px){
-      .brand h1{font-size:48px}
-      .card h2{font-size:40px}
-      .row,.row3{grid-template-columns:1fr}
+    .brand h1{
+      margin:0;
+      font-size: 42px;
+      letter-spacing:.5px;
+      line-height: 1.05;
+    }
+    .brand p{
+      margin:6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.3;
+      max-width: 760px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media(min-width: 900px){
+      .grid{ grid-template-columns: 1.15fr .85fr; align-items:start; }
+    }
+    .card{
+      background: rgba(11,18,32,.78);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 50px rgba(0,0,0,.45);
+      overflow:hidden;
+    }
+    .cardInner{ padding: 16px; }
+    .title{
+      font-size: 46px;
+      margin: 4px 0 10px;
+      color: var(--blue);
+      line-height: 1.0;
+      font-weight: 800;
+    }
+    .subtitle{
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 14px;
+    }
+    label{
+      display:block;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 12px 0 8px;
+    }
+    select, input{
+      width:100%;
+      padding: 14px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline:none;
+    }
+    input::placeholder{ color: rgba(219,231,255,.35); }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn{
+      width:100%;
+      border:none;
+      border-radius: 18px;
+      padding: 14px 16px;
+      color:#fff;
+      font-weight: 800;
+      font-size: 16px;
+      cursor:pointer;
+      background: linear-gradient(180deg, var(--blue), var(--blue2));
+      box-shadow: 0 14px 30px rgba(47,134,255,.25);
+    }
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--line);
+      box-shadow:none;
+      font-weight:700;
+    }
+    .pill{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .pill strong{ color: var(--text); }
+    .sectionTitle{
+      font-size: 44px;
+      margin: 4px 0 12px;
+      color: var(--blue);
+      line-height: 1.0;
+      font-weight: 800;
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .kvRow{
+      display:flex;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 14px;
+    }
+    .kvRow .k{ color: var(--muted); font-weight: 600; }
+    .kvRow .v{ font-weight: 800; text-align:right; }
+
+    .evBadge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+    }
+    .evGreen{ color: #0bff65; }
+    .evYellow{ color: #ffbf3a; }
+    .evRed{ color: #ff5b5b; }
+
+    .tableWrap{
+      overflow:auto;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+    }
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+    th, td{
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    th{ color: var(--muted); text-align:left; font-weight: 800; }
+    .footerNote{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="top">
-      <div class="pill"><b>Home</b></div>
-      <div class="pill"><span style="opacity:.75">PWA:</span> <b id="pwaStatus">Ready</b></div>
+
+    <div class="topbar">
+      <div class="homeDot" title="Home">←<div style="width:8px"></div>Home</div>
+      <div class="brand">
+        <h1>MatchQuant</h1>
+        <p>Soccer Prediction Engine (xG lambdas + Monte Carlo 10,000 + EV flags + Auto fixtures + H2H)</p>
+      </div>
     </div>
 
-    <div class="brand">
-      <h1>MatchQuant</h1>
-      <p>Soccer Prediction Engine (xG lambdas + Monte Carlo + EV badges + Auto fixtures + H2H)</p>
+    <div class="grid">
+
+      <!-- LEFT: INPUTS -->
+      <div class="card">
+        <div class="cardInner">
+          <div class="title">Mode 1 – Manual Match Input</div>
+
+          <label for="leagueSelect">League</label>
+          <select id="leagueSelect">
+            <option value="" selected>Loading leagues…</option>
+          </select>
+          <div class="subtitle">League list auto-loads from <code>xg_tables.json</code></div>
+
+          <button id="runAllBtn" class="btn secondary">Run ALL Leagues at Once</button>
+          <div class="subtitle">
+            Uses <code>fixtures.json</code>. Add your real fixtures there (include dates for “today”).
+          </div>
+
+          <label for="homeTeamInput">Home Team (auto-suggest)</label>
+          <input id="homeTeamInput" type="text" placeholder="Start typing… e.g., Arsenal" autocomplete="off" />
+
+          <label for="awayTeamInput">Away Team (auto-suggest)</label>
+          <input id="awayTeamInput" type="text" placeholder="Start typing… e.g., Aston Villa" autocomplete="off" />
+
+          <div class="pill"><span>Monte Carlo sims</span> <strong id="mcCount">10,000</strong></div>
+          <div class="pill">Poisson goals + sims → score distribution + win probs</div>
+
+          <div style="height:14px"></div>
+
+          <div class="card" style="background:rgba(255,255,255,.03); box-shadow:none;">
+            <div class="cardInner">
+              <div style="display:flex; justify-content:space-between; gap:10px; align-items:baseline;">
+                <div style="font-weight:900; font-size:16px;">Optional Odds (for EV flags)</div>
+                <div style="color:var(--muted); font-size:12px;">decimal</div>
+              </div>
+              <div class="subtitle">Enter decimal odds. EV flags: <span class="evGreen">Green</span> / <span class="evYellow">Yellow</span> / <span class="evRed">Red</span></div>
+
+              <div class="row">
+                <div>
+                  <label for="oddsMlHome">ML Home</label>
+                  <input id="oddsMlHome" type="number" step="0.01" placeholder="e.g., 1.95" />
+                </div>
+                <div>
+                  <label for="oddsMlDraw">ML Draw</label>
+                  <input id="oddsMlDraw" type="number" step="0.01" placeholder="e.g., 3.60" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label for="oddsMlAway">ML Away</label>
+                  <input id="oddsMlAway" type="number" step="0.01" placeholder="e.g., 3.90" />
+                </div>
+                <div>
+                  <label for="oddsOUOver">O/U 2.5 Over</label>
+                  <input id="oddsOUOver" type="number" step="0.01" placeholder="e.g., 1.85" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label for="oddsOUUnder">O/U 2.5 Under</label>
+                  <input id="oddsOUUnder" type="number" step="0.01" placeholder="e.g., 2.05" />
+                </div>
+                <div>
+                  <label for="oddsAHHome">AH Home -0.5</label>
+                  <input id="oddsAHHome" type="number" step="0.01" placeholder="e.g., 2.05" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label for="cornersLine">Corners Line (e.g., 9.5)</label>
+                  <input id="cornersLine" type="number" step="0.5" placeholder="e.g., 9.5" />
+                </div>
+                <div>
+                  <label for="cornersOverOdds">Corners Odds (Over)</label>
+                  <input id="cornersOverOdds" type="number" step="0.01" placeholder="e.g., 1.90" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label for="cornersUnderOdds">Corners Odds (Under)</label>
+                  <input id="cornersUnderOdds" type="number" step="0.01" placeholder="e.g., 1.95" />
+                </div>
+                <div>
+                  <label for="cardsLine">Cards Line (e.g., 4.5)</label>
+                  <input id="cardsLine" type="number" step="0.5" placeholder="e.g., 4.5" />
+                </div>
+              </div>
+
+              <div class="row">
+                <div>
+                  <label for="cardsOverOdds">Cards Odds (Over)</label>
+                  <input id="cardsOverOdds" type="number" step="0.01" placeholder="e.g., 1.85" />
+                </div>
+                <div>
+                  <label for="cardsUnderOdds">Cards Odds (Under)</label>
+                  <input id="cardsUnderOdds" type="number" step="0.01" placeholder="e.g., 2.05" />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div style="height:14px"></div>
+
+          <button id="runBtn" class="btn">Run Prediction</button>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: RESULTS -->
+      <div class="card">
+        <div class="cardInner">
+          <div class="sectionTitle">Result</div>
+
+          <div class="kv" id="resultKV">
+            <div class="kvRow"><div class="k">League:</div><div class="v" id="resLeague">—</div></div>
+            <div class="kvRow"><div class="k">Match:</div><div class="v" id="resMatch">—</div></div>
+            <div class="kvRow"><div class="k">xG Used:</div><div class="v" id="resXg">—</div></div>
+            <div class="kvRow"><div class="k">Predicted Score:</div><div class="v" id="resScore">—</div></div>
+            <div class="kvRow"><div class="k">O/U 2.5:</div><div class="v" id="resOU">—</div></div>
+            <div class="kvRow"><div class="k">Asian Handicap:</div><div class="v" id="resAH">—</div></div>
+            <div class="kvRow"><div class="k">Win Probabilities:</div><div class="v" id="resWin">—</div></div>
+            <div class="kvRow"><div class="k">EV Flags:</div><div class="v" id="resEV">—</div></div>
+            <div class="kvRow"><div class="k">Confidence Tier:</div><div class="v" id="resTier">—</div></div>
+            <div class="kvRow"><div class="k">Top Scorelines (MC):</div><div class="v" id="resTopLines">—</div></div>
+            <div class="kvRow"><div class="k">Last H2H:</div><div class="v" id="resH2H">—</div></div>
+          </div>
+
+          <div class="footerNote" id="xgStatus">xG loading…</div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- MODE 1 -->
+    <div style="height:14px"></div>
+
+    <!-- AUTO FIXTURES OUTPUT -->
     <div class="card">
-      <h2>Mode 1 — Manual Match Input</h2>
-      <p class="sub">Pick a league, choose teams, optionally add odds for EV badges.</p>
-
-      <label for="leagueSelect">League</label>
-      <select id="leagueSelect"></select>
-      <div class="hint">League list auto-loads from <code>xg_tables.json</code></div>
-
-      <div class="spacer"></div>
-      <button class="btnGhost" id="runAllBtn">Run ALL Leagues at Once</button>
-      <div class="hint">Uses <code>fixtures.json</code>. Add your real fixtures there (include dates for “today”).</div>
-
-      <label for="homeTeam">Home Team (auto-suggest)</label>
-      <input id="homeTeam" placeholder="Start typing… e.g., Arsenal" list="teamsList" autocomplete="off" />
-      <label for="awayTeam">Away Team (auto-suggest)</label>
-      <input id="awayTeam" placeholder="Start typing… e.g., Aston Villa" list="teamsList" autocomplete="off" />
-      <datalist id="teamsList"></datalist>
-
-      <div class="row">
-        <div>
-          <label for="sims">Monte Carlo sims</label>
-          <input id="sims" type="number" min="1000" step="1000" value="10000" />
-          <div class="tiny">Poisson goals + simulations → score distribution + win probs</div>
+      <div class="cardInner">
+        <div class="sectionTitle">Auto Fixtures Output</div>
+        <div class="subtitle">
+          Press “Run ALL Leagues at Once”. Uses <code>fixtures.json</code>. If you include a date like <code>2026-02-04</code>,
+          it will show “today” rows first.
         </div>
-        <div>
-          <label>EV badges</label>
-          <div class="badge"><span class="good">Green</span> / <span class="warn">Yellow</span> / <span class="bad">Red</span></div>
-          <div class="tiny">Enter decimal odds below (optional) to get EV flags.</div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>MATCH</th>
+                <th>SCORE</th>
+                <th>H/D/A</th>
+                <th>O2.5</th>
+                <th>AH</th>
+                <th>EV</th>
+                <th>TIER</th>
+                <th>TOP SCORELINES</th>
+              </tr>
+            </thead>
+            <tbody id="autoFixturesBody">
+              <tr><td colspan="8" style="color:var(--muted);">—</td></tr>
+            </tbody>
+          </table>
         </div>
+
       </div>
-
-      <div class="spacer"></div>
-
-      <div class="card" style="padding:14px;background:rgba(0,0,0,.18)">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
-          <div style="font-weight:900">Optional Odds (for EV flags)</div>
-          <div style="color:rgba(219,231,255,.55);font-weight:800">decimal</div>
-        </div>
-
-        <div class="row">
-          <input id="oddsMlHome" placeholder="ML Home (e.g., 1.95)" inputmode="decimal" />
-          <input id="oddsMlDraw" placeholder="ML Draw (e.g., 3.60)" inputmode="decimal" />
-        </div>
-        <div class="row">
-          <input id="oddsMlAway" placeholder="ML Away (e.g., 3.90)" inputmode="decimal" />
-          <input id="oddsOuOver" placeholder="O/U 2.5 Over (e.g., 1.85)" inputmode="decimal" />
-        </div>
-        <div class="row">
-          <input id="oddsOuUnder" placeholder="O/U 2.5 Under (e.g., 2.05)" inputmode="decimal" />
-          <input id="oddsAhHome" placeholder="AH Home -0.5 (e.g., 2.05)" inputmode="decimal" />
-        </div>
-
-        <div class="row">
-          <input id="cornersLine" placeholder="Corners Line (e.g., 9.5)" inputmode="decimal" />
-          <input id="cornersOver" placeholder="Corners Odds (Over) (e.g., 1.90)" inputmode="decimal" />
-        </div>
-        <div class="row">
-          <input id="cornersUnder" placeholder="Corners Odds (Under) (e.g., 1.95)" inputmode="decimal" />
-          <input id="cardsLine" placeholder="Cards Line (e.g., 4.5)" inputmode="decimal" />
-        </div>
-        <div class="row">
-          <input id="cardsOver" placeholder="Cards Odds (Over) (e.g., 1.85)" inputmode="decimal" />
-          <input id="cardsUnder" placeholder="Cards Odds (Under) (e.g., 2.05)" inputmode="decimal" />
-        </div>
-      </div>
-
-      <button class="btn" id="runBtn">Run Prediction</button>
     </div>
 
-    <div class="sectionTitle">Result</div>
-
-    <div class="card">
-      <div class="resultGrid">
-        <div class="field"><div class="k">League:</div><div class="v" id="rLeague">—</div></div>
-        <div class="field"><div class="k">Match:</div><div class="v" id="rMatch">—</div></div>
-        <div class="field"><div class="k">xG Used:</div><div class="v" id="rXg">—</div></div>
-        <div class="field"><div class="k">Predicted Score:</div><div class="v" id="rScore">—</div></div>
-        <div class="field"><div class="k">O/U 2.5:</div><div class="v" id="rOu">—</div></div>
-        <div class="field"><div class="k">Asian Handicap:</div><div class="v" id="rAh">—</div></div>
-        <div class="field"><div class="k">Win Probabilities:</div><div class="v" id="rWin">—</div></div>
-        <div class="field"><div class="k">EV Flags:</div><div class="v" id="rEv">—</div></div>
-        <div class="field"><div class="k">Confidence Tier:</div><div class="v" id="rTier">—</div></div>
-        <div class="field"><div class="k">Top Scorelines (MC):</div><div class="v" id="rTop">—</div></div>
-      </div>
-
-      <div class="hint" id="statusLine" style="margin-top:12px">Status: waiting…</div>
-    </div>
-
-    <div class="spacer"></div>
   </div>
 
-  <!-- IMPORTANT: keep this exactly like this -->
-  <script src="./app.js"></script>
-
+  <!-- PWA: Service Worker -->
   <script>
-    // Register Service Worker (PWA)
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", async () => {
-        try {
-          await navigator.serviceWorker.register("./sw.js");
-          document.getElementById("pwaStatus").textContent = "Installed";
-        } catch (e) {
-          document.getElementById("pwaStatus").textContent = "SW error";
-        }
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
       });
     }
   </script>
+
+  <!-- IMPORTANT: Loads the engine -->
+  <script src="./app.js"></script>
 </body>
 </html>
