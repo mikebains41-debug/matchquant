@@ -1,60 +1,25 @@
 {
   "Premier League": {
-    "Arsenal": { "att": 1.42, "def": 0.88 },
-    "Manchester City": { "att": 1.55, "def": 0.82 },
-    "Liverpool": { "att": 1.48, "def": 0.90 },
-    "Chelsea": { "att": 1.22, "def": 0.98 },
-    "Manchester United": { "att": 1.18, "def": 1.05 },
-    "Aston Villa": { "att": 1.30, "def": 0.96 },
-    "Tottenham": { "att": 1.36, "def": 1.08 },
-    "Newcastle United": { "att": 1.28, "def": 1.00 },
-    "Brighton": { "att": 1.24, "def": 1.04 },
-    "West Ham": { "att": 1.16, "def": 1.10 },
-    "Brentford": { "att": 1.12, "def": 1.06 },
-    "Crystal Palace": { "att": 1.05, "def": 1.02 },
-    "Fulham": { "att": 1.08, "def": 1.04 },
-    "Bournemouth": { "att": 1.04, "def": 1.12 },
-    "Everton": { "att": 0.98, "def": 1.06 },
-    "Nottingham Forest": { "att": 1.02, "def": 1.10 },
-    "Leeds": { "att": 1.10, "def": 1.08 },
-    "Sunderland": { "att": 0.96, "def": 1.14 }
+    "Arsenal": { "att": 1.42, "def": 0.88, "corners": 6.4, "cards": 1.6 },
+    "Manchester City": { "att": 1.55, "def": 0.82, "corners": 6.9, "cards": 1.4 },
+    "Liverpool": { "att": 1.48, "def": 0.90, "corners": 6.7, "cards": 1.8 },
+    "Chelsea": { "att": 1.22, "def": 0.98, "corners": 6.1, "cards": 2.1 },
+    "Manchester United": { "att": 1.18, "def": 1.02, "corners": 5.8, "cards": 2.3 },
+    "Aston Villa": { "att": 1.30, "def": 0.96, "corners": 6.0, "cards": 2.0 },
+    "Tottenham": { "att": 1.36, "def": 1.04, "corners": 6.5, "cards": 2.4 },
+    "Newcastle United": { "att": 1.28, "def": 0.94, "corners": 6.2, "cards": 2.2 },
+    "Brighton": { "att": 1.24, "def": 1.04, "corners": 6.8, "cards": 1.9 },
+    "West Ham": { "att": 1.16, "def": 1.10, "corners": 5.4, "cards": 2.5 }
   },
 
   "La Liga": {
-    "Real Madrid": { "att": 1.54, "def": 0.84 },
-    "Barcelona": { "att": 1.46, "def": 0.90 },
-    "Atletico Madrid": { "att": 1.28, "def": 0.86 },
-    "Real Sociedad": { "att": 1.20, "def": 0.92 },
-    "Betis": { "att": 1.16, "def": 1.00 },
-    "Villarreal": { "att": 1.18, "def": 1.04 },
-    "Valencia": { "att": 1.06, "def": 1.02 },
-    "Sevilla": { "att": 1.04, "def": 1.06 },
-    "Osasuna": { "att": 1.00, "def": 1.08 }
-  },
-
-  "Serie A": {
-    "Inter": { "att": 1.52, "def": 0.82 },
-    "AC Milan": { "att": 1.36, "def": 0.92 },
-    "Juventus": { "att": 1.30, "def": 0.88 },
-    "Napoli": { "att": 1.28, "def": 0.94 },
-    "Atalanta": { "att": 1.34, "def": 1.02 },
-    "Roma": { "att": 1.18, "def": 0.98 },
-    "Lazio": { "att": 1.16, "def": 1.00 }
-  },
-
-  "Bundesliga": {
-    "Bayern Munich": { "att": 1.60, "def": 0.84 },
-    "Borussia Dortmund": { "att": 1.44, "def": 0.98 },
-    "RB Leipzig": { "att": 1.38, "def": 0.92 },
-    "Bayer Leverkusen": { "att": 1.42, "def": 0.90 },
-    "Eintracht Frankfurt": { "att": 1.18, "def": 1.04 }
-  },
-
-  "Ligue 1": {
-    "PSG": { "att": 1.62, "def": 0.82 },
-    "Marseille": { "att": 1.26, "def": 0.98 },
-    "Lyon": { "att": 1.20, "def": 1.00 },
-    "Monaco": { "att": 1.32, "def": 1.02 },
-    "Lille": { "att": 1.18, "def": 0.94 }
+    "Real Madrid": { "att": 1.54, "def": 0.86, "corners": 6.6, "cards": 1.7 },
+    "Barcelona": { "att": 1.46, "def": 0.92, "corners": 6.9, "cards": 1.6 },
+    "Atletico Madrid": { "att": 1.28, "def": 0.80, "corners": 5.9, "cards": 2.6 },
+    "Real Sociedad": { "att": 1.20, "def": 0.96, "corners": 5.7, "cards": 2.2 },
+    "Betis": { "att": 1.16, "def": 1.00, "corners": 5.8, "cards": 2.4 },
+    "Villarreal": { "att": 1.18, "def": 1.02, "corners": 6.0, "cards": 2.3 },
+    "Valencia": { "att": 1.06, "def": 1.02, "corners": 5.5, "cards": 2.7 },
+    "Sevilla": { "att": 1.04, "def": 1.06, "corners": 5.6, "cards": 2.8 }
   }
 }
