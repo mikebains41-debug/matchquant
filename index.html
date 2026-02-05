@@ -2,81 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MatchQuant</title>
+
   <style>
-    body{margin:0;background:#071225;color:#e5e7eb;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-    .wrap{max-width:880px;margin:0 auto;padding:18px}
-    h1{margin:8px 0 4px;font-size:44px;letter-spacing:.5px}
+    body{margin:0;background:#071225;color:#e5ecff;font-family:system-ui}
+    .wrap{max-width:880px;margin:0 auto;padding:14px}
+    h1{margin:8px 0 4px;font-size:44px}
     .sub{opacity:.75;margin:0 0 14px}
-    .pills{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 16px}
-    .pill{padding:10px 12px;border-radius:999px;background:#0b1b33;border:1px solid rgba(255,255,255,.08);font-size:14px}
-    .ok{border-color:rgba(34,197,94,.35)}
-    .bad{border-color:rgba(239,68,68,.35)}
-    .warn{border-color:rgba(234,179,8,.35)}
-    .card{background:rgba(13,26,49,.75);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:14px;margin:12px 0}
-    .grid{display:grid;grid-template-columns:1fr;gap:10px}
-    select,input,button{width:100%;padding:12px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.10);background:#0b1b33;color:#e5e7eb;font-size:16px}
-    button{background:#2563eb;border:none;font-weight:700;padding:14px}
+    .pills{display:flex;gap:10px;flex-wrap:wrap}
+    .pill{padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.15)}
+    .ok{border-color:rgba(34,197,94,.45)}
+    .card{background:rgba(13,26,49,.75);border-radius:16px;padding:14px;margin:10px 0}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    select,input,button{width:100%;padding:10px;border-radius:10px;border:0}
+    button{background:#2563eb;color:white;font-size:16px}
     .muted{opacity:.7;font-size:13px}
-    .big{font-size:22px}
-    .row{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    th,td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px;vertical-align:top}
-    th{opacity:.75;text-align:left;font-weight:600}
-    .clickRow{cursor:pointer}
-    .badText{color:#fca5a5}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>MatchQuant</h1>
-    <p class="sub">Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
+<div class="wrap">
 
-    <div class="pills">
-      <div id="pillFix" class="pill">fixtures.json (loading...)</div>
-      <div id="pillXg" class="pill">xg_tables.json (loading...)</div>
-      <div id="pillH2h" class="pill">h2h.json (loading...)</div>
-    </div>
+  <h1>MatchQuant</h1>
+  <p class="sub">Soccer Prediction Engine (xG + Monte Carlo + Pro Markets)</p>
 
-    <div class="card grid">
-      <label class="muted">League</label>
-      <select id="leagueSelect"></select>
-
-      <label class="muted">Fixture (optional)</label>
-      <select id="fixtureSelect"></select>
-
-      <label class="muted">Home Team</label>
-      <select id="homeSelect"></select>
-
-      <label class="muted">Away Team</label>
-      <select id="awaySelect"></select>
-
-      <label class="muted">Monte Carlo sims</label>
-      <input id="simsInput" type="number" value="10000" />
-
-      <label class="muted">Home advantage</label>
-      <input id="homeAdvInput" type="number" step="0.01" value="1.10" />
-
-      <label class="muted">Base goals</label>
-      <input id="baseGoalsInput" type="number" step="0.01" value="1.35" />
-
-      <label class="muted">Max goals cap</label>
-      <input id="maxGoalsCapInput" type="number" value="8" />
-
-      <button id="runBtn">Run Prediction</button>
-
-      <div id="statusLine" class="muted">Choose league + teams, then Run.</div>
-    </div>
-
-    <div id="outputCard"></div>
-    <div class="card" id="fixturesTable"></div>
-
-    <div class="muted" style="margin-top:12px;">
-      Notes: Leagues come from xg_tables.json. Fixtures come from fixtures.json. If a league isn't in those files, it won't appear.
-    </div>
+  <div class="pills">
+    <div id="pillFix" class="pill">fixtures.json</div>
+    <div id="pillXg" class="pill">xg_tables.json</div>
+    <div id="pillH2h" class="pill">h2h.json</div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <div class="card grid">
+    <label class="muted">League</label>
+    <select id="leagueSelect"></select>
+
+    <label class="muted">Fixture (optional)</label>
+    <select id="fixtureSelect"></select>
+
+    <label class="muted">Home Team</label>
+    <select id="homeSelect"></select>
+
+    <label class="muted">Away Team</label>
+    <select id="awaySelect"></select>
+
+    <label class="muted">Monte Carlo sims</label>
+    <input id="simsInput" type="number" value="10000"/>
+
+    <label class="muted">Home advantage</label>
+    <input id="homeAdvInput" type="number" step="0.01" value="1.10"/>
+
+    <label class="muted">Base goals</label>
+    <input id="baseGoalsInput" type="number" step="0.01" value="1.35"/>
+
+    <label class="muted">Max goals cap</label>
+    <input id="maxGoalsCapInput" type="number" value="8"/>
+
+    <button id="runBtn">Run Prediction</button>
+  </div>
+
+  <div id="outputCard" class="card"></div>
+
+</div>
+
+<!-- 🔑 LOAD ORDER IS CRITICAL -->
+<script src="engine.js?v=1"></script>
+<script src="app.js?v=3"></script>
+
 </body>
 </html>
