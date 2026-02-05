@@ -1,444 +1,342 @@
-/* MatchQuant app.js — FULL REPLACEMENT (fixtures + xg + h2h loader + UI wiring)
-   - Derives leagues/teams from JSON (no hard-coded lists)
-   - Fixture dropdown works + auto-fills teams
-   - Manual home/away still works
-   - Calls window.runPrediction(params) from engine.js
+/* MatchQuant app.js — FULL REPLACEMENT
+   Fixes: "Data failed to load" on GitHub Pages + robust dropdown rebuilds
+   Assumes these files exist in SAME folder as index.html:
+   - fixtures.json
+   - xg_tables.json
+   - h2h.json
 */
 
-const $ = (id) => document.getElementById(id);
+(() => {
+  "use strict";
 
-const els = {
-  league: $("leagueSelect"),
-  fixture: $("fixtureSelect"),
-  home: $("homeSelect"),
-  away: $("awaySelect"),
-  sims: $("simsInput"),
-  homeAdv: $("homeAdvInput"),
-  baseGoals: $("baseGoalsInput"),
-  capGoals: $("capGoalsInput"),
-  leagueFactor: $("leagueFactorInput"),
-  evThresh: $("evThreshInput"),
-  runBtn: $("runBtn"),
+  // ---------- Helpers ----------
+  const $ = (id) => document.getElementById(id);
 
-  statusFixtures: $("statusFixtures"),
-  statusXg: $("statusXg"),
-  statusH2H: $("statusH2H"),
-  readyLine: $("readyLine"),
-  outCard: $("outCard"),
-  fixturesTableBody: $("fixturesTableBody"),
-};
-
-let xgRaw = null;
-let fixturesRaw = null;
-let h2hRaw = null;
-
-// normalized UI state
-let leagues = [];
-let teamsByLeague = new Map(); // league -> [team...]
-let fixtures = []; // {id, league, home, away, date, odds?}
-
-let currentLeague = "";
-let currentFixtureId = "";
-let currentHome = "";
-let currentAway = "";
-
-// ---------- helpers ----------
-function setStatus(el, ok, text) {
-  if (!el) return;
-  el.textContent = text;
-  el.classList.toggle("ok", !!ok);
-  el.classList.toggle("bad", !ok);
-}
-
-function clearSelect(sel, placeholder) {
-  if (!sel) return;
-  sel.innerHTML = "";
-  const opt = document.createElement("option");
-  opt.value = "";
-  opt.textContent = placeholder;
-  sel.appendChild(opt);
-  sel.value = "";
-}
-
-function fillSelect(sel, items, placeholder) {
-  clearSelect(sel, placeholder);
-  for (const v of items) {
-    const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    sel.appendChild(opt);
+  function byText(a, b) {
+    return String(a).localeCompare(String(b));
   }
-}
 
-function uniqSorted(arr) {
-  return Array.from(new Set(arr.filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b)
-  );
-}
+  function uniqSorted(arr) {
+    return Array.from(new Set(arr)).filter(Boolean).sort(byText);
+  }
 
-async function loadJson(path) {
-  // cache-bust so GitHub Pages doesn’t serve stale JSON
-  const url = `${path}?v=${Date.now()}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
-  return await res.json();
-}
+  function setSelectOptions(selectEl, items, placeholder) {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
 
-// ---------- parsers (robust to different shapes) ----------
-function parseXgTables(xg) {
-  // Build league -> teams from xg_tables.json regardless of shape.
-  const leagueTeams = new Map();
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = placeholder || "Select";
+    selectEl.appendChild(ph);
 
-  if (!xg) return leagueTeams;
-
-  const root = xg.leagues || xg.data || xg;
-
-  // Shape A: array rows [{league, team, ...}, ...]
-  if (Array.isArray(root)) {
-    for (const row of root) {
-      const league = row.league || row.competition || row.lg || row.League;
-      const team = row.team || row.squad || row.Team || row.name;
-      if (!league || !team) continue;
-      if (!leagueTeams.has(league)) leagueTeams.set(league, []);
-      leagueTeams.get(league).push(team);
+    for (const t of items) {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      selectEl.appendChild(opt);
     }
   }
-  // Shape B: object map { "Premier League": { "Arsenal": {...}, ... }, ... }
-  else if (root && typeof root === "object") {
-    for (const league of Object.keys(root)) {
-      const teamsObj = root[league];
-      if (!teamsObj || typeof teamsObj !== "object") continue;
 
-      // teamsObj could be array of teams, or map
-      if (Array.isArray(teamsObj)) {
-        for (const t of teamsObj) {
-          const team =
-            (typeof t === "string" && t) ||
-            t.team ||
-            t.squad ||
-            t.Team ||
-            t.name;
-          if (!team) continue;
-          if (!leagueTeams.has(league)) leagueTeams.set(league, []);
-          leagueTeams.get(league).push(team);
-        }
-      } else {
-        for (const team of Object.keys(teamsObj)) {
-          if (!team) continue;
-          if (!leagueTeams.has(league)) leagueTeams.set(league, []);
-          leagueTeams.get(league).push(team);
-        }
+  function setStatus(el, ok, msg) {
+    if (!el) return;
+    el.textContent = msg || "";
+    el.style.opacity = ok ? "1" : "0.9";
+    el.style.color = ok ? "#22c55e" : "#ef4444"; // green/red
+  }
+
+  function absUrl(fileName) {
+    // Always load JSON relative to the *current page* (works on GitHub Pages subpaths)
+    return new URL(fileName, window.location.href).toString();
+  }
+
+  async function fetchJsonWithRetry(fileName, tries = 3) {
+    const url = absUrl(fileName);
+    let lastErr;
+
+    for (let i = 0; i < tries; i++) {
+      try {
+        // cache bust avoids stale GitHub Pages caching
+        const bust = `cb=${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const res = await fetch(url + (url.includes("?") ? "&" : "?") + bust, {
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error(`${fileName} HTTP ${res.status}`);
+        return await res.json();
+      } catch (e) {
+        lastErr = e;
+        console.warn(`[MatchQuant] Fetch failed (${fileName}) try ${i + 1}/${tries}:`, e);
+        await new Promise((r) => setTimeout(r, 250));
       }
     }
+    throw lastErr;
   }
 
-  // de-dupe
-  for (const [lg, arr] of leagueTeams.entries()) {
-    leagueTeams.set(lg, uniqSorted(arr));
-  }
-  return leagueTeams;
-}
+  // ---------- Data model ----------
+  let fixtures = []; // normalized: [{id, league, home, away, date?}]
+  let xgRaw = null;
+  let h2hRaw = null;
 
-function parseFixtures(fx) {
-  // Normalize fixtures.json into array of:
-  // { id, league, home, away, date, odds }
-  const out = [];
-  if (!fx) return out;
+  let leagues = [];
 
-  const root = fx.fixtures || fx.matches || fx.data || fx;
+  // ---------- Elements ----------
+  const els = {
+    league: $("league"),
+    fixture: $("fixture"),
+    home: $("home"),
+    away: $("away"),
+    sims: $("sims"),
+    homeAdv: $("homeAdv"),
+    baseGoals: $("baseGoals"),
+    capGoals: $("capGoals"),
+    runBtn: $("runBtn"),
 
-  // Shape A: array
-  if (Array.isArray(root)) {
-    for (let i = 0; i < root.length; i++) {
-      const f = root[i] || {};
-      const league = f.league || f.competition || f.lg || f.League;
-      const home = f.home || f.homeTeam || f.Home || f.team1;
-      const away = f.away || f.awayTeam || f.Away || f.team2;
-      const date = f.date || f.kickoff || f.time || f.datetime || "";
+    statusFixtures: $("statusFixtures"),
+    statusXg: $("statusXg"),
+    statusH2H: $("statusH2H"),
+    statusReady: $("statusReady"),
+    footerLoaded: $("footerLoaded"), // optional element
+  };
+
+  // ---------- Parsing ----------
+  function normalizeFixtures(raw) {
+    // Accepts many shapes; produces [{id, league, home, away}]
+    const out = [];
+
+    const arr =
+      Array.isArray(raw) ? raw :
+      Array.isArray(raw?.fixtures) ? raw.fixtures :
+      Array.isArray(raw?.data) ? raw.data :
+      [];
+
+    for (let i = 0; i < arr.length; i++) {
+      const f = arr[i] || {};
+      const league = f.league || f.competition || f.lg || "";
+      const home = f.home || f.homeTeam || f.h || "";
+      const away = f.away || f.awayTeam || f.a || "";
       if (!league || !home || !away) continue;
+
       out.push({
-        id: f.id || `${league}__${home}__${away}__${i}`,
+        id: f.id ?? `${league}__${home}__${away}__${i}`,
         league,
         home,
         away,
-        date,
-        odds: f.odds || null,
+        date: f.date || f.kickoff || f.time || "",
       });
     }
+    return out;
   }
-  // Shape B: object map
-  else if (root && typeof root === "object") {
-    let i = 0;
-    for (const k of Object.keys(root)) {
-      const f = root[k];
-      if (!f || typeof f !== "object") continue;
-      const league = f.league || f.competition || f.lg || f.League;
-      const home = f.home || f.homeTeam || f.Home || f.team1;
-      const away = f.away || f.awayTeam || f.Away || f.team2;
-      const date = f.date || f.kickoff || f.time || f.datetime || "";
-      if (!league || !home || !away) continue;
-      out.push({
-        id: f.id || k || `${league}__${home}__${away}__${i++}`,
-        league,
-        home,
-        away,
-        date,
-        odds: f.odds || null,
-      });
+
+  function leaguesFromFixtures(fixturesArr) {
+    return uniqSorted(fixturesArr.map((f) => f.league));
+  }
+
+  function teamsFromXg(leagueName) {
+    // supports:
+    // 1) xgRaw.leagues[league][team] = {xGF,xGA,...}
+    // 2) xgRaw.data = [{league, team, xGF, xGA}, ...]
+    // 3) xgRaw = [{league, team, xGF, xGA}, ...]
+    if (!xgRaw) return [];
+
+    const root = xgRaw.leagues || xgRaw.data || xgRaw;
+
+    if (Array.isArray(root)) {
+      return uniqSorted(
+        root
+          .filter((r) => (r.league === leagueName || r.competition === leagueName))
+          .map((r) => r.team || r.squad)
+      );
     }
+
+    if (root && root[leagueName]) {
+      return uniqSorted(Object.keys(root[leagueName]));
+    }
+
+    return [];
   }
 
-  return out;
-}
-
-// ---------- build UI data ----------
-function rebuildDataModel() {
-  // leagues = union of leagues from fixtures + xg
-  const lgSet = new Set();
-
-  // teamsByLeague union from fixtures + xg
-  const map = new Map();
-
-  // from fixtures
-  for (const f of fixtures) {
-    lgSet.add(f.league);
-    if (!map.has(f.league)) map.set(f.league, []);
-    map.get(f.league).push(f.home, f.away);
+  function fixturesForLeague(leagueName) {
+    if (!leagueName) return fixtures.slice();
+    return fixtures.filter((f) => f.league === leagueName);
   }
 
-  // from xg
-  const xgMap = parseXgTables(xgRaw);
-  for (const [lg, teams] of xgMap.entries()) {
-    lgSet.add(lg);
-    if (!map.has(lg)) map.set(lg, []);
-    map.get(lg).push(...teams);
+  // ---------- UI rebuild ----------
+  function rebuildLeagueSelect() {
+    setSelectOptions(els.league, leagues, "Select league");
   }
 
-  leagues = uniqSorted(Array.from(lgSet));
-
-  for (const [lg, arr] of map.entries()) {
-    map.set(lg, uniqSorted(arr));
-  }
-  teamsByLeague = map;
-}
-
-// ---------- UI builders ----------
-function rebuildLeagueSelect() {
-  fillSelect(els.league, leagues, "Select league");
-}
-
-function rebuildFixtureSelect(league) {
-  const list = fixtures
-    .filter((f) => !league || f.league === league)
-    .map((f) => ({
+  function rebuildFixtureSelect(leagueName) {
+    const list = fixturesForLeague(leagueName);
+    const labels = list.map((f) => ({
       id: f.id,
-      label: `${f.home} vs ${f.away}${f.date ? ` (${f.date})` : ""}`,
+      label: `${f.home} vs ${f.away}` + (f.date ? ` (${f.date})` : ""),
     }));
 
-  clearSelect(els.fixture, "Select Fixture (optional)");
-  for (const item of list) {
-    const opt = document.createElement("option");
-    opt.value = item.id;
-    opt.textContent = item.label;
-    els.fixture.appendChild(opt);
-  }
-}
+    if (!els.fixture) return;
+    els.fixture.innerHTML = "";
 
-function rebuildTeamSelects(league) {
-  const teams = teamsByLeague.get(league) || [];
-  fillSelect(els.home, teams, "Select home");
-  fillSelect(els.away, teams, "Select away");
-}
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "Select Fixture (optional)";
+    els.fixture.appendChild(ph);
 
-function setReadyLine() {
-  if (!els.readyLine) return;
-  const ok = !!(currentLeague && currentHome && currentAway);
-  els.readyLine.textContent = ok ? "✅ Ready" : "—";
-}
-
-// ---------- events ----------
-function onLeagueChange() {
-  currentLeague = els.league.value || "";
-  currentFixtureId = "";
-  if (els.fixture) els.fixture.value = "";
-
-  // rebuild dependent selects
-  rebuildFixtureSelect(currentLeague);
-  rebuildTeamSelects(currentLeague);
-
-  // clear selected teams
-  currentHome = "";
-  currentAway = "";
-  if (els.home) els.home.value = "";
-  if (els.away) els.away.value = "";
-
-  setReadyLine();
-}
-
-function onFixtureChange() {
-  const id = els.fixture.value || "";
-  currentFixtureId = id;
-
-  if (!id) {
-    // just keep league selection; reset teams
-    currentHome = "";
-    currentAway = "";
-    if (els.home) els.home.value = "";
-    if (els.away) els.away.value = "";
-    setReadyLine();
-    return;
+    for (const item of labels) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item.label;
+      els.fixture.appendChild(opt);
+    }
   }
 
-  const f = fixtures.find((x) => x.id === id);
-  if (!f) return;
+  function rebuildTeamSelects(leagueName) {
+    // Priority: xG teams (complete league), fallback: teams from fixtures
+    let teams = teamsFromXg(leagueName);
 
-  // set league to match fixture
-  currentLeague = f.league;
-  els.league.value = currentLeague;
+    if (!teams.length) {
+      const lf = fixturesForLeague(leagueName);
+      teams = uniqSorted(lf.flatMap((f) => [f.home, f.away]));
+    }
 
-  // rebuild lists for that league
-  rebuildFixtureSelect(currentLeague);
-  els.fixture.value = id;
-  rebuildTeamSelects(currentLeague);
+    setSelectOptions(els.home, teams, "Select home");
+    setSelectOptions(els.away, teams, "Select away");
+  }
 
-  // auto-fill teams
-  currentHome = f.home;
-  currentAway = f.away;
-  els.home.value = currentHome;
-  els.away.value = currentAway;
+  function setReady(ok, msg) {
+    setStatus(els.statusReady, ok, msg);
+  }
 
-  setReadyLine();
-}
+  function syncReadyState() {
+    const ok = !!(fixtures.length && xgRaw && h2hRaw);
+    setReady(ok, ok ? "Ready" : "Loading…");
+  }
 
-function onHomeChange() {
-  currentHome = els.home.value || "";
-  setReadyLine();
-}
-function onAwayChange() {
-  currentAway = els.away.value || "";
-  setReadyLine();
-}
+  function onLeagueChange() {
+    const lg = els.league?.value || "";
+    rebuildFixtureSelect(lg);
+    rebuildTeamSelects(lg);
+    setReady(true, "Ready");
+  }
 
-// ---------- init ----------
-async function init() {
-  // initial status
-  setStatus(els.statusFixtures, false, "fixtures loading…");
-  setStatus(els.statusXg, false, "xg_tables loading…");
-  setStatus(els.statusH2H, false, "h2h loading…");
-  if (els.outCard) els.outCard.textContent = "";
-  setReadyLine();
+  function onFixtureChange() {
+    const id = els.fixture?.value || "";
+    if (!id) return;
 
-  try {
-    // load all (h2h can fail without blocking)
-    [fixturesRaw, xgRaw] = await Promise.all([
-      loadJson("./fixtures.json"),
-      loadJson("./xg_tables.json"),
-    ]);
+    const f = fixtures.find((x) => String(x.id) === String(id));
+    if (!f) return;
 
+    // set league to fixture league if needed
+    if (els.league && els.league.value !== f.league) {
+      els.league.value = f.league;
+      rebuildFixtureSelect(f.league);
+      rebuildTeamSelects(f.league);
+      els.fixture.value = f.id;
+    }
+
+    if (els.home) els.home.value = f.home;
+    if (els.away) els.away.value = f.away;
+
+    setReady(true, "Ready");
+  }
+
+  // ---------- Run ----------
+  function runPrediction() {
     try {
-      h2hRaw = await loadJson("./h2h.json");
-      setStatus(els.statusH2H, true, "h2h OK");
-    } catch (e) {
-      h2hRaw = null;
-      setStatus(els.statusH2H, false, "h2h —");
-      console.warn("h2h load failed:", e);
-    }
-
-    fixtures = parseFixtures(fixturesRaw);
-
-    // Build model + UI
-    rebuildDataModel();
-    rebuildLeagueSelect();
-    rebuildFixtureSelect(""); // all fixtures
-    clearSelect(els.home, "Select home");
-    clearSelect(els.away, "Select away");
-    setReadyLine();
-
-    setStatus(els.statusFixtures, true, `fixtures OK (${fixtures.length})`);
-    setStatus(els.statusXg, true, `xg OK (${leagues.length} leagues)`);
-
-    // Optional: preview fixtures table
-    if (els.fixturesTableBody) {
-      els.fixturesTableBody.innerHTML = "";
-      const preview = fixtures.slice(0, 25);
-      for (const f of preview) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${f.league}</td>
-          <td>${f.home} vs ${f.away}</td>
-          <td class="mono">${f.date || "—"}</td>
-        `;
-        tr.style.cursor = "pointer";
-        tr.addEventListener("click", () => {
-          els.fixture.value = f.id;
-          onFixtureChange();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-        els.fixturesTableBody.appendChild(tr);
+      if (!fixtures.length || !xgRaw) {
+        alert("MatchQuant says\n\nPrediction error. Data failed to load.\n\nOpen Console for details.");
+        console.error("[MatchQuant] Missing data:", { fixtures: fixtures.length, xgRaw: !!xgRaw, h2hRaw: !!h2hRaw });
+        return;
       }
-    }
-  } catch (e) {
-    console.error(e);
-    setStatus(els.statusFixtures, false, "fixtures FAIL");
-    setStatus(els.statusXg, false, "xg FAIL");
-    alert("MatchQuant says\n\nPrediction error. Data failed to load.\n\nOpen Console for details.");
-    return;
-  }
 
-  // wire events
-  if (els.league) els.league.addEventListener("change", onLeagueChange);
-  if (els.fixture) els.fixture.addEventListener("change", onFixtureChange);
-  if (els.home) els.home.addEventListener("change", onHomeChange);
-  if (els.away) els.away.addEventListener("change", onAwayChange);
+      const league = els.league?.value || "";
+      const home = els.home?.value || "";
+      const away = els.away?.value || "";
 
-  // run
-  if (els.runBtn) {
-    els.runBtn.addEventListener("click", () => {
-      if (!currentLeague || !currentHome || !currentAway) {
+      if (!league || !home || !away) {
         alert("MatchQuant says\n\nSelect league + home + away.");
-        return;
-      }
-      if (currentHome === currentAway) {
-        alert("MatchQuant says\n\nHome and Away cannot be the same team.");
-        return;
-      }
-
-      // engine must exist
-      if (typeof window.runPrediction !== "function") {
-        console.warn("engine missing: window.runPrediction is not a function");
-        alert("MatchQuant says\n\nEngine not found. Make sure engine.js is loaded correctly.");
         return;
       }
 
       const params = {
-        league: currentLeague,
-        home: currentHome,
-        away: currentAway,
+        league,
+        home,
+        away,
         sims: Number(els.sims?.value || 10000),
-        homeAdv: Number(els.homeAdv?.value || 1.1),
+        homeAdv: Number(els.homeAdv?.value || 1.10),
         baseGoals: Number(els.baseGoals?.value || 1.35),
         capGoals: Number(els.capGoals?.value || 8),
-        leagueFactorOverride: els.leagueFactor?.value ? Number(els.leagueFactor.value) : null,
-        evThreshold: els.evThresh?.value ? Number(els.evThresh.value) : null,
-
-        // give engine full data (optional use)
         xgRaw,
         fixtures,
         h2hRaw,
-        fixtureId: currentFixtureId || null,
       };
 
-      try {
+      if (typeof window.runPrediction === "function") {
         window.runPrediction(params);
-      } catch (err) {
-        console.error(err);
-        alert("MatchQuant says\n\nPrediction error. Open DevTools Console for details.");
+      } else {
+        alert("MatchQuant says\n\nEngine not found. Make sure engine.js loads before app.js.");
+        console.warn("[MatchQuant] window.runPrediction is not defined.");
       }
-    });
+    } catch (e) {
+      console.error("[MatchQuant] Prediction crash:", e);
+      alert("MatchQuant says\n\nPrediction error. Open Console for details.");
+    }
   }
 
-  // helpful hint for Android users
-  console.log("TIP: On Android, the <select> list is scrollable. Swipe inside the list to see all teams.");
-}
+  // ---------- Init ----------
+  async function init() {
+    // clear statuses
+    setStatus(els.statusFixtures, false, "fixtures loading…");
+    setStatus(els.statusXg, false, "xg loading…");
+    setStatus(els.statusH2H, false, "h2h loading…");
+    setReady(false, "Loading…");
 
-document.addEventListener("DOMContentLoaded", init);
+    try {
+      const [fixturesRaw, xg, h2h] = await Promise.all([
+        fetchJsonWithRetry("fixtures.json", 3),
+        fetchJsonWithRetry("xg_tables.json", 3),
+        fetchJsonWithRetry("h2h.json", 3),
+      ]);
+
+      fixtures = normalizeFixtures(fixturesRaw);
+      xgRaw = xg;
+      h2hRaw = h2h;
+
+      leagues = leaguesFromFixtures(fixtures);
+
+      setStatus(els.statusFixtures, true, `fixtures OK (${fixtures.length})`);
+      setStatus(els.statusXg, true, `xg OK (${leagues.length} leagues)`);
+      setStatus(els.statusH2H, true, `h2h OK`);
+
+      rebuildLeagueSelect();
+      rebuildFixtureSelect("");
+      rebuildTeamSelects("");
+
+      // wire events
+      els.league?.addEventListener("change", onLeagueChange);
+      els.fixture?.addEventListener("change", onFixtureChange);
+      els.runBtn?.addEventListener("click", runPrediction);
+
+      // footer line if you have it
+      if (els.footerLoaded) {
+        els.footerLoaded.textContent = `Loaded: ${leagues.length} leagues • ${fixtures.length} fixtures`;
+      }
+
+      syncReadyState();
+    } catch (e) {
+      console.error("[MatchQuant] DATA LOAD FAILED:", e);
+      setStatus(els.statusFixtures, false, "fixtures FAIL");
+      setStatus(els.statusXg, false, "xg FAIL");
+      setStatus(els.statusH2H, false, "h2h FAIL");
+      setReady(false, "Not Ready");
+
+      alert(
+        "MatchQuant says\n\nPrediction error. Data failed to load.\n\n" +
+        "Fix checklist:\n" +
+        "1) Make sure fixtures.json, xg_tables.json, h2h.json are in the SAME folder as index.html\n" +
+        "2) Filenames must match EXACTLY (lowercase)\n" +
+        "3) After pushing to GitHub, wait 1-2 minutes then hard refresh\n\n" +
+        "Open Console for details."
+      );
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
