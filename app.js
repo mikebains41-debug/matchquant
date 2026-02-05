@@ -1,17 +1,41 @@
 document.addEventListener("DOMContentLoaded", () => {
-
   const leagueEl = document.getElementById("league");
   const homeEl = document.getElementById("home");
   const awayEl = document.getElementById("away");
   const runBtn = document.getElementById("runBtn");
   const statusEl = document.getElementById("status");
 
+  // ✅ Full team lists (manual mode) — no JSON needed
   const leagues = {
-    "Premier League": ["Arsenal", "Chelsea", "Liverpool", "Man City"],
-    "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Sevilla"],
-    "Bundesliga": ["Bayern Munich", "RB Leipzig", "Dortmund"],
-    "Serie A": ["Inter", "AC Milan", "Juventus"],
-    "Ligue 1": ["PSG", "Marseille", "Lyon"]
+    "Premier League": [
+      "Arsenal","Aston Villa","Bournemouth","Brentford","Brighton",
+      "Chelsea","Crystal Palace","Everton","Fulham","Ipswich Town",
+      "Leicester City","Liverpool","Manchester City","Manchester United",
+      "Newcastle United","Nottingham Forest","Southampton","Tottenham",
+      "West Ham United","Wolverhampton"
+    ],
+    "La Liga": [
+      "Alaves","Athletic Club","Atletico Madrid","Barcelona","Betis","Celta Vigo",
+      "Espanyol","Getafe","Girona","Las Palmas","Leganes","Mallorca","Osasuna",
+      "Rayo Vallecano","Real Madrid","Real Sociedad","Sevilla","Valencia",
+      "Valladolid","Villarreal"
+    ],
+    "Bundesliga": [
+      "Augsburg","Bayern Munich","Bochum","Borussia Dortmund","Borussia Monchengladbach",
+      "Eintracht Frankfurt","Freiburg","Heidenheim","Hoffenheim","Holstein Kiel",
+      "Mainz","RB Leipzig","St. Pauli","Stuttgart","Union Berlin","Werder Bremen",
+      "Wolfsburg","Bayer Leverkusen"
+    ],
+    "Serie A": [
+      "AC Milan","Atalanta","Bologna","Cagliari","Como","Empoli","Fiorentina",
+      "Genoa","Inter","Juventus","Lazio","Lecce","Monza","Napoli","Parma",
+      "Roma","Torino","Udinese","Venezia","Verona"
+    ],
+    "Ligue 1": [
+      "Angers","Auxerre","Brest","Le Havre","Lens","Lille","Lyon","Marseille",
+      "Monaco","Montpellier","Nantes","Nice","PSG","Rennes","Reims",
+      "Saint-Etienne","Strasbourg","Toulouse"
+    ]
   };
 
   function resetSelect(el, placeholder) {
@@ -23,15 +47,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function fillSelect(el, items) {
-    items.forEach(t => {
+    for (const t of items) {
       const o = document.createElement("option");
       o.value = t;
       o.textContent = t;
       el.appendChild(o);
-    });
+    }
   }
 
-  // Populate leagues
+  // Populate leagues dropdown
   resetSelect(leagueEl, "Select league");
   Object.keys(leagues).forEach(lg => {
     const o = document.createElement("option");
@@ -40,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     leagueEl.appendChild(o);
   });
 
+  // Init team dropdowns
   resetSelect(homeEl, "Select home");
   resetSelect(awayEl, "Select away");
 
@@ -55,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   runBtn.addEventListener("click", () => {
     if (!window.runPrediction) {
-      alert("Engine not loaded.");
+      alert("MatchQuant says\n\nEngine not loaded.");
       return;
     }
 
@@ -63,22 +88,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const home = homeEl.value;
     const away = awayEl.value;
 
-    if (!league || !home || !away || home === away) {
-      alert("Select valid league, home and away teams.");
+    if (!league || !home || !away) {
+      alert("MatchQuant says\n\nSelect league, home, and away.");
+      return;
+    }
+    if (home === away) {
+      alert("MatchQuant says\n\nHome and Away cannot be the same team.");
       return;
     }
 
-    const params = {
-      league,
-      home,
-      away,
-      sims: Number(document.getElementById("sims").value),
-      homeAdv: Number(document.getElementById("homeAdv").value),
-      baseGoals: Number(document.getElementById("baseGoals").value),
-      capGoals: Number(document.getElementById("capGoals").value)
-    };
+    const sims = Number(document.getElementById("sims").value || 10000);
+    const homeAdv = Number(document.getElementById("homeAdv").value || 1.10);
+    const baseGoals = Number(document.getElementById("baseGoals").value || 1.35);
+    const capGoals = Number(document.getElementById("capGoals").value || 8);
 
-    window.runPrediction(params);
+    const params = { league, home, away, sims, homeAdv, baseGoals, capGoals };
+
+    try {
+      window.runPrediction(params);
+    } catch (e) {
+      alert("MatchQuant says\n\nPrediction error.");
+      console.error(e);
+    }
   });
 
   statusEl.textContent = "Ready ✔ Manual mode (engine-driven)";
