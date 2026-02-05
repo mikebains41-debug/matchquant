@@ -1,9 +1,22 @@
-{
-  "EPL": {
-    "arsenal__aston villa": { "date": "2025-12-10", "score": "2-1", "corners": 10, "cards": 4 },
-    "liverpool__man city": { "date": "2025-11-22", "score": "2-2", "corners": 11, "cards": 5 }
+[
+  {
+    "date": "2025-12-15",
+    "league": "Premier League",
+    "home": "Arsenal",
+    "away": "Chelsea",
+    "home_goals": 2,
+    "away_goals": 1,
+    "cards": 5,
+    "corners": 10
   },
-  "LaLiga": {
-    "barcelona__real madrid": { "date": "2025-10-28", "score": "2-2", "corners": 9, "cards": 6 }
+  {
+    "date": "2025-11-02",
+    "league": "Premier League",
+    "home": "Aston Villa",
+    "away": "Liverpool",
+    "home_goals": 1,
+    "away_goals": 1,
+    "cards": 4,
+    "corners": 9
   }
-}
+]
