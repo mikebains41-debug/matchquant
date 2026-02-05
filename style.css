@@ -1,0 +1,113 @@
+* {
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at top, #0b1c2d, #020814);
+  color: #e6eef8;
+}
+
+.app {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin-top: 6px;
+  margin-bottom: 18px;
+  color: #9fb4cc;
+  font-size: 14px;
+}
+
+.data-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.data-buttons button {
+  flex: 1;
+  background: #0f243a;
+  border: 1px solid #1f3a57;
+  color: #8fa8c2;
+  padding: 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.card {
+  background: linear-gradient(180deg, #0d2035, #071524);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #9fb4cc;
+}
+
+select,
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #1f3a57;
+  background: #081a2c;
+  color: #e6eef8;
+  font-size: 15px;
+}
+
+select:focus,
+input:focus {
+  outline: none;
+  border-color: #3a7bfd;
+}
+
+button#runBtn {
+  margin-top: 18px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #3a7bfd, #1b56d8);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button#runBtn:active {
+  transform: scale(0.98);
+}
+
+.status {
+  margin-top: 14px;
+  font-size: 12px;
+  color: #9fb4cc;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status span.ok {
+  color: #4ade80;
+}
+
+.status span.bad {
+  color: #f87171;
+}
