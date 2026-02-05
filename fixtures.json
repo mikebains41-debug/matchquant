@@ -4,35 +4,75 @@
     "home": "Arsenal",
     "away": "Aston Villa",
     "date": "2026-02-08",
-    "odds": { "home": 1.85, "draw": 3.70, "away": 4.20 }
+    "odds": { "home": 1.85, "draw": 3.80, "away": 4.20 },
+    "lines": {
+      "ah_main": -0.75,
+      "ou_main": 2.5
+    },
+    "pro": {
+      "confidence": "A",
+      "notes": "Strong home xG edge + tempo advantage"
+    }
   },
   {
     "league": "Premier League",
     "home": "Liverpool",
     "away": "Manchester City",
     "date": "2026-02-09",
-    "odds": { "home": 2.45, "draw": 3.40, "away": 2.70 }
+    "odds": { "home": 2.45, "draw": 3.60, "away": 2.70 },
+    "lines": {
+      "ah_main": 0.0,
+      "ou_main": 3.0
+    },
+    "pro": {
+      "confidence": "B",
+      "notes": "High variance elite matchup"
+    }
   },
   {
     "league": "Premier League",
     "home": "Chelsea",
     "away": "Manchester United",
     "date": "2026-02-10",
-    "odds": { "home": 2.05, "draw": 3.35, "away": 3.60 }
+    "odds": { "home": 2.05, "draw": 3.40, "away": 3.50 },
+    "lines": {
+      "ah_main": -0.25,
+      "ou_main": 2.5
+    },
+    "pro": {
+      "confidence": "B",
+      "notes": "Chelsea home pressure, United counter threat"
+    }
   },
   {
     "league": "Premier League",
     "home": "Tottenham",
     "away": "Newcastle United",
     "date": "2026-02-11",
-    "odds": { "home": 2.15, "draw": 3.50, "away": 3.20 }
+    "odds": { "home": 2.15, "draw": 3.50, "away": 3.10 },
+    "lines": {
+      "ah_main": -0.25,
+      "ou_main": 3.0
+    },
+    "pro": {
+      "confidence": "C",
+      "notes": "Wide distribution outcomes"
+    }
   },
   {
     "league": "Premier League",
     "home": "Brighton",
     "away": "West Ham",
     "date": "2026-02-12",
-    "odds": { "home": 2.10, "draw": 3.45, "away": 3.55 }
+    "odds": { "home": 2.10, "draw": 3.40, "away": 3.60 },
+    "lines": {
+      "ah_main": -0.5,
+      "ou_main": 2.75
+    },
+    "pro": {
+      "confidence": "A",
+      "notes": "Brighton shot volume dominance"
+    }
   },
 
   {
@@ -40,27 +80,59 @@
     "home": "Real Madrid",
     "away": "Barcelona",
     "date": "2026-02-15",
-    "odds": { "home": 2.30, "draw": 3.60, "away": 2.85 }
+    "odds": { "home": 2.30, "draw": 3.60, "away": 2.85 },
+    "lines": {
+      "ah_main": -0.25,
+      "ou_main": 3.0
+    },
+    "pro": {
+      "confidence": "B",
+      "notes": "El Clasico volatility"
+    }
   },
   {
     "league": "La Liga",
     "home": "Atletico Madrid",
     "away": "Real Sociedad",
     "date": "2026-02-16",
-    "odds": { "home": 1.95, "draw": 3.40, "away": 4.10 }
+    "odds": { "home": 1.95, "draw": 3.30, "away": 4.20 },
+    "lines": {
+      "ah_main": -0.75,
+      "ou_main": 2.25
+    },
+    "pro": {
+      "confidence": "A",
+      "notes": "Defensive clamp + home control"
+    }
   },
   {
     "league": "La Liga",
     "home": "Betis",
     "away": "Villarreal",
     "date": "2026-02-17",
-    "odds": { "home": 2.55, "draw": 3.30, "away": 2.70 }
+    "odds": { "home": 2.55, "draw": 3.40, "away": 2.75 },
+    "lines": {
+      "ah_main": 0.0,
+      "ou_main": 2.75
+    },
+    "pro": {
+      "confidence": "C",
+      "notes": "Coin-flip midfield battle"
+    }
   },
   {
     "league": "La Liga",
     "home": "Valencia",
     "away": "Sevilla",
     "date": "2026-02-18",
-    "odds": { "home": 2.65, "draw": 3.10, "away": 2.85 }
+    "odds": { "home": 2.65, "draw": 3.20, "away": 2.65 },
+    "lines": {
+      "ah_main": 0.0,
+      "ou_main": 2.25
+    },
+    "pro": {
+      "confidence": "B",
+      "notes": "Low scoring bias"
+    }
   }
 ]
