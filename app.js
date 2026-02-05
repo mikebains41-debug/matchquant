@@ -1,11 +1,11 @@
 let xgTables = {};
 
-// ---------- LOAD XG TABLES ----------
+// ================= LOAD DATA =================
 fetch("xg_tables.json")
   .then(res => res.json())
   .then(data => {
-    xgTables = normalizeAllLeagues(data);
-    populateLeagueDropdown();
+    xgTables = data;
+    populateLeagues();
     document.getElementById("xg-status").innerText =
       `✓ xG loaded (${Object.keys(xgTables).length} leagues)`;
   })
@@ -14,52 +14,8 @@ fetch("xg_tables.json")
     console.error(err);
   });
 
-// ---------- NORMALIZATION ----------
-function normalizeAllLeagues(raw) {
-  const out = {};
-
-  for (const league in raw) {
-    out[league] = {};
-
-    for (const team in raw[league]) {
-      const t = raw[league][team];
-
-      const att =
-        t.att ??
-        t.xg ??
-        t.xg_for ??
-        t.xgf ??
-        null;
-
-      const def =
-        t.def ??
-        t.xga ??
-        t.xg_against ??
-        t.xga ??
-        null;
-
-      if (isFinite(att) && isFinite(def)) {
-        out[league][team] = {
-          att: Number(att),
-          def: Number(def)
-        };
-      }
-    }
-
-    if (Object.keys(out[league]).length === 0) {
-      delete out[league];
-    }
-  }
-
-  if (Object.keys(out).length === 0) {
-    throw new Error("No valid xG data found");
-  }
-
-  return out;
-}
-
-// ---------- UI ----------
-function populateLeagueDropdown() {
+// ================= UI =================
+function populateLeagues() {
   const leagueSelect = document.getElementById("league");
   leagueSelect.innerHTML = `<option value="">Select a league...</option>`;
 
@@ -96,7 +52,7 @@ function populateTeams() {
   });
 }
 
-// ---------- PREDICTION ----------
+// ================= PREDICTION =================
 function runPrediction() {
   const league = document.getElementById("league").value;
   const home = document.getElementById("home").value;
@@ -115,8 +71,9 @@ function runPrediction() {
     return;
   }
 
-  const homeXG = (H.att + A.def) / 2;
-  const awayXG = (A.att + H.def) / 2;
+  // STRICT schema: xg_for / xg_against
+  const homeXG = (H.xg_for + A.xg_against) / 2;
+  const awayXG = (A.xg_for + H.xg_against) / 2;
 
   const score = `${Math.round(homeXG)} – ${Math.round(awayXG)}`;
   const total = homeXG + awayXG;
