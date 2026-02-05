@@ -1,14 +1,26 @@
 {
   "premier league__arsenal__aston villa": {
-    "date": "2025-11-02",
+    "date": "2025-10-29",
     "score": "2-1",
-    "cards": 4,
+    "cards": 5,
     "corners": 11
   },
   "premier league__liverpool__manchester city": {
-    "date": "2025-10-18",
+    "date": "2025-11-04",
     "score": "1-1",
-    "cards": 5,
+    "cards": 6,
     "corners": 10
+  },
+  "la liga__real madrid__barcelona": {
+    "date": "2025-10-21",
+    "score": "3-2",
+    "cards": 7,
+    "corners": 12
+  },
+  "la liga__atletico madrid__real sociedad": {
+    "date": "2025-11-09",
+    "score": "1-0",
+    "cards": 4,
+    "corners": 9
   }
 }
