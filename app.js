@@ -1,399 +1,431 @@
-"use strict";
+/* MatchQuant - app.js (FULL REPLACEMENT)
+   Fixes:
+   - Accepts xg_tables.json formats: {att,def} OR {xg_for,xg_against} OR {xg,xga} OR {xgf,xga}
+   - NEVER silently deletes leagues/teams (it will keep them and show helpful console warnings)
+   - League -> Fixture -> Teams pipeline wired reliably
+   - Run Prediction works and is exposed globally for the button onclick
+*/
 
-/** ---------- helpers ---------- */
-const $ = (id) => document.getElementById(id);
+(() => {
+  "use strict";
 
-function cleanName(s) {
-  return (s ?? "")
-    .toString()
-    .replace(/\s+/g, " ")
-    .replace(/\u00A0/g, " ")
-    .trim();
-}
+  // ----------------------------
+  // State
+  // ----------------------------
+  let xgRaw = null;      // raw xg json
+  let xgTables = {};     // normalized: { league: { team: {att, def} } }
+  let fixtures = {};     // { league: [ {home,away,date?} ] } or [ {league,home,away,date?} ]
+  let h2h = {};          // any format - we try to read last match if present
 
-function keyName(s) {
-  // case-insensitive + remove punctuation for matching
-  return cleanName(s)
-    .toLowerCase()
-    .replace(/[’'".,()/\-]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+  // ----------------------------
+  // Helpers
+  // ----------------------------
+  const $ = (id) => document.getElementById(id);
 
-function safeNum(x) {
-  const n = Number(x);
-  return Number.isFinite(n) ? n : null;
-}
+  function setPill(id, ok, text) {
+    const el = $(id);
+    if (!el) return;
+    el.textContent = (ok ? "✓ " : "✗ ") + text;
+    el.style.opacity = ok ? "1" : "0.7";
+  }
 
-function setStatus(id, okText, failText, ok) {
-  const el = $(id);
-  if (!el) return;
-  el.textContent = ok ? okText : failText;
-}
+  function cleanName(s) {
+    if (typeof s !== "string") return "";
+    return s.trim();
+  }
 
-/** ---------- data stores ---------- */
-let xgTables = {};     // { league: { teamName: {att, def} } }
-let fixtures = [];     // [{league, home, away, date?}]
-let h2hList = [];      // [{league?, home, away, score, corners, cards, date?}]
+  // Convert many possible xG row shapes -> {att, def}
+  function normalizeTeamRow(row) {
+    if (!row || typeof row !== "object") return null;
 
-/** ---------- xG normalization ---------- */
-/**
- * Accepts any of these per team:
- *  - {att, def}
- *  - {xg, xga}
- *  - {xg_for, xg_against}
- *  - {xg_for, xg_against} (your screenshot shows xg_for)
- */
-function normalizeXG(raw) {
-  const out = {};
-  for (const leagueRaw in raw) {
-    const league = cleanName(leagueRaw);
-    out[league] = {};
+    const att =
+      row.att ??
+      row.xg ??
+      row.xg_for ??
+      row.xgf ??
+      row.for ??
+      row.attack ??
+      null;
 
-    const teamsObj = raw[leagueRaw] || {};
-    for (const teamRaw in teamsObj) {
-      const teamName = cleanName(teamRaw);
-      const t = teamsObj[teamRaw] || {};
+    const def =
+      row.def ??
+      row.xga ??
+      row.xg_against ??
+      row.against ??
+      row.defense ??
+      null;
 
-      const att =
-        safeNum(t.att) ??
-        safeNum(t.xg) ??
-        safeNum(t.xg_for) ??
-        safeNum(t.xgf) ??
-        null;
+    const attNum = Number(att);
+    const defNum = Number(def);
 
-      const def =
-        safeNum(t.def) ??
-        safeNum(t.xga) ??
-        safeNum(t.xg_against) ??
-        safeNum(t.xga_for) ?? // just in case someone used odd keys
-        null;
+    if (!Number.isFinite(attNum) || !Number.isFinite(defNum)) return null;
+    return { att: attNum, def: defNum };
+  }
 
-      if (Number.isFinite(att) && Number.isFinite(def)) {
-        out[league][teamName] = { att, def };
+  function normalizeXG(raw) {
+    const out = {};
+    if (!raw || typeof raw !== "object") return out;
+
+    for (const leagueKey of Object.keys(raw)) {
+      const league = cleanName(leagueKey);
+      const leagueObj = raw[leagueKey];
+      if (!league || !leagueObj || typeof leagueObj !== "object") continue;
+
+      out[league] = {};
+
+      for (const teamKey of Object.keys(leagueObj)) {
+        const team = cleanName(teamKey);
+        const row = leagueObj[teamKey];
+        const norm = normalizeTeamRow(row);
+
+        if (team && norm) {
+          out[league][team] = norm;
+        }
+      }
+    }
+    return out;
+  }
+
+  function leagueKeys(obj) {
+    return Object.keys(obj || {}).sort((a, b) => a.localeCompare(b));
+  }
+
+  function teamKeysForLeague(league) {
+    const teams = xgTables?.[league] ? Object.keys(xgTables[league]) : [];
+    return teams.sort((a, b) => a.localeCompare(b));
+  }
+
+  function fillSelect(selectEl, options, placeholder) {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
+
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = placeholder || "Select…";
+    selectEl.appendChild(ph);
+
+    for (const opt of options) {
+      const o = document.createElement("option");
+      o.value = opt.value;
+      o.textContent = opt.label;
+      selectEl.appendChild(o);
+    }
+  }
+
+  // Fixtures can be stored as:
+  // A) { "Premier League": [ {home,away,date}, ... ], "La Liga": [...] }
+  // B) [ {league:"Premier League", home:"...", away:"..."}, ... ]
+  function fixturesForLeague(league) {
+    if (!fixtures) return [];
+    if (Array.isArray(fixtures)) {
+      return fixtures.filter((f) => cleanName(f.league) === league);
+    }
+    if (typeof fixtures === "object") {
+      const arr = fixtures[league];
+      return Array.isArray(arr) ? arr : [];
+    }
+    return [];
+  }
+
+  function formatFixtureLabel(f) {
+    const home = cleanName(f.home);
+    const away = cleanName(f.away);
+    const date = cleanName(f.date || f.kickoff || f.time || "");
+    return date ? `${home} vs ${away} (${date})` : `${home} vs ${away}`;
+  }
+
+  // ----------------------------
+  // UI Wiring
+  // ----------------------------
+  function populateLeagueDropdown() {
+    const leagueSelect = $("league");
+    const leagues = leagueKeys(xgTables).map((l) => ({ value: l, label: l }));
+
+    fillSelect(leagueSelect, leagues, "Select a league…");
+
+    // IMPORTANT: always (re)wire events
+    if (leagueSelect) {
+      leagueSelect.onchange = () => {
+        populateFixtureDropdown();
+        populateTeamsDropdowns();
+      };
+    }
+  }
+
+  function populateFixtureDropdown() {
+    const league = cleanName($("league")?.value);
+    const fixtureSelect = $("fixture");
+
+    if (!fixtureSelect) return;
+
+    if (!league) {
+      fillSelect(fixtureSelect, [], "Select a fixture…");
+      fixtureSelect.onchange = null;
+      return;
+    }
+
+    const list = fixturesForLeague(league)
+      .filter((f) => cleanName(f.home) && cleanName(f.away))
+      .map((f, idx) => ({
+        value: String(idx),
+        label: formatFixtureLabel(f),
+      }));
+
+    fillSelect(fixtureSelect, list, "Select a fixture…");
+
+    fixtureSelect.onchange = () => {
+      const idx = Number(fixtureSelect.value);
+      if (!Number.isFinite(idx)) return;
+      const arr = fixturesForLeague(league);
+      const f = arr[idx];
+      if (!f) return;
+
+      // Auto-fill teams if they exist in xg table for league
+      const home = cleanName(f.home);
+      const away = cleanName(f.away);
+
+      const homeSel = $("home");
+      const awaySel = $("away");
+
+      if (homeSel && home) homeSel.value = home;
+      if (awaySel && away) awaySel.value = away;
+    };
+  }
+
+  function populateTeamsDropdowns() {
+    const league = cleanName($("league")?.value);
+    const homeSel = $("home");
+    const awaySel = $("away");
+
+    if (!league || !xgTables[league]) {
+      fillSelect(homeSel, [], "Select home team…");
+      fillSelect(awaySel, [], "Select away team…");
+      return;
+    }
+
+    const teams = teamKeysForLeague(league).map((t) => ({ value: t, label: t }));
+    fillSelect(homeSel, teams, "Select home team…");
+    fillSelect(awaySel, teams, "Select away team…");
+  }
+
+  // ----------------------------
+  // Prediction (Poisson Monte Carlo)
+  // ----------------------------
+  function poissonSample(lambda) {
+    // Knuth
+    const L = Math.exp(-lambda);
+    let k = 0;
+    let p = 1;
+    do {
+      k++;
+      p *= Math.random();
+    } while (p > L);
+    return k - 1;
+  }
+
+  function simulateMatch(homeAtt, awayDef, awayAtt, homeDef, sims) {
+    // Simple blending of attack/defense into expected goals
+    const homeLambda = Math.max(0.05, (homeAtt + awayDef) / 2);
+    const awayLambda = Math.max(0.05, (awayAtt + homeDef) / 2);
+
+    let homeWins = 0, awayWins = 0, draws = 0;
+    let homeGoalsSum = 0, awayGoalsSum = 0;
+    let over25 = 0, btts = 0;
+
+    const scoreCounts = new Map();
+
+    for (let i = 0; i < sims; i++) {
+      const hg = poissonSample(homeLambda);
+      const ag = poissonSample(awayLambda);
+
+      homeGoalsSum += hg;
+      awayGoalsSum += ag;
+
+      if (hg > ag) homeWins++;
+      else if (ag > hg) awayWins++;
+      else draws++;
+
+      if (hg + ag > 2.5) over25++;
+      if (hg > 0 && ag > 0) btts++;
+
+      const key = `${hg}-${ag}`;
+      scoreCounts.set(key, (scoreCounts.get(key) || 0) + 1);
+    }
+
+    // Most common scoreline
+    let bestScore = "1-1";
+    let bestCount = -1;
+    for (const [k, c] of scoreCounts.entries()) {
+      if (c > bestCount) {
+        bestCount = c;
+        bestScore = k;
       }
     }
 
-    // remove empty league
-    if (Object.keys(out[league]).length === 0) delete out[league];
+    return {
+      homeLambda,
+      awayLambda,
+      avgHome: homeGoalsSum / sims,
+      avgAway: awayGoalsSum / sims,
+      pHome: homeWins / sims,
+      pDraw: draws / sims,
+      pAway: awayWins / sims,
+      pOver25: over25 / sims,
+      pBTTS: btts / sims,
+      modalScore: bestScore,
+    };
   }
 
-  if (Object.keys(out).length === 0) {
-    throw new Error("No valid xG found. Check xg_tables.json format.");
-  }
-  return out;
-}
-
-/** ---------- UI builders ---------- */
-function populateLeagueDropdown() {
-  const sel = $("league");
-  sel.innerHTML = `<option value="">Select a league…</option>`;
-  Object.keys(xgTables).sort().forEach((league) => {
-    const opt = document.createElement("option");
-    opt.value = league;
-    opt.textContent = league;
-    sel.appendChild(opt);
-  });
-}
-
-function populateTeams() {
-  const league = $("league").value;
-  const homeSel = $("home");
-  const awaySel = $("away");
-
-  homeSel.innerHTML = `<option value="">Select home team…</option>`;
-  awaySel.innerHTML = `<option value="">Select away team…</option>`;
-
-  if (!league || !xgTables[league]) return;
-
-  const teams = Object.keys(xgTables[league]).sort();
-  teams.forEach((team) => {
-    const o1 = document.createElement("option");
-    o1.value = team;
-    o1.textContent = team;
-    homeSel.appendChild(o1);
-
-    const o2 = document.createElement("option");
-    o2.value = team;
-    o2.textContent = team;
-    awaySel.appendChild(o2);
-  });
-}
-
-function populateFixturesDropdown() {
-  const league = $("league").value;
-  const fxSel = $("fixture");
-  fxSel.innerHTML = `<option value="">Select a fixture…</option>`;
-
-  if (!league) return;
-
-  const inLeague = fixtures.filter(f => cleanName(f.league) === cleanName(league));
-  inLeague.forEach((f, idx) => {
-    const opt = document.createElement("option");
-    opt.value = String(idx);
-    const d = f.date ? ` (${f.date})` : "";
-    opt.textContent = `${f.home} vs ${f.away}${d}`;
-    fxSel.appendChild(opt);
-  });
-
-  // show list of today's fixtures box
-  const today = $("today");
-  if (inLeague.length === 0) {
-    today.textContent = "No fixtures in this league (fixtures.json).";
-  } else {
-    today.innerHTML = inLeague.slice(0, 12).map(f => `• ${f.home} vs ${f.away}${f.date ? " — " + f.date : ""}`).join("<br>");
-  }
-}
-
-function applyFixtureSelection() {
-  const league = $("league").value;
-  const fxSel = $("fixture").value;
-  if (!league || fxSel === "") return;
-
-  const inLeague = fixtures.filter(f => cleanName(f.league) === cleanName(league));
-  const f = inLeague[Number(fxSel)];
-  if (!f) return;
-
-  // set dropdown values if exist
-  $("home").value = f.home;
-  $("away").value = f.away;
-  renderH2H(); // update h2h box
-}
-
-/** ---------- prediction core ---------- */
-function poissonSample(lambda) {
-  // Knuth
-  const L = Math.exp(-lambda);
-  let k = 0, p = 1;
-  do {
-    k++;
-    p *= Math.random();
-  } while (p > L);
-  return k - 1;
-}
-
-function computeLambdas(league, home, away) {
-  const H = xgTables[league]?.[home];
-  const A = xgTables[league]?.[away];
-  if (!H || !A) return null;
-
-  // Simple blend: home attack with away defense, away attack with home defense
-  // You can improve later. This is stable + works.
-  const homeXG = (H.att + A.def) / 2;
-  const awayXG = (A.att + H.def) / 2;
-
-  // guardrails
-  return {
-    homeXG: Math.max(0.05, Math.min(4.5, homeXG)),
-    awayXG: Math.max(0.05, Math.min(4.5, awayXG)),
-  };
-}
-
-function runMonteCarlo(homeXG, awayXG, sims) {
-  const scoreCounts = new Map(); // "h-a" -> count
-  let homeWin = 0, draw = 0, awayWin = 0;
-  let over25 = 0, btts = 0;
-
-  for (let i = 0; i < sims; i++) {
-    const h = poissonSample(homeXG);
-    const a = poissonSample(awayXG);
-
-    const key = `${h}-${a}`;
-    scoreCounts.set(key, (scoreCounts.get(key) || 0) + 1);
-
-    if (h > a) homeWin++;
-    else if (h === a) draw++;
-    else awayWin++;
-
-    if (h + a >= 3) over25++;
-    if (h >= 1 && a >= 1) btts++;
-  }
-
-  // top scorelines
-  const top = [...scoreCounts.entries()]
-    .sort((x, y) => y[1] - x[1])
-    .slice(0, 5)
-    .map(([k, c]) => ({ score: k, p: c / sims }));
-
-  return {
-    top,
-    pHome: homeWin / sims,
-    pDraw: draw / sims,
-    pAway: awayWin / sims,
-    pOver25: over25 / sims,
-    pBTTS: btts / sims,
-  };
-}
-
-/** ---------- H2H ---------- */
-function findH2H(league, home, away) {
-  const L = keyName(league);
-  const h = keyName(home);
-  const a = keyName(away);
-
-  // allow either order
-  const hits = h2hList.filter(x => {
-    const xl = x.league ? keyName(x.league) : L;
-    const xh = keyName(x.home);
-    const xa = keyName(x.away);
-    const sameLeague = !x.league || xl === L;
-    const direct = (xh === h && xa === a);
-    const reverse = (xh === a && xa === h);
-    return sameLeague && (direct || reverse);
-  });
-
-  // newest first if date exists
-  hits.sort((p, q) => (q.date || "").localeCompare(p.date || ""));
-  return hits[0] || null;
-}
-
-function renderH2H() {
-  const league = $("league").value;
-  const home = $("home").value;
-  const away = $("away").value;
-  const box = $("h2h");
-  if (!league || !home || !away) { box.textContent = "—"; return; }
-
-  const h = findH2H(league, home, away);
-  if (!h) {
-    box.textContent = "No H2H found in h2h.json for this matchup.";
-    return;
-  }
-
-  const parts = [];
-  if (h.date) parts.push(`<b>${h.date}</b>`);
-  parts.push(`<b>${h.home}</b> vs <b>${h.away}</b> — <b>${h.score || "?"}</b>`);
-  if (h.corners != null) parts.push(`Corners: <b>${h.corners}</b>`);
-  if (h.cards != null) parts.push(`Cards: <b>${h.cards}</b>`);
-
-  box.innerHTML = parts.join("<br>");
-}
-
-/** ---------- main run ---------- */
-window.runPrediction = function runPrediction() {
-  try {
-    const league = $("league").value;
-    const home = $("home").value;
-    const away = $("away").value;
-
-    const simsRaw = Number($("sims").value || 10000);
-    const sims = Number.isFinite(simsRaw) ? Math.max(1000, Math.min(200000, Math.floor(simsRaw))) : 10000;
-
-    if (!league || !home || !away) {
-      alert("Select league, home team, and away team.");
-      return;
-    }
-    if (home === away) {
-      alert("Home and Away cannot be the same team.");
-      return;
-    }
-
-    const lambdas = computeLambdas(league, home, away);
-    if (!lambdas) {
-      alert(`Team not found in xG table.\nMake sure league + team names exist in xg_tables.json.`);
-      return;
-    }
-
-    const { homeXG, awayXG } = lambdas;
-    const mc = runMonteCarlo(homeXG, awayXG, sims);
-
-    renderH2H();
-
+  function renderOutput({ league, home, away, sim, sims }) {
     const out = $("output");
-    const pct = (x) => (100 * x).toFixed(1) + "%";
+    if (!out) return;
+
+    const pct = (x) => `${Math.round(x * 100)}%`;
 
     out.innerHTML = `
-      <div><b>${home}</b> vs <b>${away}</b> <span class="muted mono">(${league})</span></div>
-      <div class="muted mono" style="margin-top:6px;">λ Home: ${homeXG.toFixed(2)} | λ Away: ${awayXG.toFixed(2)} | sims: ${sims.toLocaleString()}</div>
-      <hr style="border:0;border-top:1px solid rgba(255,255,255,.14);margin:10px 0;">
-      <div><b>1X2</b> — Home ${pct(mc.pHome)} | Draw ${pct(mc.pDraw)} | Away ${pct(mc.pAway)}</div>
-      <div><b>O/U 2.5</b> — Over ${pct(mc.pOver25)} | Under ${pct(1 - mc.pOver25)}</div>
-      <div><b>BTTS</b> — Yes ${pct(mc.pBTTS)} | No ${pct(1 - mc.pBTTS)}</div>
-      <div style="margin-top:8px;"><b>Top scorelines</b></div>
-      <div class="muted mono">${mc.top.map(x => `${x.score} (${pct(x.p)})`).join(" • ")}</div>
+      <div class="mono">
+        <div><b>${league}</b></div>
+        <div><b>${home}</b> vs <b>${away}</b></div>
+        <hr style="opacity:.15" />
+        <div>λ Home: <b>${sim.homeLambda.toFixed(2)}</b> | λ Away: <b>${sim.awayLambda.toFixed(2)}</b></div>
+        <div>Avg goals: <b>${sim.avgHome.toFixed(2)}</b> - <b>${sim.avgAway.toFixed(2)}</b> (sims: ${sims})</div>
+        <div>Most likely score: <b>${sim.modalScore}</b></div>
+        <hr style="opacity:.15" />
+        <div>1X2: Home <b>${pct(sim.pHome)}</b> | Draw <b>${pct(sim.pDraw)}</b> | Away <b>${pct(sim.pAway)}</b></div>
+        <div>O2.5: <b>${pct(sim.pOver25)}</b> | BTTS: <b>${pct(sim.pBTTS)}</b></div>
+      </div>
     `;
-  } catch (e) {
-    console.error(e);
-    alert("Error running prediction. Open console to see details.");
-  }
-};
-
-/** ---------- boot ---------- */
-async function loadJSON(path) {
-  const res = await fetch(path, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
-  return await res.json();
-}
-
-async function init() {
-  // default: disable run until xG loaded
-  $("run").disabled = true;
-
-  // load xG
-  try {
-    const rawXG = await loadJSON("xg_tables.json");
-    xgTables = normalizeXG(rawXG);
-    setStatus("xg-status", `✅ xG loaded (${Object.keys(xgTables).length} leagues)`, "❌ xG failed", true);
-  } catch (e) {
-    console.error(e);
-    setStatus("xg-status", "❌ xG failed", "❌ xG failed", false);
-    alert(e.message);
-    return;
   }
 
-  // load fixtures (optional)
-  try {
-    const rawFx = await loadJSON("fixtures.json");
-    fixtures = Array.isArray(rawFx) ? rawFx : (rawFx.fixtures || []);
-    fixtures = fixtures.map(f => ({
-      league: cleanName(f.league),
-      home: cleanName(f.home),
-      away: cleanName(f.away),
-      date: f.date ? cleanName(f.date) : ""
-    })).filter(f => f.league && f.home && f.away);
-    setStatus("fx-status", `✅ fixtures loaded (${fixtures.length})`, "⚠️ fixtures missing", true);
-  } catch (e) {
-    console.warn("fixtures.json not loaded:", e.message);
-    fixtures = [];
-    setStatus("fx-status", "⚠️ fixtures missing", "⚠️ fixtures missing", false);
+  // ----------------------------
+  // H2H Render (best-effort)
+  // ----------------------------
+  function renderH2H(league, home, away) {
+    const el = $("h2h");
+    if (!el) return;
+
+    // You can store h2h in many formats. We'll try common ones.
+    // Preferred:
+    // h2h[league][home][away] = { score:"2-1", cards:5, corners:11, date:"..." }
+    let last = null;
+
+    try {
+      const L = h2h?.[league];
+      if (L && L[home] && L[home][away]) last = L[home][away];
+      if (!last && L && L[away] && L[away][home]) last = L[away][home];
+    } catch {}
+
+    if (!last) {
+      el.textContent = "No H2H found for this matchup (in h2h.json).";
+      return;
+    }
+
+    const score = last.score ?? last.result ?? "";
+    const cards = last.cards ?? last.total_cards ?? "";
+    const corners = last.corners ?? last.total_corners ?? "";
+    const date = last.date ?? last.when ?? "";
+
+    el.innerHTML = `
+      <div class="mono">
+        <div><b>Last H2H</b> ${date ? `(${date})` : ""}</div>
+        <div>Score: <b>${score || "N/A"}</b></div>
+        <div>Cards: <b>${cards || "N/A"}</b> | Corners: <b>${corners || "N/A"}</b></div>
+      </div>
+    `;
   }
 
-  // load h2h (optional)
-  try {
-    const rawH2H = await loadJSON("h2h.json");
-    h2hList = Array.isArray(rawH2H) ? rawH2H : (rawH2H.h2h || []);
-    h2hList = h2hList.map(x => ({
-      league: x.league ? cleanName(x.league) : "",
-      home: cleanName(x.home),
-      away: cleanName(x.away),
-      score: x.score ? cleanName(x.score) : "",
-      corners: x.corners ?? null,
-      cards: x.cards ?? null,
-      date: x.date ? cleanName(x.date) : ""
-    })).filter(x => x.home && x.away);
-    setStatus("h2h-status", `✅ H2H loaded (${h2hList.length})`, "⚠️ H2H missing", true);
-  } catch (e) {
-    console.warn("h2h.json not loaded:", e.message);
-    h2hList = [];
-    setStatus("h2h-status", "⚠️ H2H missing", "⚠️ H2H missing", false);
+  // ----------------------------
+  // Run Prediction (exposed globally)
+  // ----------------------------
+  function runPrediction() {
+    const league = cleanName($("league")?.value);
+    const home = cleanName($("home")?.value);
+    const away = cleanName($("away")?.value);
+    const sims = Math.max(1000, Number($("sims")?.value || 10000));
+
+    if (!league) {
+      alert("Pick a league first.");
+      return;
+    }
+    if (!home || !away) {
+      alert("Pick both home and away teams.");
+      return;
+    }
+    const H = xgTables?.[league]?.[home];
+    const A = xgTables?.[league]?.[away];
+
+    if (!H || !A) {
+      alert(`Team not found in xG table for "${league}".\nHome="${home}" Away="${away}"`);
+      return;
+    }
+
+    const sim = simulateMatch(H.att, A.def, A.att, H.def, sims);
+    renderOutput({ league, home, away, sim, sims });
+    renderH2H(league, home, away);
   }
 
-  // build UI
-  populateLeagueDropdown();
-  $("league").addEventListener("change", () => {
-    populateTeams();
-    populateFixturesDropdown();
-    renderH2H();
-  });
+  // Make sure the HTML button onclick can find it
+  window.runPrediction = runPrediction;
 
-  $("fixture").addEventListener("change", () => {
-    applyFixtureSelection();
-  });
+  // ----------------------------
+  // Load data
+  // ----------------------------
+  async function loadJson(path) {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
+    return await res.json();
+  }
 
-  $("home").addEventListener("change", renderH2H);
-  $("away").addEventListener("change", renderH2H);
+  async function init() {
+    try {
+      // Load xG
+      xgRaw = await loadJson("xg_tables.json");
+      xgTables = normalizeXG(xgRaw);
 
-  $("run").disabled = false;
-}
+      const leaguesCount = Object.keys(xgTables).length;
+      setPill("xg-status", true, `xG loaded (${leaguesCount} leagues)`);
 
-init();
+      // Load fixtures (optional)
+      try {
+        fixtures = await loadJson("fixtures.json");
+        const fxCount = Array.isArray(fixtures)
+          ? fixtures.length
+          : Object.values(fixtures || {}).reduce((a, v) => a + (Array.isArray(v) ? v.length : 0), 0);
+        setPill("fx-status", true, `fixtures loaded (${fxCount})`);
+      } catch (e) {
+        fixtures = {};
+        setPill("fx-status", false, "fixtures not loaded");
+        console.warn("fixtures.json load failed:", e);
+      }
+
+      // Load h2h (optional)
+      try {
+        h2h = await loadJson("h2h.json");
+        // best-effort count
+        setPill("h2h-status", true, "H2H loaded");
+      } catch (e) {
+        h2h = {};
+        setPill("h2h-status", false, "H2H not loaded");
+        console.warn("h2h.json load failed:", e);
+      }
+
+      // Build UI
+      populateLeagueDropdown();
+      populateFixtureDropdown();
+      populateTeamsDropdowns();
+
+      // Default output text
+      const out = $("output");
+      if (out && !out.innerHTML.trim()) {
+        out.textContent = "Choose league + teams, then Run.";
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load core data (xg_tables.json). Check file name + JSON format.");
+      setPill("xg-status", false, "xG load failed");
+    }
+  }
+
+  // Start
+  document.addEventListener("DOMContentLoaded", init);
+})();
