@@ -1,54 +1,23 @@
 {
-  "leagues": {
-    "EPL": {
-      "teams": {
-        "Arsenal": { "lambda_for": 1.72 },
-        "Aston Villa": { "lambda_for": 1.25 },
-        "Liverpool": { "lambda_for": 1.80 },
-        "Man City": { "lambda_for": 1.78 },
-        "Chelsea": { "lambda_for": 1.55 },
-        "Tottenham": { "lambda_for": 1.62 },
-        "Newcastle": { "lambda_for": 1.48 },
-        "Man United": { "lambda_for": 1.40 }
-      }
-    },
-    "LaLiga": {
-      "teams": {
-        "Barcelona": { "lambda_for": 1.80 },
-        "Real Madrid": { "lambda_for": 1.78 },
-        "Atletico Madrid": { "lambda_for": 1.55 },
-        "Sevilla": { "lambda_for": 1.25 },
-        "Villarreal": { "lambda_for": 1.32 }
-      }
-    },
-    "SerieA": {
-      "teams": {
-        "Inter": { "lambda_for": 1.75 },
-        "AC Milan": { "lambda_for": 1.45 },
-        "Juventus": { "lambda_for": 1.40 },
-        "Napoli": { "lambda_for": 1.55 }
-      }
-    },
-    "Bundesliga": {
-      "teams": {
-        "Bayern Munich": { "lambda_for": 2.05 },
-        "Borussia Dortmund": { "lambda_for": 1.70 },
-        "RB Leipzig": { "lambda_for": 1.65 }
-      }
-    },
-    "Ligue1": {
-      "teams": {
-        "PSG": { "lambda_for": 1.95 },
-        "Marseille": { "lambda_for": 1.40 },
-        "Lyon": { "lambda_for": 1.30 }
-      }
-    },
-    "Portugal": {
-      "teams": {
-        "Benfica": { "lambda_for": 1.75 },
-        "Sporting CP": { "lambda_for": 1.70 },
-        "Porto": { "lambda_for": 1.62 }
-      }
+  "Premier League": {
+    "teams": {
+      "Arsenal": { "att": 1.85, "def": 1.10 },
+      "Manchester City": { "att": 2.05, "def": 0.95 },
+      "Liverpool": { "att": 1.95, "def": 1.05 }
+    }
+  },
+  "La Liga": {
+    "teams": {
+      "Real Madrid": { "att": 1.90, "def": 1.00 },
+      "Barcelona": { "att": 1.85, "def": 1.05 },
+      "Atletico Madrid": { "att": 1.55, "def": 0.95 }
+    }
+  },
+  "Bundesliga": {
+    "teams": {
+      "Bayern Munich": { "att": 2.10, "def": 1.05 },
+      "Borussia Dortmund": { "att": 1.80, "def": 1.20 },
+      "RB Leipzig": { "att": 1.75, "def": 1.10 }
     }
   }
 }
