@@ -1,90 +1,108 @@
-// MatchQuant (mobile-safe) - leagues + fixtures + team dropdowns + run prediction
-// Works with xg_tables.json that uses either:
-//   {att, def}  OR  {xg, xga}  OR  {xg_for, xg_against}  OR  {xgf, xga}
+"use strict";
 
-let xgTables = {};     // normalized: { League: { Team: {att, def} } }
-let fixtures = [];     // [{date, league, home, away}]
-let h2h = [];          // optional array
-
+/** ---------- helpers ---------- */
 const $ = (id) => document.getElementById(id);
 
 function cleanName(s) {
-  return String(s || "")
+  return (s ?? "")
+    .toString()
+    .replace(/\s+/g, " ")
     .replace(/\u00A0/g, " ")
+    .trim();
+}
+
+function keyName(s) {
+  // case-insensitive + remove punctuation for matching
+  return cleanName(s)
+    .toLowerCase()
+    .replace(/[’'".,()/\-]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-// Makes team lookup forgiving: case/spacing
-function keyName(s) {
-  return cleanName(s).toLowerCase();
+function safeNum(x) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
 }
 
-function normalizeXgTables(raw) {
+function setStatus(id, okText, failText, ok) {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = ok ? okText : failText;
+}
+
+/** ---------- data stores ---------- */
+let xgTables = {};     // { league: { teamName: {att, def} } }
+let fixtures = [];     // [{league, home, away, date?}]
+let h2hList = [];      // [{league?, home, away, score, corners, cards, date?}]
+
+/** ---------- xG normalization ---------- */
+/**
+ * Accepts any of these per team:
+ *  - {att, def}
+ *  - {xg, xga}
+ *  - {xg_for, xg_against}
+ *  - {xg_for, xg_against} (your screenshot shows xg_for)
+ */
+function normalizeXG(raw) {
   const out = {};
-  if (!raw || typeof raw !== "object") throw new Error("xg_tables.json is not an object");
-
-  for (const leagueRaw of Object.keys(raw)) {
+  for (const leagueRaw in raw) {
     const league = cleanName(leagueRaw);
-    const teamsObj = raw[leagueRaw];
-    if (!teamsObj || typeof teamsObj !== "object") continue;
-
     out[league] = {};
 
-    for (const teamRaw of Object.keys(teamsObj)) {
-      const team = cleanName(teamRaw);
+    const teamsObj = raw[leagueRaw] || {};
+    for (const teamRaw in teamsObj) {
+      const teamName = cleanName(teamRaw);
       const t = teamsObj[teamRaw] || {};
 
-      // Accept multiple field naming styles
       const att =
-        (t.att ?? t.attack ?? t.xg ?? t.xgf ?? t.xg_for ?? t.xG_for ?? t.xG ?? null);
+        safeNum(t.att) ??
+        safeNum(t.xg) ??
+        safeNum(t.xg_for) ??
+        safeNum(t.xgf) ??
+        null;
+
       const def =
-        (t.def ?? t.defense ?? t.xga ?? t.xg_against ?? t.xG_against ?? t.xGA ?? null);
+        safeNum(t.def) ??
+        safeNum(t.xga) ??
+        safeNum(t.xg_against) ??
+        safeNum(t.xga_for) ?? // just in case someone used odd keys
+        null;
 
-      const attNum = Number(att);
-      const defNum = Number(def);
-
-      if (Number.isFinite(attNum) && Number.isFinite(defNum)) {
-        out[league][team] = { att: attNum, def: defNum };
+      if (Number.isFinite(att) && Number.isFinite(def)) {
+        out[league][teamName] = { att, def };
       }
     }
 
-    // If league ended up empty, remove it
+    // remove empty league
     if (Object.keys(out[league]).length === 0) delete out[league];
   }
 
   if (Object.keys(out).length === 0) {
-    throw new Error("No valid xG data found (need att/def or xg/xga or xg_for/xg_against).");
+    throw new Error("No valid xG found. Check xg_tables.json format.");
   }
   return out;
 }
 
+/** ---------- UI builders ---------- */
 function populateLeagueDropdown() {
-  const leagueSel = $("league");
-  leagueSel.innerHTML = `<option value="">Select a league...</option>`;
-
-  Object.keys(xgTables)
-    .sort()
-    .forEach((lg) => {
-      const opt = document.createElement("option");
-      opt.value = lg;
-      opt.textContent = lg;
-      leagueSel.appendChild(opt);
-    });
-
-  leagueSel.onchange = () => {
-    populateFixtureDropdown();
-    populateTeamDropdowns();
-  };
+  const sel = $("league");
+  sel.innerHTML = `<option value="">Select a league…</option>`;
+  Object.keys(xgTables).sort().forEach((league) => {
+    const opt = document.createElement("option");
+    opt.value = league;
+    opt.textContent = league;
+    sel.appendChild(opt);
+  });
 }
 
-function populateTeamDropdowns() {
+function populateTeams() {
   const league = $("league").value;
   const homeSel = $("home");
   const awaySel = $("away");
 
-  homeSel.innerHTML = `<option value="">Select home team...</option>`;
-  awaySel.innerHTML = `<option value="">Select away team...</option>`;
+  homeSel.innerHTML = `<option value="">Select home team…</option>`;
+  awaySel.innerHTML = `<option value="">Select away team…</option>`;
 
   if (!league || !xgTables[league]) return;
 
@@ -102,59 +120,51 @@ function populateTeamDropdowns() {
   });
 }
 
-function populateFixtureDropdown() {
+function populateFixturesDropdown() {
   const league = $("league").value;
-  const fixSel = $("fixture");
-  if (!fixSel) return;
+  const fxSel = $("fixture");
+  fxSel.innerHTML = `<option value="">Select a fixture…</option>`;
 
-  fixSel.innerHTML = `<option value="">Select a fixture...</option>`;
   if (!league) return;
 
-  // Show fixtures for selected league only
-  const list = fixtures
-    .filter((f) => cleanName(f.league) === league)
-    .slice(0, 200);
-
-  list.forEach((f, idx) => {
+  const inLeague = fixtures.filter(f => cleanName(f.league) === cleanName(league));
+  inLeague.forEach((f, idx) => {
     const opt = document.createElement("option");
     opt.value = String(idx);
-    opt.textContent = `${f.date || ""} — ${f.home} vs ${f.away}`;
-    opt.dataset.home = f.home;
-    opt.dataset.away = f.away;
-    fixSel.appendChild(opt);
+    const d = f.date ? ` (${f.date})` : "";
+    opt.textContent = `${f.home} vs ${f.away}${d}`;
+    fxSel.appendChild(opt);
   });
 
-  // Auto-fill teams when fixture picked
-  fixSel.onchange = () => {
-    const chosen = fixSel.options[fixSel.selectedIndex];
-    if (!chosen || !chosen.dataset.home) return;
-
-    // Force correct league teams to be loaded
-    populateTeamDropdowns();
-
-    // Try exact match first
-    $("home").value = chosen.dataset.home;
-    $("away").value = chosen.dataset.away;
-
-    // If not exact, try forgiving match
-    if (!$("home").value) $("home").value = findClosestTeam($("league").value, chosen.dataset.home);
-    if (!$("away").value) $("away").value = findClosestTeam($("league").value, chosen.dataset.away);
-  };
+  // show list of today's fixtures box
+  const today = $("today");
+  if (inLeague.length === 0) {
+    today.textContent = "No fixtures in this league (fixtures.json).";
+  } else {
+    today.innerHTML = inLeague.slice(0, 12).map(f => `• ${f.home} vs ${f.away}${f.date ? " — " + f.date : ""}`).join("<br>");
+  }
 }
 
-function findClosestTeam(league, name) {
-  const target = keyName(name);
-  const teams = Object.keys(xgTables[league] || {});
-  // exact keyName match
-  const found = teams.find((t) => keyName(t) === target);
-  return found || "";
+function applyFixtureSelection() {
+  const league = $("league").value;
+  const fxSel = $("fixture").value;
+  if (!league || fxSel === "") return;
+
+  const inLeague = fixtures.filter(f => cleanName(f.league) === cleanName(league));
+  const f = inLeague[Number(fxSel)];
+  if (!f) return;
+
+  // set dropdown values if exist
+  $("home").value = f.home;
+  $("away").value = f.away;
+  renderH2H(); // update h2h box
 }
 
+/** ---------- prediction core ---------- */
 function poissonSample(lambda) {
   // Knuth
   const L = Math.exp(-lambda);
-  let k = 0;
-  let p = 1;
+  let k = 0, p = 1;
   do {
     k++;
     p *= Math.random();
@@ -162,121 +172,228 @@ function poissonSample(lambda) {
   return k - 1;
 }
 
-function runMonteCarlo(homeLam, awayLam, sims) {
-  const maxGoals = 8;
-  const scoreCounts = new Map();
-  let homeW = 0, draw = 0, awayW = 0;
-  let over25 = 0, btts = 0;
+function computeLambdas(league, home, away) {
+  const H = xgTables[league]?.[home];
+  const A = xgTables[league]?.[away];
+  if (!H || !A) return null;
 
-  for (let i = 0; i < sims; i++) {
-    const hg = Math.min(poissonSample(homeLam), maxGoals);
-    const ag = Math.min(poissonSample(awayLam), maxGoals);
+  // Simple blend: home attack with away defense, away attack with home defense
+  // You can improve later. This is stable + works.
+  const homeXG = (H.att + A.def) / 2;
+  const awayXG = (A.att + H.def) / 2;
 
-    const key = `${hg}-${ag}`;
-    scoreCounts.set(key, (scoreCounts.get(key) || 0) + 1);
-
-    if (hg > ag) homeW++;
-    else if (hg === ag) draw++;
-    else awayW++;
-
-    if (hg + ag >= 3) over25++;
-    if (hg >= 1 && ag >= 1) btts++;
-  }
-
-  const topScores = [...scoreCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([k, c]) => ({ score: k, pct: (c / sims) * 100 }));
-
+  // guardrails
   return {
-    homeWinPct: (homeW / sims) * 100,
-    drawPct: (draw / sims) * 100,
-    awayWinPct: (awayW / sims) * 100,
-    over25Pct: (over25 / sims) * 100,
-    bttsPct: (btts / sims) * 100,
-    topScores
+    homeXG: Math.max(0.05, Math.min(4.5, homeXG)),
+    awayXG: Math.max(0.05, Math.min(4.5, awayXG)),
   };
 }
 
-function setOutput(html) {
-  const out = $("output");
-  if (out) out.innerHTML = html;
+function runMonteCarlo(homeXG, awayXG, sims) {
+  const scoreCounts = new Map(); // "h-a" -> count
+  let homeWin = 0, draw = 0, awayWin = 0;
+  let over25 = 0, btts = 0;
+
+  for (let i = 0; i < sims; i++) {
+    const h = poissonSample(homeXG);
+    const a = poissonSample(awayXG);
+
+    const key = `${h}-${a}`;
+    scoreCounts.set(key, (scoreCounts.get(key) || 0) + 1);
+
+    if (h > a) homeWin++;
+    else if (h === a) draw++;
+    else awayWin++;
+
+    if (h + a >= 3) over25++;
+    if (h >= 1 && a >= 1) btts++;
+  }
+
+  // top scorelines
+  const top = [...scoreCounts.entries()]
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 5)
+    .map(([k, c]) => ({ score: k, p: c / sims }));
+
+  return {
+    top,
+    pHome: homeWin / sims,
+    pDraw: draw / sims,
+    pAway: awayWin / sims,
+    pOver25: over25 / sims,
+    pBTTS: btts / sims,
+  };
 }
 
-function runPrediction() {
+/** ---------- H2H ---------- */
+function findH2H(league, home, away) {
+  const L = keyName(league);
+  const h = keyName(home);
+  const a = keyName(away);
+
+  // allow either order
+  const hits = h2hList.filter(x => {
+    const xl = x.league ? keyName(x.league) : L;
+    const xh = keyName(x.home);
+    const xa = keyName(x.away);
+    const sameLeague = !x.league || xl === L;
+    const direct = (xh === h && xa === a);
+    const reverse = (xh === a && xa === h);
+    return sameLeague && (direct || reverse);
+  });
+
+  // newest first if date exists
+  hits.sort((p, q) => (q.date || "").localeCompare(p.date || ""));
+  return hits[0] || null;
+}
+
+function renderH2H() {
   const league = $("league").value;
   const home = $("home").value;
   const away = $("away").value;
+  const box = $("h2h");
+  if (!league || !home || !away) { box.textContent = "—"; return; }
 
-  if (!league) return alert("Select a league first.");
-  if (!home || !away) return alert("Select home + away teams.");
+  const h = findH2H(league, home, away);
+  if (!h) {
+    box.textContent = "No H2H found in h2h.json for this matchup.";
+    return;
+  }
 
-  const H = xgTables[league]?.[home];
-  const A = xgTables[league]?.[away];
+  const parts = [];
+  if (h.date) parts.push(`<b>${h.date}</b>`);
+  parts.push(`<b>${h.home}</b> vs <b>${h.away}</b> — <b>${h.score || "?"}</b>`);
+  if (h.corners != null) parts.push(`Corners: <b>${h.corners}</b>`);
+  if (h.cards != null) parts.push(`Cards: <b>${h.cards}</b>`);
 
-  if (!H) return alert(`Home team not found in xG table: "${home}"`);
-  if (!A) return alert(`Away team not found in xG table: "${away}"`);
-
-  // Simple lambda blend
-  const homeLam = (H.att + A.def) / 2;
-  const awayLam = (A.att + H.def) / 2;
-
-  const sims = Math.max(1000, Math.min(50000, Number($("sims")?.value || 10000) || 10000));
-  const mc = runMonteCarlo(homeLam, awayLam, sims);
-
-  // EV flag (very basic)
-  const totalExp = homeLam + awayLam;
-  let ev = "🟡 Neutral";
-  if (totalExp >= 2.85) ev = "🟢 Over Lean";
-  if (totalExp <= 2.15) ev = "🔴 Under Lean";
-
-  const top = mc.topScores.map(s => `<li>${s.score} (${s.pct.toFixed(1)}%)</li>`).join("");
-
-  setOutput(`
-    <h3>Prediction</h3>
-    <p><strong>${home}</strong> vs <strong>${away}</strong></p>
-    <p>Expected Goals (λ): <strong>${homeLam.toFixed(2)}</strong> – <strong>${awayLam.toFixed(2)}</strong></p>
-    <p>1X2: <strong>Home ${mc.homeWinPct.toFixed(1)}%</strong> | <strong>Draw ${mc.drawPct.toFixed(1)}%</strong> | <strong>Away ${mc.awayWinPct.toFixed(1)}%</strong></p>
-    <p>O/U 2.5: <strong>Over ${mc.over25Pct.toFixed(1)}%</strong> | <strong>Under ${(100 - mc.over25Pct).toFixed(1)}%</strong></p>
-    <p>BTTS: <strong>${mc.bttsPct.toFixed(1)}%</strong></p>
-    <p><strong>EV:</strong> ${ev}</p>
-    <p><strong>Top scorelines:</strong></p>
-    <ul>${top}</ul>
-    <p style="opacity:.7">Sims: ${sims.toLocaleString()}</p>
-  `);
+  box.innerHTML = parts.join("<br>");
 }
 
-// ---- LOAD ALL DATA ----
-Promise.all([
-  fetch("xg_tables.json").then(r => r.json()),
-  fetch("fixtures.json").then(r => r.json()).catch(() => []),
-  fetch("h2h.json").then(r => r.json()).catch(() => [])
-])
-  .then(([xgRaw, fixturesRaw, h2hRaw]) => {
-    xgTables = normalizeXgTables(xgRaw);
+/** ---------- main run ---------- */
+window.runPrediction = function runPrediction() {
+  try {
+    const league = $("league").value;
+    const home = $("home").value;
+    const away = $("away").value;
 
-    fixtures = Array.isArray(fixturesRaw) ? fixturesRaw : (fixturesRaw.fixtures || []);
-    h2h = Array.isArray(h2hRaw) ? h2hRaw : (h2hRaw.matches || []);
+    const simsRaw = Number($("sims").value || 10000);
+    const sims = Number.isFinite(simsRaw) ? Math.max(1000, Math.min(200000, Math.floor(simsRaw))) : 10000;
 
-    $("status").textContent = `✓ xG loaded (${Object.keys(xgTables).length} leagues)`;
+    if (!league || !home || !away) {
+      alert("Select league, home team, and away team.");
+      return;
+    }
+    if (home === away) {
+      alert("Home and Away cannot be the same team.");
+      return;
+    }
 
-    const fcount = fixtures.length || 0;
-    const hcount = h2h.length || 0;
+    const lambdas = computeLambdas(league, home, away);
+    if (!lambdas) {
+      alert(`Team not found in xG table.\nMake sure league + team names exist in xg_tables.json.`);
+      return;
+    }
 
-    const fEl = $("fixturesStatus");
-    if (fEl) fEl.textContent = `✓ fixtures loaded (${fcount})`;
-    const hEl = $("h2hStatus");
-    if (hEl) hEl.textContent = `✓ H2H loaded (${hcount})`;
+    const { homeXG, awayXG } = lambdas;
+    const mc = runMonteCarlo(homeXG, awayXG, sims);
 
-    populateLeagueDropdown();
-    populateFixtureDropdown();
-    populateTeamDropdowns();
+    renderH2H();
 
-    // Wire the button safely (important!)
-    const btn = $("run");
-    if (btn) btn.onclick = runPrediction;
-  })
-  .catch((err) => {
-    alert("Failed to load data. Check xg_tables.json format & file names.");
-    console.error(err);
+    const out = $("output");
+    const pct = (x) => (100 * x).toFixed(1) + "%";
+
+    out.innerHTML = `
+      <div><b>${home}</b> vs <b>${away}</b> <span class="muted mono">(${league})</span></div>
+      <div class="muted mono" style="margin-top:6px;">λ Home: ${homeXG.toFixed(2)} | λ Away: ${awayXG.toFixed(2)} | sims: ${sims.toLocaleString()}</div>
+      <hr style="border:0;border-top:1px solid rgba(255,255,255,.14);margin:10px 0;">
+      <div><b>1X2</b> — Home ${pct(mc.pHome)} | Draw ${pct(mc.pDraw)} | Away ${pct(mc.pAway)}</div>
+      <div><b>O/U 2.5</b> — Over ${pct(mc.pOver25)} | Under ${pct(1 - mc.pOver25)}</div>
+      <div><b>BTTS</b> — Yes ${pct(mc.pBTTS)} | No ${pct(1 - mc.pBTTS)}</div>
+      <div style="margin-top:8px;"><b>Top scorelines</b></div>
+      <div class="muted mono">${mc.top.map(x => `${x.score} (${pct(x.p)})`).join(" • ")}</div>
+    `;
+  } catch (e) {
+    console.error(e);
+    alert("Error running prediction. Open console to see details.");
+  }
+};
+
+/** ---------- boot ---------- */
+async function loadJSON(path) {
+  const res = await fetch(path, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
+  return await res.json();
+}
+
+async function init() {
+  // default: disable run until xG loaded
+  $("run").disabled = true;
+
+  // load xG
+  try {
+    const rawXG = await loadJSON("xg_tables.json");
+    xgTables = normalizeXG(rawXG);
+    setStatus("xg-status", `✅ xG loaded (${Object.keys(xgTables).length} leagues)`, "❌ xG failed", true);
+  } catch (e) {
+    console.error(e);
+    setStatus("xg-status", "❌ xG failed", "❌ xG failed", false);
+    alert(e.message);
+    return;
+  }
+
+  // load fixtures (optional)
+  try {
+    const rawFx = await loadJSON("fixtures.json");
+    fixtures = Array.isArray(rawFx) ? rawFx : (rawFx.fixtures || []);
+    fixtures = fixtures.map(f => ({
+      league: cleanName(f.league),
+      home: cleanName(f.home),
+      away: cleanName(f.away),
+      date: f.date ? cleanName(f.date) : ""
+    })).filter(f => f.league && f.home && f.away);
+    setStatus("fx-status", `✅ fixtures loaded (${fixtures.length})`, "⚠️ fixtures missing", true);
+  } catch (e) {
+    console.warn("fixtures.json not loaded:", e.message);
+    fixtures = [];
+    setStatus("fx-status", "⚠️ fixtures missing", "⚠️ fixtures missing", false);
+  }
+
+  // load h2h (optional)
+  try {
+    const rawH2H = await loadJSON("h2h.json");
+    h2hList = Array.isArray(rawH2H) ? rawH2H : (rawH2H.h2h || []);
+    h2hList = h2hList.map(x => ({
+      league: x.league ? cleanName(x.league) : "",
+      home: cleanName(x.home),
+      away: cleanName(x.away),
+      score: x.score ? cleanName(x.score) : "",
+      corners: x.corners ?? null,
+      cards: x.cards ?? null,
+      date: x.date ? cleanName(x.date) : ""
+    })).filter(x => x.home && x.away);
+    setStatus("h2h-status", `✅ H2H loaded (${h2hList.length})`, "⚠️ H2H missing", true);
+  } catch (e) {
+    console.warn("h2h.json not loaded:", e.message);
+    h2hList = [];
+    setStatus("h2h-status", "⚠️ H2H missing", "⚠️ H2H missing", false);
+  }
+
+  // build UI
+  populateLeagueDropdown();
+  $("league").addEventListener("change", () => {
+    populateTeams();
+    populateFixturesDropdown();
+    renderH2H();
   });
+
+  $("fixture").addEventListener("change", () => {
+    applyFixtureSelection();
+  });
+
+  $("home").addEventListener("change", renderH2H);
+  $("away").addEventListener("change", renderH2H);
+
+  $("run").disabled = false;
+}
+
+init();
