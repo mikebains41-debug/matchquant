@@ -1,126 +1,143 @@
 :root{
-  --bg0:#050914;
-  --bg1:#071a2c;
-  --card: rgba(255,255,255,0.06);
-  --card2: rgba(255,255,255,0.08);
-  --txt:#e6f0ff;
-  --muted: rgba(230,240,255,0.7);
-  --stroke: rgba(255,255,255,0.12);
-  --blue:#2b6cff;
+  --bg:#071321;
+  --card:#0c1b2a;
+  --text:#e8eef7;
+  --muted:#94a3b8;
+  --line:rgba(255,255,255,.08);
+  --btn:#2563eb;
+  --btn2:#1d4ed8;
 }
 
 *{ box-sizing:border-box; }
-
 body{
   margin:0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--txt);
-  background: radial-gradient(1200px 800px at 25% 10%, #0d2a4a 0%, var(--bg0) 55%), linear-gradient(180deg, var(--bg1), var(--bg0));
+  background: radial-gradient(1000px 600px at 20% 10%, rgba(59,130,246,.25), transparent 55%),
+              radial-gradient(900px 500px at 80% 10%, rgba(14,165,233,.18), transparent 60%),
+              var(--bg);
+  color:var(--text);
 }
 
 .wrap{
-  max-width: 860px;
+  max-width: 820px;
   margin: 0 auto;
-  padding: 18px 14px 40px;
+  padding: 18px 14px 30px;
 }
 
-h1{
-  margin: 8px 0 2px;
-  font-size: 44px;
-  letter-spacing: 0.3px;
+.hero h1{
+  font-size: 52px;
+  margin: 8px 0 4px;
+  letter-spacing: .2px;
 }
-
-.sub{
+.hero p{
   margin: 0 0 16px;
   color: var(--muted);
 }
 
-.grid{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  background: var(--card);
-  border: 1px solid var(--stroke);
-  border-radius: 18px;
+.card{
+  background: rgba(12,27,42,.78);
+  border: 1px solid var(--line);
+  border-radius: 16px;
   padding: 14px;
-  backdrop-filter: blur(8px);
+  margin: 12px 0;
+  backdrop-filter: blur(6px);
 }
 
-@media (max-width: 720px){
-  .grid{ grid-template-columns: 1fr; }
-  h1{ font-size: 38px; }
+h2{
+  font-size: 18px;
+  margin: 0 0 12px;
+  color: #cfe3ff;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 label{
   display:flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
+  flex-direction:column;
+  gap: 8px;
+  font-size: 13px;
   color: var(--muted);
 }
 
 select, input{
-  width: 100%;
+  width:100%;
   padding: 12px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--stroke);
-  background: rgba(0,0,0,0.25);
-  color: var(--txt);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,.18);
+  color: var(--text);
   outline: none;
 }
 
-select:focus, input:focus{
-  border-color: rgba(43,108,255,0.7);
-  box-shadow: 0 0 0 3px rgba(43,108,255,0.22);
-}
-
-.divider{
-  grid-column: 1 / -1;
-  height: 1px;
-  background: rgba(255,255,255,0.10);
-  margin: 6px 0;
-}
-
-.section{
-  grid-column: 1 / -1;
-  margin: 4px 0 0;
-  font-size: 16px;
-  color: var(--txt);
-  letter-spacing: 0.2px;
-}
-
-.cta{
-  grid-column: 1 / -1;
+.btn{
+  width:100%;
   padding: 14px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(43,108,255,0.55);
-  background: linear-gradient(180deg, rgba(43,108,255,0.95), rgba(43,108,255,0.65));
+  margin: 12px 0 2px;
+  border: 0;
+  border-radius: 14px;
   color: white;
-  font-weight: 700;
   font-size: 16px;
-  cursor: pointer;
+  font-weight: 700;
+  background: linear-gradient(180deg, var(--btn), var(--btn2));
 }
 
-.cta:active{ transform: translateY(1px); }
+.btn:active{ transform: translateY(1px); }
 
-.panel{
-  margin-top: 14px;
-  background: var(--card2);
-  border: 1px solid var(--stroke);
-  border-radius: 18px;
-  padding: 14px;
-}
-
-.results{
-  margin: 10px 0 0;
+.mono{
   white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
   line-height: 1.35;
-  color: var(--txt);
-  font-size: 14px;
 }
 
-.footer{
-  margin-top: 12px;
+.muted{
+  margin-top: 10px;
   color: var(--muted);
   font-size: 12px;
+}
+
+/* Modal (replaces alert) */
+.mq-modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.62);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.mq-modal.hidden{ display:none; }
+
+.mq-box{
+  width: min(560px, 96vw);
+  background: #0b1522;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.7);
+}
+
+.mq-title{
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.mq-box pre{
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+@media (max-width: 680px){
+  .grid{ grid-template-columns: 1fr; }
+  .hero h1{ font-size: 44px; }
 }
