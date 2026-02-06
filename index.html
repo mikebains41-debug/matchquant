@@ -71,7 +71,9 @@
 
     <section class="card">
       <h2>Results</h2>
-      <div id="results" class="results">Pick league + teams, then press <b>Run Predictions</b>.</div>
+      <div id="results" class="results">
+        Pick league + teams, then press <b>Run Predictions</b>.
+      </div>
     </section>
   </main>
 
@@ -84,7 +86,7 @@
   <script src="engine.js?v=400"></script>
   <script src="app.js?v=400"></script>
 
-  <!-- Reset (clears selections + results) -->
+  <!-- Reset -->
   <script>
     (() => {
       const resetBtn = document.getElementById("resetBtn");
@@ -101,7 +103,8 @@
         if (home) { home.innerHTML = "<option value=''>Select home team</option>"; home.disabled = true; }
         if (away) { away.innerHTML = "<option value=''>Select away team</option>"; away.disabled = true; }
 
-        if (results) results.innerHTML = "Pick league + teams, then press <b>Run Predictions</b>.";
+        if (results) results.innerHTML =
+          "Pick league + teams, then press <b>Run Predictions</b>.";
         if (status) status.textContent = "Reset. Select a league.";
       });
     })();
