@@ -1,5 +1,7 @@
 /* ======================================================
-   MatchQuant app.js — Teams + Run FIX (works w/ your index.html)
+   MatchQuant app.js — ANDROID SELECT FIX (league -> teams)
+   Works with your index.html IDs:
+   leagueSelect, homeTeam, awayTeam, runBtn, results, sims, statusLine
    ====================================================== */
 
 (() => {
@@ -15,7 +17,7 @@
     status: $("statusLine"),
   };
 
-  function log(msg) {
+  function setStatus(msg) {
     if (el.status) el.status.textContent = msg;
   }
 
@@ -40,6 +42,7 @@
   function fillSelect(sel, values, placeholder) {
     resetSelect(sel, placeholder, false);
     values.forEach((v) => sel.appendChild(opt(v, v)));
+    sel.disabled = false; // force-enable
   }
 
   async function loadJSON(path) {
@@ -49,13 +52,18 @@
   }
 
   function findEngine() {
-    return (
-      window.predictMatch ||
-      window.simulateMatch ||
-      window.predict ||
-      window.predictMatchInternal ||
-      window.simulateMatchInternal
-    );
+    return window.predictMatch || window.simulateMatch || window.predict;
+  }
+
+  function wireLeagueHandlers(updateTeams) {
+    // Android browsers sometimes don’t fire "change" the way you expect.
+    // So we listen to multiple events and also poll briefly after interaction.
+    const events = ["change", "input", "click", "touchend"];
+    events.forEach((ev) => el.league.addEventListener(ev, () => {
+      setTimeout(updateTeams, 0);
+      setTimeout(updateTeams, 50);
+      setTimeout(updateTeams, 150);
+    }));
   }
 
   async function init() {
@@ -69,10 +77,9 @@
       resetSelect(el.away, "Select away team", true);
 
       setResults(`<div style="opacity:.75">Loading leagues…</div>`);
-      log("Loading teams.json…");
+      setStatus("Loading ./data/teams.json…");
 
-      // ✅ Use relative path for GitHub Pages repo site
-      // If your teams.json is at /data/teams.json, this is correct:
+      // ✅ Correct GitHub Pages path for repo site
       const teamsByLeague = await loadJSON("./data/teams.json");
 
       const leagues = Object.keys(teamsByLeague).sort();
@@ -81,42 +88,50 @@
       // Populate leagues + enable
       resetSelect(el.league, "Select league", false);
       leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
+      el.league.disabled = false;
 
-      log(`Loaded ${leagues.length} leagues. Pick one.`);
-
-      // League change => populate teams + enable
-      el.league.addEventListener("change", () => {
+      const updateTeams = () => {
         const league = el.league.value;
+
+        // Always reset teams first
         resetSelect(el.home, "Select home team", true);
         resetSelect(el.away, "Select away team", true);
 
         if (!league) {
-          log("Pick a league.");
+          setStatus("Pick a league.");
           return;
         }
 
-        const teams = teamsByLeague[league] || [];
-        if (!teams.length) {
-          log(`No teams found for ${league}.`);
+        const teams = teamsByLeague[league];
+        if (!Array.isArray(teams) || teams.length === 0) {
+          setStatus(`No teams found for "${league}" in teams.json.`);
           return;
         }
 
         fillSelect(el.home, teams, "Select home team");
         fillSelect(el.away, teams, "Select away team");
-        log(`Loaded ${teams.length} teams for ${league}.`);
-      });
 
-      // Run button click
+        // If you want them enabled even before picking, keep this:
+        el.home.disabled = false;
+        el.away.disabled = false;
+
+        setStatus(`Loaded ${teams.length} teams for ${league}.`);
+      };
+
+      wireLeagueHandlers(updateTeams);
+
+      // Run button
       el.runBtn.addEventListener("click", () => runPrediction(teamsByLeague));
 
       setResults(`<div style="opacity:.85">Ready. Select league + teams, then Run.</div>`);
+      setStatus(`Loaded ${leagues.length} leagues. Select one.`);
 
-      // Debug helper
+      // Debug
       window.__teamsByLeague = teamsByLeague;
 
     } catch (err) {
       console.error(err);
-      log("Error");
+      setStatus("Error");
       setResults(`
         <div class="card">
           <b>App error</b><br><br>
@@ -124,35 +139,26 @@
           <br><br>
           <b>Quick checks:</b>
           <ul>
-            <li>index.html IDs are: leagueSelect, homeTeam, awayTeam, runBtn, results</li>
-            <li>teams.json path is ./data/teams.json</li>
+            <li>teams.json must be at <code>/data/teams.json</code> in your repo</li>
+            <li>index.html IDs must match: leagueSelect, homeTeam, awayTeam</li>
           </ul>
         </div>
       `);
     }
   }
 
-  function runPrediction(teamsByLeague) {
+  function runPrediction() {
     const league = el.league.value;
     const home = el.home.value;
     const away = el.away.value;
 
-    if (!league) {
-      setResults(`<div class="card">Pick a league first.</div>`);
-      return;
-    }
-    if (!home || !away) {
-      setResults(`<div class="card">Pick both teams.</div>`);
-      return;
-    }
-    if (home === away) {
-      setResults(`<div class="card">Teams must be different.</div>`);
-      return;
-    }
+    if (!league) return setResults(`<div class="card">Pick a league first.</div>`);
+    if (!home || !away) return setResults(`<div class="card">Pick both teams.</div>`);
+    if (home === away) return setResults(`<div class="card">Teams must be different.</div>`);
 
     const engine = findEngine();
     if (typeof engine !== "function") {
-      setResults(`
+      return setResults(`
         <div class="card">
           <b>Run button works ✅</b><br><br>
           But <b>engine.js</b> is not exposing a function.<br>
@@ -162,20 +168,11 @@
             <li>window.simulateMatch</li>
             <li>window.predict</li>
           </ul>
-          <div style="opacity:.8;margin-top:8px">
-            Fix: in engine.js, add: <code>window.predictMatch = predictMatch;</code>
-          </div>
         </div>
       `);
-      return;
     }
 
-    const payload = {
-      league,
-      home,
-      away,
-      sims: Number(el.sims?.value || 10000),
-    };
+    const payload = { league, home, away, sims: Number(el.sims?.value || 10000) };
 
     try {
       const out = engine(payload);
