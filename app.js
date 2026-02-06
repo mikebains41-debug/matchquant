@@ -62,7 +62,7 @@
       setResults(`<div style="opacity:.7">Loading teams…</div>`);
 
       // 🔑 IMPORTANT FIX — RELATIVE PATH (NO LEADING SLASH)
-      const rawTeams = await loadJSON("data/teams.json");
+      const rawTeams = await loadJSON("https://mikebains41-debug.github.io/data/teams.json");
       const teamsByLeague = normalizeTeams(rawTeams);
 
       const leagues = Object.keys(teamsByLeague).sort();
