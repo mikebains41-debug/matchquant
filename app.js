@@ -1,229 +1,269 @@
-// MatchQuant UI wiring (data-driven dropdowns)
-// Works with teams.json + aliases.json + league_strength.json in /data
+/* MatchQuant App - loads data + wires UI */
 
-const $ = (id) => document.getElementById(id);
+(async function () {
+  const $ = (id) => document.getElementById(id);
 
-const leagueEl = $("league");
-const homeEl = $("homeTeam");
-const awayEl = $("awayTeam");
-const runBtn = $("runBtn");
-const resultsEl = $("results");
-const statusEl = $("status");
+  const leagueSelect = $("leagueSelect");
+  const homeSelect = $("homeSelect");
+  const awaySelect = $("awaySelect");
+  const homeAdv = $("homeAdv");
+  const baseGoals = $("baseGoals");
+  const goalCap = $("goalCap");
+  const ahSide = $("ahSide");
+  const ahLine = $("ahLine");
+  const ahOdds = $("ahOdds");
+  const runBtn = $("runBtn");
+  const results = $("results");
+  const status = $("status");
 
-let TEAMS = null;
-let ALIASES = {};
-let LEAGUE_STRENGTH = {};
-
-function setStatus(msg) {
-  if (statusEl) statusEl.textContent = msg || "";
-}
-
-async function loadJSON(path) {
-  const res = await fetch(path, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
-  return res.json();
-}
-
-// supports multiple possible shapes:
-// A) { leagues: [{key,name,teams:[...]}] }
-// B) { "Premier League": ["Arsenal", ...], "La Liga": [...] }
-// C) [{league:"Premier League", teams:[...]}]
-function normalizeTeamsJson(raw) {
-  // Case A
-  if (raw && Array.isArray(raw.leagues)) {
-    return raw.leagues.map((l, idx) => ({
-      key: l.key || l.name || String(idx),
-      name: l.name || l.key || `League ${idx + 1}`,
-      teams: Array.isArray(l.teams) ? l.teams : [],
-    }));
+  function setStatus(msg) {
+    status.textContent = msg || "";
   }
 
-  // Case B (object map)
-  if (raw && !Array.isArray(raw) && typeof raw === "object") {
-    return Object.keys(raw).map((leagueName) => ({
-      key: leagueName,
-      name: leagueName,
-      teams: Array.isArray(raw[leagueName]) ? raw[leagueName] : [],
-    }));
+  async function fetchJSON(path) {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
+    return await res.json();
   }
 
-  // Case C
-  if (Array.isArray(raw)) {
-    // maybe array of leagues or array of strings
-    if (raw.length && typeof raw[0] === "string") {
-      // unknown league; treat as one league
-      return [{ key: "League", name: "League", teams: raw }];
+  // DATA (your repo already has these)
+  let TEAMS = null;            // data/teams.json
+  let XG = null;               // data/xg_2025_2026.json
+  let LEAGUE_STRENGTH = null;  // data/league_strength.json
+  let ALIASES = null;          // data/aliases.json
+
+  function normalizeTeamName(name) {
+    if (!name) return name;
+    if (ALIASES && ALIASES[name]) return ALIASES[name];
+    return name;
+  }
+
+  function getLeagueNames() {
+    // IMPORTANT: league names are KEYS in teams.json
+    // This prevents the “0,1,2…” bug.
+    if (!TEAMS || typeof TEAMS !== "object") return [];
+    return Object.keys(TEAMS);
+  }
+
+  function fillSelect(select, items, placeholder = null) {
+    select.innerHTML = "";
+    if (placeholder) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = placeholder;
+      select.appendChild(opt);
     }
-    return raw.map((l, idx) => ({
-      key: l.key || l.name || l.league || String(idx),
-      name: l.name || l.league || l.key || `League ${idx + 1}`,
-      teams: Array.isArray(l.teams) ? l.teams : (Array.isArray(l.items) ? l.items : []),
-    }));
+    for (const it of items) {
+      const opt = document.createElement("option");
+      opt.value = it;
+      opt.textContent = it;
+      select.appendChild(opt);
+    }
   }
 
-  // fallback
-  return [];
-}
-
-function fillSelect(selectEl, options, placeholder) {
-  selectEl.innerHTML = "";
-  if (placeholder) {
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.textContent = placeholder;
-    selectEl.appendChild(opt);
+  function getTeamsForLeague(leagueName) {
+    const arr = TEAMS?.[leagueName];
+    if (!Array.isArray(arr)) return [];
+    // ensure strings, unique, sorted
+    return [...new Set(arr.map(String))].sort((a, b) => a.localeCompare(b));
   }
-  for (const v of options) {
-    const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    selectEl.appendChild(opt);
+
+  function leagueMultiplier(leagueName) {
+    if (!LEAGUE_STRENGTH || typeof LEAGUE_STRENGTH !== "object") return 1.0;
+    const v = LEAGUE_STRENGTH[leagueName];
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 1.0;
   }
-}
 
-function getLeagueList() {
-  return TEAMS || [];
-}
+  function xgForTeam(leagueName, teamName) {
+    // Supports either:
+    // XG[league][team] = { xGF: n, xGA: n } OR { xg: n } OR number
+    if (!XG || typeof XG !== "object") return { xGF: null, xGA: null };
 
-function getTeamsForLeagueKey(leagueKey) {
-  const leagues = getLeagueList();
-  const found = leagues.find((l) => l.key === leagueKey || l.name === leagueKey);
-  return found ? (found.teams || []) : [];
-}
+    const leagueObj = XG[leagueName];
+    if (!leagueObj) return { xGF: null, xGA: null };
 
-// optional alias mapping if engine expects a different spelling
-function aliasTeam(name) {
-  return ALIASES?.[name] || name;
-}
+    const t = normalizeTeamName(teamName);
+    const row = leagueObj[t] || leagueObj[teamName];
+    if (row == null) return { xGF: null, xGA: null };
 
-function renderError(err) {
-  resultsEl.textContent = `Error: ${err?.message || err}`;
-}
+    if (typeof row === "number") return { xGF: row, xGA: null };
 
-async function boot() {
-  try {
-    setStatus("Loading data…");
+    if (typeof row === "object") {
+      const xGF = Number.isFinite(Number(row.xGF)) ? Number(row.xGF)
+               : Number.isFinite(Number(row.xg)) ? Number(row.xg)
+               : Number.isFinite(Number(row.for)) ? Number(row.for)
+               : null;
 
-    const [teamsRaw, aliasesRaw, strengthRaw] = await Promise.all([
-      loadJSON("data/teams.json"),
-      loadJSON("data/aliases.json").catch(() => ({})),
-      loadJSON("data/league_strength.json").catch(() => ({})),
-    ]);
+      const xGA = Number.isFinite(Number(row.xGA)) ? Number(row.xGA)
+               : Number.isFinite(Number(row.against)) ? Number(row.against)
+               : null;
 
-    TEAMS = normalizeTeamsJson(teamsRaw);
-    ALIASES = aliasesRaw || {};
-    LEAGUE_STRENGTH = strengthRaw || {};
-
-    // ✅ FIX: if TEAMS is empty, show a clear message
-    if (!TEAMS.length) {
-      setStatus("");
-      resultsEl.textContent =
-        "teams.json loaded but no leagues/teams were found. Open data/teams.json and make sure it contains league names + team lists.";
-      // still populate league dropdown with nothing to prevent undefined numeric options
-      fillSelect(leagueEl, [], "Choose league");
-      fillSelect(homeEl, [], "Choose home");
-      fillSelect(awayEl, [], "Choose away");
-      return;
+      return { xGF, xGA };
     }
 
-    // populate league dropdown with league NAMES (not numbers)
-    const leagueNames = TEAMS.map((l) => l.name);
-    fillSelect(leagueEl, leagueNames, "Choose league");
+    return { xGF: null, xGA: null };
+  }
 
-    // default to first real league
-    leagueEl.value = leagueNames[0];
+  function renderResultCard(out) {
+    const pct = (p) => `${(p * 100).toFixed(1)}%`;
+    const odds = (o) => (o ? o.toFixed ? o.toFixed(2) : o : "—");
 
-    // load teams for selected league
-    const teams = getTeamsForLeagueKey(leagueEl.value);
-    fillSelect(homeEl, teams, "Choose home");
-    fillSelect(awayEl, teams, "Choose away");
+    const top = out.mostLikely;
+    const score = `${top.h}-${top.a}`;
 
-    // sensible defaults
+    const ahBlock = out.ah
+      ? `<div style="margin-top:10px;">
+          <b>AH (${out.ahSide || ""} ${out.ahLine || ""}) Cover:</b>
+          ${pct(out.ah.win)} (Fair ${odds(out.ah.fairOdds)})
+          ${Number.isFinite(out.ah.edge) ? `<div style="opacity:.85;margin-top:6px;"><b>Edge (fairProb - bookProb):</b> ${out.ah.edge}</div>` : ""}
+        </div>`
+      : "";
+
+    return `
+      <div class="card" style="padding:16px;">
+        <div style="font-size:1.1rem;font-weight:800;">
+          ${out.leagueName}: ${out.homeTeam} vs ${out.awayTeam}
+        </div>
+
+        <div style="margin-top:10px;">
+          <b>Expected Goals (xG-based λ):</b> ${out.lamH.toFixed(2)} – ${out.lamA.toFixed(2)}
+        </div>
+
+        <div style="margin-top:10px;">
+          <b>Most likely score:</b> ${score} (p=${pct(top.p)})
+        </div>
+
+        <div style="margin-top:10px;">
+          <b>1X2:</b>
+          Home ${pct(out.x12.home)} |
+          Draw ${pct(out.x12.draw)} |
+          Away ${pct(out.x12.away)}
+        </div>
+
+        <div style="margin-top:10px;">
+          <b>O/U 2.5:</b>
+          Over ${pct(out.ou25.over)} (Fair ${odds(out.ou25.overOdds)}) |
+          Under ${pct(out.ou25.under)} (Fair ${odds(out.ou25.underOdds)})
+        </div>
+
+        <div style="margin-top:10px;">
+          <b>BTTS:</b>
+          Yes ${pct(out.btts.yes)} (Fair ${odds(out.btts.yesOdds)}) |
+          No ${pct(out.btts.no)} (Fair ${odds(out.btts.noOdds)})
+        </div>
+
+        ${ahBlock}
+
+        <div style="margin-top:12px;opacity:.75;">
+          League multiplier: ${leagueMultiplier(out.leagueName).toFixed(2)}
+        </div>
+      </div>
+    `;
+  }
+
+  function syncTeamDropdowns() {
+    const league = leagueSelect.value;
+    const teams = getTeamsForLeague(league);
+
+    fillSelect(homeSelect, teams, "Choose home");
+    fillSelect(awaySelect, teams, "Choose away");
+
+    // default pick if available
     if (teams.length >= 2) {
-      homeEl.value = teams[0];
-      awayEl.value = teams[1];
+      homeSelect.value = teams[0];
+      awaySelect.value = teams[1];
     }
+  }
 
-    // when league changes, update teams
-    leagueEl.addEventListener("change", () => {
-      const t = getTeamsForLeagueKey(leagueEl.value);
-      fillSelect(homeEl, t, "Choose home");
-      fillSelect(awayEl, t, "Choose away");
-      if (t.length >= 2) {
-        homeEl.value = t[0];
-        awayEl.value = t[1];
+  async function init() {
+    try {
+      setStatus("Loading data…");
+
+      // load in parallel
+      const [teams, xg, strength, aliases] = await Promise.all([
+        fetchJSON("data/teams.json"),
+        fetchJSON("data/xg_2025_2026.json"),
+        fetchJSON("data/league_strength.json"),
+        fetchJSON("data/aliases.json")
+      ]);
+
+      TEAMS = teams;
+      XG = xg;
+      LEAGUE_STRENGTH = strength;
+      ALIASES = aliases;
+
+      const leagues = getLeagueNames().sort((a, b) => a.localeCompare(b));
+      fillSelect(leagueSelect, leagues, "Choose league");
+
+      // pick first league by default
+      if (leagues.length) {
+        leagueSelect.value = leagues[0];
+        syncTeamDropdowns();
       }
-    });
 
-    runBtn.addEventListener("click", runPrediction);
+      leagueSelect.addEventListener("change", syncTeamDropdowns);
 
-    setStatus("Ready.");
-  } catch (e) {
-    setStatus("");
-    renderError(e);
+      runBtn.addEventListener("click", () => {
+        const leagueName = leagueSelect.value;
+        const homeTeam = homeSelect.value;
+        const awayTeam = awaySelect.value;
+
+        if (!leagueName || !homeTeam || !awayTeam) {
+          results.textContent = "Please choose league, home team, and away team.";
+          return;
+        }
+        if (homeTeam === awayTeam) {
+          results.textContent = "Home and away teams must be different.";
+          return;
+        }
+
+        const mult = leagueMultiplier(leagueName);
+
+        const hxg = xgForTeam(leagueName, homeTeam);
+        const axg = xgForTeam(leagueName, awayTeam);
+
+        // Use xGF if available, else null (engine will blend with base goals)
+        const xgHome = Number.isFinite(hxg.xGF) ? hxg.xGF : null;
+        const xgAway = Number.isFinite(axg.xGF) ? axg.xGF : null;
+
+        const ha = Number(homeAdv.value);
+        const bg = Number(baseGoals.value);
+        const cap = Number(goalCap.value);
+
+        const lineVal = ahLine.value === "none" ? null : Number(ahLine.value);
+        const oddsVal = ahOdds.value ? Number(ahOdds.value) : null;
+
+        const payload = {
+          leagueName,
+          homeTeam,
+          awayTeam,
+          xgHome,
+          xgAway,
+          leagueMult: mult,
+          homeAdv: Number.isFinite(ha) ? ha : 1.1,
+          baseGoals: Number.isFinite(bg) ? bg : 1.35,
+          goalCap: Number.isFinite(cap) ? cap : 8,
+          ahSide: ahSide.value || "home",
+          ahLine: Number.isFinite(lineVal) ? lineVal : null,
+          ahOdds: Number.isFinite(oddsVal) ? oddsVal : null
+        };
+
+        const out = window.MQ.predictMatchInternal(payload);
+        // store for render (optional)
+        out.ahSide = payload.ahSide;
+        out.ahLine = payload.ahLine;
+
+        results.innerHTML = renderResultCard(out);
+      });
+
+      setStatus("Loaded ✅");
+    } catch (e) {
+      console.error(e);
+      setStatus("Load failed ❌");
+      results.textContent = String(e?.message || e);
+    }
   }
-}
 
-function runPrediction() {
-  try {
-    const leagueName = leagueEl.value;
-    const homeTeam = homeEl.value;
-    const awayTeam = awayEl.value;
-
-    if (!leagueName || !homeTeam || !awayTeam) {
-      resultsEl.textContent = "Pick league + both teams first.";
-      return;
-    }
-    if (homeTeam === awayTeam) {
-      resultsEl.textContent = "Home and Away cannot be the same team.";
-      return;
-    }
-
-    const sims = Number($("sims")?.value || 10000);
-    const homeAdv = Number($("homeAdv")?.value || 1.1);
-    const baseGoals = Number($("baseGoals")?.value || 1.35);
-
-    // Optional league multiplier
-    const leagueMult =
-      (LEAGUE_STRENGTH && (LEAGUE_STRENGTH[leagueName] ?? LEAGUE_STRENGTH[leagueName.toLowerCase()])) || 1.0;
-
-    // ✅ IMPORTANT: send the names using keys engine expects
-    const payload = {
-      leagueName,
-      homeTeam: aliasTeam(homeTeam),
-      awayTeam: aliasTeam(awayTeam),
-      sims,
-      homeAdv,
-      baseGoals,
-      leagueMult,
-    };
-
-    // engine.js should provide a function. We support common names.
-    const fn =
-      window.runMatchQuant ||
-      window.runPrediction ||
-      window.predictMatch ||
-      window.engineRun;
-
-    if (typeof fn !== "function") {
-      resultsEl.textContent =
-        "engine.js did not expose a runner function. Make sure engine.js defines window.runMatchQuant = function(payload){...}";
-      return;
-    }
-
-    const out = fn(payload);
-
-    // ✅ FIX: render HTML properly if out is HTML
-    if (typeof out === "string" && out.includes("<")) {
-      resultsEl.innerHTML = out;
-    } else if (typeof out === "string") {
-      resultsEl.textContent = out;
-    } else {
-      resultsEl.textContent = JSON.stringify(out, null, 2);
-    }
-  } catch (e) {
-    renderError(e);
-  }
-}
-
-boot();
+  init();
+})();
