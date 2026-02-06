@@ -1,5 +1,5 @@
 /* ======================================================
-   MatchQuant app.js — ANDROID SELECT FIX (league -> teams)
+   MatchQuant app.js — HARD ANDROID FIX (poll league value)
    Works with your index.html IDs:
    leagueSelect, homeTeam, awayTeam, runBtn, results, sims, statusLine
    ====================================================== */
@@ -16,6 +16,8 @@
     runBtn: $("runBtn"),
     status: $("statusLine"),
   };
+
+  const log = (...a) => console.log("[MatchQuant]", ...a);
 
   function setStatus(msg) {
     if (el.status) el.status.textContent = msg;
@@ -55,88 +57,29 @@
     return window.predictMatch || window.simulateMatch || window.predict;
   }
 
-  function wireLeagueHandlers(updateTeams) {
-    const events = ["change", "input", "click", "touchend"];
-    events.forEach((ev) =>
-      el.league.addEventListener(ev, () => {
-        setTimeout(updateTeams, 0);
-        setTimeout(updateTeams, 50);
-        setTimeout(updateTeams, 150);
-      })
-    );
-  }
+  function updateTeams(teamsByLeague) {
+    const league = el.league.value;
 
-  async function init() {
-    try {
-      if (!el.league || !el.home || !el.away || !el.runBtn || !el.results) {
-        throw new Error("Missing required HTML IDs. Check index.html IDs.");
-      }
+    // always reset
+    resetSelect(el.home, "Select home team", true);
+    resetSelect(el.away, "Select away team", true);
 
-      resetSelect(el.league, "Select league", true);
-      resetSelect(el.home, "Select home team", true);
-      resetSelect(el.away, "Select away team", true);
-
-      setResults(`<div style="opacity:.75">Loading leagues…</div>`);
-      setStatus("Loading data/teams.json…");
-
-      // ✅ Use relative path that works on GitHub Pages
-      const teamsByLeague = await loadJSON("data/teams.json");
-
-      const leagues = Object.keys(teamsByLeague).sort();
-      if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
-
-      resetSelect(el.league, "Select league", false);
-      leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
-      el.league.disabled = false;
-
-      const updateTeams = () => {
-        const league = el.league.value;
-
-        resetSelect(el.home, "Select home team", true);
-        resetSelect(el.away, "Select away team", true);
-
-        if (!league) {
-          setStatus("Pick a league.");
-          return;
-        }
-
-        const teams = teamsByLeague[league];
-        if (!Array.isArray(teams) || teams.length === 0) {
-          setStatus(`No teams found for "${league}" in teams.json.`);
-          return;
-        }
-
-        fillSelect(el.home, teams, "Select home team");
-        fillSelect(el.away, teams, "Select away team");
-
-        setStatus(`Loaded ${teams.length} teams for ${league}.`);
-      };
-
-      wireLeagueHandlers(updateTeams);
-
-      // ✅ Run button wired correctly
-      el.runBtn.addEventListener("click", runPrediction);
-
-      setResults(`<div style="opacity:.85">Ready. Select league + teams, then Run.</div>`);
-      setStatus(`Loaded ${leagues.length} leagues. Select one.`);
-
-      window.__teamsByLeague = teamsByLeague;
-    } catch (err) {
-      console.error(err);
-      setStatus("Error");
-      setResults(`
-        <div class="card">
-          <b>App error</b><br><br>
-          ${String(err.message || err)}
-          <br><br>
-          <b>Quick checks:</b>
-          <ul>
-            <li>teams.json must be at <code>data/teams.json</code></li>
-            <li>index.html IDs must match: leagueSelect, homeTeam, awayTeam, runBtn</li>
-          </ul>
-        </div>
-      `);
+    if (!league) {
+      setStatus("Pick a league.");
+      return;
     }
+
+    const teams = teamsByLeague[league];
+
+    if (!Array.isArray(teams) || teams.length === 0) {
+      setStatus(`No teams found for "${league}" in teams.json.`);
+      return;
+    }
+
+    fillSelect(el.home, teams, "Select home team");
+    fillSelect(el.away, teams, "Select away team");
+
+    setStatus(`Loaded ${teams.length} teams for ${league}.`);
   }
 
   function runPrediction() {
@@ -164,12 +107,7 @@
       `);
     }
 
-    const payload = {
-      league,
-      home,
-      away,
-      sims: Number(el.sims?.value || 10000),
-    };
+    const payload = { league, home, away, sims: Number(el.sims?.value || 10000) };
 
     try {
       const out = engine(payload);
@@ -181,6 +119,72 @@
     } catch (e) {
       console.error(e);
       setResults(`<div class="card">Engine error: ${e.message}</div>`);
+    }
+  }
+
+  async function init() {
+    try {
+      if (!el.league || !el.home || !el.away || !el.runBtn || !el.results) {
+        throw new Error("Missing required HTML IDs. Check index.html IDs.");
+      }
+
+      resetSelect(el.league, "Select league", true);
+      resetSelect(el.home, "Select home team", true);
+      resetSelect(el.away, "Select away team", true);
+
+      setResults(`<div style="opacity:.75">Loading leagues…</div>`);
+      setStatus("Loading ./data/teams.json…");
+
+      const teamsByLeague = await loadJSON("./data/teams.json");
+      window.__teamsByLeague = teamsByLeague;
+
+      const leagues = Object.keys(teamsByLeague).sort();
+      if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
+
+      // populate leagues
+      resetSelect(el.league, "Select league", false);
+      leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
+      el.league.disabled = false;
+
+      // ✅ ANDROID HARD FIX: poll for league value changes
+      let lastLeague = "";
+      setInterval(() => {
+        const current = el.league.value;
+        if (current !== lastLeague) {
+          lastLeague = current;
+          log("League changed:", current);
+          updateTeams(teamsByLeague);
+        }
+      }, 250);
+
+      // also try normal events (bonus)
+      ["change", "input", "click", "touchend"].forEach((ev) => {
+        el.league.addEventListener(ev, () => {
+          setTimeout(() => updateTeams(teamsByLeague), 0);
+        });
+      });
+
+      // run button
+      el.runBtn.addEventListener("click", runPrediction);
+
+      setResults(`<div style="opacity:.85">Ready. Select league + teams, then Run.</div>`);
+      setStatus(`Loaded ${leagues.length} leagues. Select one.`);
+
+    } catch (err) {
+      console.error(err);
+      setStatus("Error");
+      setResults(`
+        <div class="card">
+          <b>App error</b><br><br>
+          ${String(err.message || err)}
+          <br><br>
+          <b>Quick checks:</b>
+          <ul>
+            <li>teams.json must be at <code>/data/teams.json</code></li>
+            <li>index.html IDs must match: leagueSelect, homeTeam, awayTeam, runBtn, results</li>
+          </ul>
+        </div>
+      `);
     }
   }
 
