@@ -1,0 +1,11 @@
+{
+  "Premier League": {
+    "Chelsea": { "xg": 1.70, "xga": 1.35 },
+    "Brighton": { "xg": 1.65, "xga": 1.40 }
+  },
+  "La Liga": {},
+  "Serie A": {},
+  "Bundesliga": {},
+  "Ligue 1": {},
+  "Portugal": {}
+}
