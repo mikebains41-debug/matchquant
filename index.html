@@ -11,7 +11,7 @@
   <main class="wrap">
     <header class="hero">
       <h1>MatchQuant</h1>
-      <p>Soccer Prediction Engine (Poisson + Pro Markets)</p>
+      <p class="sub">Soccer Prediction Engine (Poisson + Pro Markets)</p>
     </header>
 
     <section class="card">
@@ -47,7 +47,11 @@
         <label>Goal Cap
           <input id="capGoals" type="number" value="8" />
         </label>
+
+        <button id="runBtn" type="button">Run Prediction</button>
       </div>
+
+      <div id="loaded" class="loaded">Loading…</div>
     </section>
 
     <section class="card">
@@ -55,31 +59,31 @@
 
       <div class="grid">
         <label>Home ML odds
-          <input id="oddsHome" type="number" step="0.01" placeholder="e.g. 1.85" />
+          <input id="homeML" type="number" step="0.01" placeholder="e.g. 1.85" />
         </label>
 
         <label>Draw odds
-          <input id="oddsDraw" type="number" step="0.01" placeholder="e.g. 3.60" />
+          <input id="drawML" type="number" step="0.01" placeholder="e.g. 3.60" />
         </label>
 
         <label>Away ML odds
-          <input id="oddsAway" type="number" step="0.01" placeholder="e.g. 4.20" />
+          <input id="awayML" type="number" step="0.01" placeholder="e.g. 4.20" />
         </label>
 
         <label>Over 2.5 odds
-          <input id="oddsO25" type="number" step="0.01" placeholder="e.g. 1.95" />
+          <input id="over25" type="number" step="0.01" placeholder="e.g. 1.95" />
         </label>
 
         <label>Under 2.5 odds
-          <input id="oddsU25" type="number" step="0.01" placeholder="e.g. 1.90" />
+          <input id="under25" type="number" step="0.01" placeholder="e.g. 1.90" />
         </label>
 
         <label>BTTS Yes odds
-          <input id="oddsBTTSY" type="number" step="0.01" placeholder="e.g. 1.80" />
+          <input id="bttsYes" type="number" step="0.01" placeholder="e.g. 1.80" />
         </label>
 
         <label>BTTS No odds
-          <input id="oddsBTTSN" type="number" step="0.01" placeholder="e.g. 2.05" />
+          <input id="bttsNo" type="number" step="0.01" placeholder="e.g. 2.05" />
         </label>
       </div>
     </section>
@@ -90,61 +94,44 @@
       <div class="grid">
         <label>AH Side
           <select id="ahSide">
-            <option value="home">Home</option>
-            <option value="away">Away</option>
+            <option>Home</option>
+            <option>Away</option>
           </select>
         </label>
 
         <label>AH Line
           <select id="ahLine">
-            <option value="-2">-2.00</option>
-            <option value="-1.75">-1.75</option>
-            <option value="-1.5">-1.50</option>
-            <option value="-1.25">-1.25</option>
-            <option value="-1">-1.00</option>
+            <option value="">(none)</option>
+            <option value="-0.25">-0.25</option>
+            <option value="-0.5">-0.5</option>
             <option value="-0.75">-0.75</option>
-            <option value="-0.5">-0.50</option>
-            <option value="-0.25" selected>-0.25</option>
-            <option value="0">0.00</option>
-            <option value="0.25">+0.25</option>
-            <option value="0.5">+0.50</option>
-            <option value="0.75">+0.75</option>
-            <option value="1">+1.00</option>
-            <option value="1.25">+1.25</option>
-            <option value="1.5">+1.50</option>
-            <option value="1.75">+1.75</option>
-            <option value="2">+2.00</option>
+            <option value="-1">-1</option>
+            <option value="0">0</option>
+            <option value="+0.25">+0.25</option>
+            <option value="+0.5">+0.5</option>
+            <option value="+0.75">+0.75</option>
+            <option value="+1">+1</option>
           </select>
         </label>
 
         <label>AH Odds
           <input id="ahOdds" type="number" step="0.01" placeholder="e.g. 1.95" />
         </label>
+
+        <div></div>
       </div>
     </section>
 
-    <button id="runBtn" class="btn" type="button">Run Prediction</button>
-
-    <section class="card" id="resultsCard">
+    <section class="card">
       <h2>Results</h2>
-      <div id="resultsText" class="mono">
+      <div id="results" class="results">
         Pick league + teams, then press Run Prediction.
       </div>
-      <div class="muted" id="loadedHint"></div>
     </section>
   </main>
 
-  <!-- Custom modal (replaces alert, removes your personal name from popup) -->
-  <div id="mqModal" class="mq-modal hidden">
-    <div class="mq-box">
-      <div class="mq-title">MatchQuant</div>
-      <pre id="mqContent"></pre>
-      <button class="btn" type="button" onclick="closeMQ()">OK</button>
-    </div>
-  </div>
-
   <!-- IMPORTANT: order matters -->
-  <script src="engine.js"></script>
-  <script src="app.js"></script>
+  <script src="engine.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
