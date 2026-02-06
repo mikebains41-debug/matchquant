@@ -9,120 +9,142 @@
 
 <body>
   <main class="wrap">
-    <h1>MatchQuant</h1>
-    <p class="sub">Soccer Prediction Engine (Poisson + Pro Markets)</p>
+    <header class="hero">
+      <h1>MatchQuant</h1>
+      <p>Soccer Prediction Engine (Poisson + Pro Markets)</p>
+    </header>
 
-    <div class="grid">
-      <label>League
-        <select id="league"></select>
-      </label>
+    <section class="card">
+      <div class="grid">
+        <label>League
+          <select id="league"></select>
+        </label>
 
-      <label>Fixture (optional)
-        <select id="fixture"></select>
-      </label>
+        <label>Fixture (optional)
+          <select id="fixture"></select>
+        </label>
 
-      <label>Home Team
-        <select id="home"></select>
-      </label>
+        <label>Home Team
+          <select id="home"></select>
+        </label>
 
-      <label>Away Team
-        <select id="away"></select>
-      </label>
+        <label>Away Team
+          <select id="away"></select>
+        </label>
 
-      <label>Sims (kept for UI)
-        <input id="sims" type="number" value="10000" />
-      </label>
+        <label>Sims (kept for UI)
+          <input id="sims" type="number" value="10000" />
+        </label>
 
-      <label>Home Advantage
-        <input id="homeAdv" type="number" value="1.10" step="0.01" />
-      </label>
+        <label>Home Advantage
+          <input id="homeAdv" type="number" value="1.10" step="0.01" />
+        </label>
 
-      <label>Base Goals
-        <input id="baseGoals" type="number" value="1.35" step="0.01" />
-      </label>
+        <label>Base Goals
+          <input id="baseGoals" type="number" value="1.35" step="0.01" />
+        </label>
 
-      <label>Goal Cap
-        <input id="capGoals" type="number" value="8" />
-      </label>
+        <label>Goal Cap
+          <input id="capGoals" type="number" value="8" />
+        </label>
+      </div>
+    </section>
 
-      <div class="divider"></div>
+    <section class="card">
+      <h2>Odds (optional) — for EV badges</h2>
 
-      <h2 class="section">Odds (optional) — for EV badges</h2>
+      <div class="grid">
+        <label>Home ML odds
+          <input id="oddsHome" type="number" step="0.01" placeholder="e.g. 1.85" />
+        </label>
 
-      <label>Home ML odds
-        <input id="oddsHome" type="number" step="0.01" placeholder="e.g. 1.85" />
-      </label>
+        <label>Draw odds
+          <input id="oddsDraw" type="number" step="0.01" placeholder="e.g. 3.60" />
+        </label>
 
-      <label>Draw odds
-        <input id="oddsDraw" type="number" step="0.01" placeholder="e.g. 3.60" />
-      </label>
+        <label>Away ML odds
+          <input id="oddsAway" type="number" step="0.01" placeholder="e.g. 4.20" />
+        </label>
 
-      <label>Away ML odds
-        <input id="oddsAway" type="number" step="0.01" placeholder="e.g. 4.20" />
-      </label>
+        <label>Over 2.5 odds
+          <input id="oddsO25" type="number" step="0.01" placeholder="e.g. 1.95" />
+        </label>
 
-      <label>Over 2.5 odds
-        <input id="oddsOver25" type="number" step="0.01" placeholder="e.g. 1.95" />
-      </label>
+        <label>Under 2.5 odds
+          <input id="oddsU25" type="number" step="0.01" placeholder="e.g. 1.90" />
+        </label>
 
-      <label>Under 2.5 odds
-        <input id="oddsUnder25" type="number" step="0.01" placeholder="e.g. 1.90" />
-      </label>
+        <label>BTTS Yes odds
+          <input id="oddsBTTSY" type="number" step="0.01" placeholder="e.g. 1.80" />
+        </label>
 
-      <label>BTTS Yes odds
-        <input id="oddsBTTSYes" type="number" step="0.01" placeholder="e.g. 1.80" />
-      </label>
+        <label>BTTS No odds
+          <input id="oddsBTTSN" type="number" step="0.01" placeholder="e.g. 2.05" />
+        </label>
+      </div>
+    </section>
 
-      <label>BTTS No odds
-        <input id="oddsBTTSNo" type="number" step="0.01" placeholder="e.g. 2.05" />
-      </label>
+    <section class="card">
+      <h2>Asian Handicap (optional)</h2>
 
-      <div class="divider"></div>
+      <div class="grid">
+        <label>AH Side
+          <select id="ahSide">
+            <option value="home">Home</option>
+            <option value="away">Away</option>
+          </select>
+        </label>
 
-      <h2 class="section">Asian Handicap (optional)</h2>
+        <label>AH Line
+          <select id="ahLine">
+            <option value="-2">-2.00</option>
+            <option value="-1.75">-1.75</option>
+            <option value="-1.5">-1.50</option>
+            <option value="-1.25">-1.25</option>
+            <option value="-1">-1.00</option>
+            <option value="-0.75">-0.75</option>
+            <option value="-0.5">-0.50</option>
+            <option value="-0.25" selected>-0.25</option>
+            <option value="0">0.00</option>
+            <option value="0.25">+0.25</option>
+            <option value="0.5">+0.50</option>
+            <option value="0.75">+0.75</option>
+            <option value="1">+1.00</option>
+            <option value="1.25">+1.25</option>
+            <option value="1.5">+1.50</option>
+            <option value="1.75">+1.75</option>
+            <option value="2">+2.00</option>
+          </select>
+        </label>
 
-      <label>AH Side
-        <select id="ahSide">
-          <option value="home">Home</option>
-          <option value="away">Away</option>
-        </select>
-      </label>
+        <label>AH Odds
+          <input id="ahOdds" type="number" step="0.01" placeholder="e.g. 1.95" />
+        </label>
+      </div>
+    </section>
 
-      <label>AH Line
-        <select id="ahLine">
-          <option value="-1.5">-1.5</option>
-          <option value="-1.25">-1.25</option>
-          <option value="-1.0">-1.0</option>
-          <option value="-0.75">-0.75</option>
-          <option value="-0.5">-0.5</option>
-          <option value="-0.25" selected>-0.25</option>
-          <option value="0">0</option>
-          <option value="0.25">+0.25</option>
-          <option value="0.5">+0.5</option>
-          <option value="0.75">+0.75</option>
-          <option value="1.0">+1.0</option>
-          <option value="1.25">+1.25</option>
-          <option value="1.5">+1.5</option>
-        </select>
-      </label>
+    <button id="runBtn" class="btn" type="button">Run Prediction</button>
 
-      <label>AH Odds
-        <input id="ahOdds" type="number" step="0.01" placeholder="e.g. 1.95" />
-      </label>
-
-      <button id="runBtn" type="button" class="cta">Run Prediction</button>
-    </div>
-
-    <div class="panel">
-      <h2 class="section">Results</h2>
-      <pre id="results" class="results">Pick league + teams, then press Run Prediction.</pre>
-    </div>
-
-    <div id="footerLoaded" class="footer"></div>
+    <section class="card" id="resultsCard">
+      <h2>Results</h2>
+      <div id="resultsText" class="mono">
+        Pick league + teams, then press Run Prediction.
+      </div>
+      <div class="muted" id="loadedHint"></div>
+    </section>
   </main>
+
+  <!-- Custom modal (replaces alert, removes your personal name from popup) -->
+  <div id="mqModal" class="mq-modal hidden">
+    <div class="mq-box">
+      <div class="mq-title">MatchQuant</div>
+      <pre id="mqContent"></pre>
+      <button class="btn" type="button" onclick="closeMQ()">OK</button>
+    </div>
+  </div>
 
   <!-- IMPORTANT: order matters -->
   <script src="engine.js"></script>
   <script src="app.js"></script>
 </body>
-        </html>
+</html>
