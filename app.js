@@ -1,12 +1,14 @@
-/* MatchQuant app.js — FULL REPLACEMENT
+/* MatchQuant app.js — v2
    Fixes:
-   - "Data failed to load" on GitHub Pages
-   - Removes "__league_factor" from team dropdowns
-   - Better fixture -> team matching (case/spacing)
-   Assumes these files exist in SAME folder as index.html:
+   - Shows ALL teams (from xg_tables.json), not just fixtures
+   - Removes "__league_factor" from team dropdown
+   - Robust loading for GitHub Pages paths
+   - Sends odds inputs to engine.js for EV badges + AH EV
+
+   Requires files in SAME folder as index.html:
    - fixtures.json
    - xg_tables.json
-   - h2h.json
+   - h2h.json  (optional but kept)
 */
 
 (() => {
@@ -14,14 +16,6 @@
 
   // ---------- Helpers ----------
   const $ = (id) => document.getElementById(id);
-
-  const norm = (s) =>
-    String(s || "")
-      .trim()
-      .toLowerCase()
-      .replace(/[’']/g, "")
-      .replace(/[^a-z0-9\s]/g, " ")
-      .replace(/\s+/g, " ");
 
   function byText(a, b) {
     return String(a).localeCompare(String(b));
@@ -48,13 +42,6 @@
     }
   }
 
-  function setStatus(el, ok, msg) {
-    if (!el) return;
-    el.textContent = msg || "";
-    el.style.opacity = ok ? "1" : "0.9";
-    el.style.color = ok ? "#22c55e" : "#ef4444";
-  }
-
   function absUrl(fileName) {
     return new URL(fileName, window.location.href).toString();
   }
@@ -66,9 +53,7 @@
     for (let i = 0; i < tries; i++) {
       try {
         const bust = `cb=${Date.now()}_${Math.random().toString(16).slice(2)}`;
-        const res = await fetch(url + (url.includes("?") ? "&" : "?") + bust, {
-          cache: "no-store",
-        });
+        const res = await fetch(url + (url.includes("?") ? "&" : "?") + bust, { cache: "no-store" });
         if (!res.ok) throw new Error(`${fileName} HTTP ${res.status}`);
         return await res.json();
       } catch (e) {
@@ -80,12 +65,10 @@
     throw lastErr;
   }
 
-  // ---------- Data model ----------
-  let fixtures = []; // [{id, league, home, away, date?}]
+  // ---------- Data ----------
+  let fixtures = [];
   let xgRaw = null;
   let h2hRaw = null;
-
-  let leagues = [];
 
   // ---------- Elements ----------
   const els = {
@@ -98,18 +81,26 @@
     baseGoals: $("baseGoals"),
     capGoals: $("capGoals"),
     runBtn: $("runBtn"),
-
-    statusFixtures: $("statusFixtures"),
-    statusXg: $("statusXg"),
-    statusH2H: $("statusH2H"),
-    statusReady: $("statusReady"),
+    results: $("results"),
     footerLoaded: $("footerLoaded"),
+
+    // odds inputs
+    homeML: $("oddsHome"),
+    draw: $("oddsDraw"),
+    awayML: $("oddsAway"),
+    over25: $("oddsOver25"),
+    under25: $("oddsUnder25"),
+    bttsYes: $("oddsBTTSYes"),
+    bttsNo: $("oddsBTTSNo"),
+
+    ahSide: $("ahSide"),
+    ahLine: $("ahLine"),
+    ahOdds: $("ahOdds"),
   };
 
-  // ---------- Parsing ----------
+  // ---------- Normalization ----------
   function normalizeFixtures(raw) {
     const out = [];
-
     const arr =
       Array.isArray(raw) ? raw :
       Array.isArray(raw?.fixtures) ? raw.fixtures :
@@ -134,8 +125,20 @@
     return out;
   }
 
-  function leaguesFromFixtures(fixturesArr) {
-    return uniqSorted(fixturesArr.map((f) => f.league));
+  function leaguesFromXg() {
+    if (!xgRaw) return [];
+    const root = xgRaw.leagues || xgRaw;
+    if (!root || typeof root !== "object") return [];
+    return uniqSorted(Object.keys(root));
+  }
+
+  function leaguesFromFixtures() {
+    return uniqSorted(fixtures.map((f) => f.league));
+  }
+
+  function allLeagues() {
+    // union: fixtures + xg leagues
+    return uniqSorted([ ...leaguesFromFixtures(), ...leaguesFromXg() ]);
   }
 
   function fixturesForLeague(leagueName) {
@@ -145,24 +148,23 @@
 
   function teamsFromXg(leagueName) {
     if (!xgRaw) return [];
-
     const root = xgRaw.leagues || xgRaw.data || xgRaw;
 
-    // array shape (rare)
+    // if array format
     if (Array.isArray(root)) {
       return uniqSorted(
         root
-          .filter((r) =>
+          .filter(r =>
             (r.league === leagueName || r.competition === leagueName) &&
             r.team &&
             !String(r.team).startsWith("__")
           )
-          .map((r) => r.team)
+          .map(r => r.team)
       );
     }
 
-    // object shape: xgRaw[leagueName] = { team: {att,def}, "__league_factor": 1.0 }
-    if (root && root[leagueName] && typeof root[leagueName] === "object") {
+    // object format: root[leagueName] = { "__league_factor":1.0, "Arsenal": {...} }
+    if (root && root[leagueName]) {
       return uniqSorted(
         Object.keys(root[leagueName]).filter((k) => !String(k).startsWith("__"))
       );
@@ -171,19 +173,20 @@
     return [];
   }
 
+  function teamsFromFixtures(leagueName) {
+    const lf = fixturesForLeague(leagueName);
+    return uniqSorted(lf.flatMap((f) => [f.home, f.away]));
+  }
+
   // ---------- UI rebuild ----------
   function rebuildLeagueSelect() {
-    setSelectOptions(els.league, leagues, "Select league");
+    setSelectOptions(els.league, allLeagues(), "Select league");
   }
 
   function rebuildFixtureSelect(leagueName) {
-    const list = fixturesForLeague(leagueName);
-    const labels = list.map((f) => ({
-      id: f.id,
-      label: `${f.home} vs ${f.away}` + (f.date ? ` (${f.date})` : ""),
-    }));
-
     if (!els.fixture) return;
+
+    const list = fixturesForLeague(leagueName);
     els.fixture.innerHTML = "";
 
     const ph = document.createElement("option");
@@ -191,48 +194,27 @@
     ph.textContent = "Select Fixture (optional)";
     els.fixture.appendChild(ph);
 
-    for (const item of labels) {
+    for (const f of list) {
       const opt = document.createElement("option");
-      opt.value = item.id;
-      opt.textContent = item.label;
+      opt.value = f.id;
+      opt.textContent = `${f.home} vs ${f.away}` + (f.date ? ` (${f.date})` : "");
       els.fixture.appendChild(opt);
     }
   }
 
   function rebuildTeamSelects(leagueName) {
-    // Priority: xG teams (complete league), fallback: teams from fixtures
+    // Priority: xG teams (full league list), fallback: fixture teams
     let teams = teamsFromXg(leagueName);
-
-    if (!teams.length) {
-      const lf = fixturesForLeague(leagueName);
-      teams = uniqSorted(lf.flatMap((f) => [f.home, f.away]));
-    }
-
-    // build normalization map so fixture team names snap to exact xG keys
-    const teamNormMap = {};
-    for (const t of teams) teamNormMap[norm(t)] = t;
+    if (!teams.length) teams = teamsFromFixtures(leagueName);
 
     setSelectOptions(els.home, teams, "Select home");
     setSelectOptions(els.away, teams, "Select away");
-
-    // attach map for use in onFixtureChange
-    rebuildTeamSelects.teamNormMap = teamNormMap;
-  }
-
-  function setReady(ok, msg) {
-    setStatus(els.statusReady, ok, msg);
-  }
-
-  function syncReadyState() {
-    const ok = !!(fixtures.length && xgRaw && h2hRaw);
-    setReady(ok, ok ? "Ready" : "Loading…");
   }
 
   function onLeagueChange() {
     const lg = els.league?.value || "";
     rebuildFixtureSelect(lg);
     rebuildTeamSelects(lg);
-    setReady(true, "Ready");
   }
 
   function onFixtureChange() {
@@ -249,24 +231,102 @@
       els.fixture.value = f.id;
     }
 
-    const map = rebuildTeamSelects.teamNormMap || {};
-    const h = map[norm(f.home)] || f.home;
-    const a = map[norm(f.away)] || f.away;
+    if (els.home) els.home.value = f.home;
+    if (els.away) els.away.value = f.away;
+  }
 
-    if (els.home) els.home.value = h;
-    if (els.away) els.away.value = a;
+  function readOdds() {
+    const num = (el) => {
+      if (!el) return null;
+      const n = Number(el.value);
+      return isFinite(n) ? n : null;
+    };
 
-    setReady(true, "Ready");
+    return {
+      homeML: num(els.homeML),
+      draw: num(els.draw),
+      awayML: num(els.awayML),
+      over25: num(els.over25),
+      under25: num(els.under25),
+      bttsYes: num(els.bttsYes),
+      bttsNo: num(els.bttsNo),
+
+      ahSide: els.ahSide?.value || "home",
+      ahLine: els.ahLine ? Number(els.ahLine.value) : null,
+      ahOdds: num(els.ahOdds),
+    };
+  }
+
+  function renderResults(r) {
+    if (!els.results) {
+      // fallback
+      alert(JSON.stringify(r, null, 2));
+      return;
+    }
+
+    const evLine = (name, evObj) => {
+      const b = evObj.badge;
+      return `${b.badge} ${name}: ${b.label}`;
+    };
+
+    const top5 = r.score.top5.map((x) => `${x.s} (${(x.pr * 100).toFixed(1)}%)`).join("\n");
+
+    const ahText = r.ah
+      ? [
+          `AH (${r.ah.side} ${r.ah.line > 0 ? "+" : ""}${r.ah.line} @ ${r.ah.odds || "—"}):`,
+          `Cover-ish: ${(r.ah.cover * 100).toFixed(1)}% | Fail-ish: ${(r.ah.fail * 100).toFixed(1)}%`,
+          `${r.ah.badge.badge} ${r.ah.badge.label}`,
+        ].join("\n")
+      : `AH lean (no line selected): ${r.lean.side} ${r.lean.market} (signal ${(r.lean.strength * 100).toFixed(1)}%)`;
+
+    const miss = r.meta.missingTeams?.length
+      ? `\n⚠️ Missing xG mapping for: ${r.meta.missingTeams.join(", ")}\n(Still works, but downgrades confidence.)`
+      : "";
+
+    els.results.textContent =
+      `Match: ${r.meta.home} vs ${r.meta.away}\n` +
+      `League: ${r.meta.league}\n\n` +
+
+      `Win Probabilities (Poisson, deterministic):\n` +
+      `${r.meta.home}: ${pct(r.probs.homeWin)}\n` +
+      `Draw: ${pct(r.probs.draw)}\n` +
+      `${r.meta.away}: ${pct(r.probs.awayWin)}\n\n` +
+
+      `Most Likely Score: ${r.score.mostLikely}\n\n` +
+
+      `O/U 2.5:\n` +
+      `Over 2.5: ${pct(r.probs.over25)}\n` +
+      `Under 2.5: ${pct(r.probs.under25)}\n\n` +
+
+      `BTTS:\n` +
+      `Yes: ${pct(r.probs.bttsYes)}\n` +
+      `No: ${pct(r.probs.bttsNo)}\n\n` +
+
+      `Confidence Grade: ${r.confidence.grade}\n` +
+      `Note: ${r.confidence.note}\n\n` +
+
+      `EV (if odds entered):\n` +
+      `${evLine("Home ML", r.ev.homeML)}\n` +
+      `${evLine("Draw", r.ev.draw)}\n` +
+      `${evLine("Away ML", r.ev.awayML)}\n` +
+      `${evLine("Over 2.5", r.ev.over25)}\n` +
+      `${evLine("Under 2.5", r.ev.under25)}\n` +
+      `${evLine("BTTS Yes", r.ev.bttsYes)}\n` +
+      `${evLine("BTTS No", r.ev.bttsNo)}\n\n` +
+
+      `${ahText}\n\n` +
+
+      `Model inputs:\n` +
+      `league_factor: ${Number(r.meta.leagueFactor).toFixed(2)}\n` +
+      `mu(home): ${r.means.muHome.toFixed(2)}\n` +
+      `mu(away): ${r.means.muAway.toFixed(2)}\n\n` +
+
+      `Top 5 scorelines:\n${top5}` +
+      miss;
   }
 
   function runPrediction() {
     try {
-      if (!fixtures.length || !xgRaw) {
-        alert("MatchQuant says\n\nPrediction error. Data failed to load.\n\nOpen Console for details.");
-        console.error("[MatchQuant] Missing data:", { fixtures: fixtures.length, xgRaw: !!xgRaw, h2hRaw: !!h2hRaw });
-        return;
-      }
-
       const league = els.league?.value || "";
       const home = els.home?.value || "";
       const away = els.away?.value || "";
@@ -276,37 +336,35 @@
         return;
       }
 
-      const params = {
+      if (typeof window.runPrediction !== "function") {
+        alert("MatchQuant says\n\nEngine not found. Make sure engine.js loads before app.js.");
+        return;
+      }
+
+      const payload = {
         league,
         home,
         away,
-        sims: Number(els.sims?.value || 10000),
+        sims: Number(els.sims?.value || 10000), // kept for UI compatibility
         homeAdv: Number(els.homeAdv?.value || 1.10),
         baseGoals: Number(els.baseGoals?.value || 1.35),
         capGoals: Number(els.capGoals?.value || 8),
         xgRaw,
         fixtures,
         h2hRaw,
+        odds: readOdds(),
       };
 
-      if (typeof window.runPrediction === "function") {
-        window.runPrediction(params);
-      } else {
-        alert("MatchQuant says\n\nEngine not found. Make sure engine.js loads before app.js.");
-        console.warn("[MatchQuant] window.runPrediction is not defined.");
-      }
+      const r = window.runPrediction(payload);
+      renderResults(r);
     } catch (e) {
       console.error("[MatchQuant] Prediction crash:", e);
       alert("MatchQuant says\n\nPrediction error. Open Console for details.");
     }
   }
 
+  // ---------- Init ----------
   async function init() {
-    setStatus(els.statusFixtures, false, "fixtures loading…");
-    setStatus(els.statusXg, false, "xg loading…");
-    setStatus(els.statusH2H, false, "h2h loading…");
-    setReady(false, "Loading…");
-
     try {
       const [fixturesRaw, xg, h2h] = await Promise.all([
         fetchJsonWithRetry("fixtures.json", 3),
@@ -318,12 +376,6 @@
       xgRaw = xg;
       h2hRaw = h2h;
 
-      leagues = leaguesFromFixtures(fixtures);
-
-      setStatus(els.statusFixtures, true, `fixtures OK (${fixtures.length})`);
-      setStatus(els.statusXg, true, `xg OK`);
-      setStatus(els.statusH2H, true, `h2h OK`);
-
       rebuildLeagueSelect();
       rebuildFixtureSelect("");
       rebuildTeamSelects("");
@@ -333,24 +385,17 @@
       els.runBtn?.addEventListener("click", runPrediction);
 
       if (els.footerLoaded) {
-        els.footerLoaded.textContent = `Loaded: ${leagues.length} leagues • ${fixtures.length} fixtures`;
+        const lgs = allLeagues();
+        els.footerLoaded.textContent = `Loaded: ${lgs.length} leagues • ${fixtures.length} fixtures`;
       }
-
-      syncReadyState();
     } catch (e) {
       console.error("[MatchQuant] DATA LOAD FAILED:", e);
-      setStatus(els.statusFixtures, false, "fixtures FAIL");
-      setStatus(els.statusXg, false, "xg FAIL");
-      setStatus(els.statusH2H, false, "h2h FAIL");
-      setReady(false, "Not Ready");
-
       alert(
-        "MatchQuant says\n\nPrediction error. Data failed to load.\n\n" +
-        "Fix checklist:\n" +
-        "1) Make sure fixtures.json, xg_tables.json, h2h.json are in the SAME folder as index.html\n" +
-        "2) Filenames must match EXACTLY (lowercase)\n" +
-        "3) After pushing to GitHub, hard refresh\n\n" +
-        "Open Console for details."
+        "MatchQuant says\n\nData failed to load.\n\n" +
+          "Checklist:\n" +
+          "1) fixtures.json, xg_tables.json, h2h.json are in SAME folder as index.html\n" +
+          "2) Filenames match EXACTLY\n" +
+          "3) Hard refresh after push\n"
       );
     }
   }
