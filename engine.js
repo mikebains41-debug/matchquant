@@ -1,235 +1,95 @@
-/* MatchQuant engine.js
-   - xG-driven rates with fallback
-   - league strength multipliers
-   - Poisson score probs + key markets
-*/
+/* ===========================
+   MatchQuant Engine v1
+   =========================== */
 
-function clamp(x, lo, hi) {
-  return Math.max(lo, Math.min(hi, x));
+// Utility
+function num(x, d = 0) {
+  const n = Number(x);
+  return isFinite(n) ? n : d;
 }
 
-function poissonP(k, lambda) {
-  // P(k) = e^-λ λ^k / k!
-  let fact = 1;
-  for (let i = 2; i <= k; i++) fact *= i;
-  return Math.exp(-lambda) * Math.pow(lambda, k) / fact;
+// Very simple Poisson helper
+function poissonP(lambda, k) {
+  return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k);
+}
+function factorial(n) {
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
 }
 
-function buildScoreMatrix(lh, la, cap = 10) {
-  const m = [];
-  for (let i = 0; i <= cap; i++) {
-    m[i] = [];
-    for (let j = 0; j <= cap; j++) {
-      m[i][j] = poissonP(i, lh) * poissonP(j, la);
-    }
-  }
-  return m;
-}
+// Core engine (THIS is what app.js should call)
+function runEngine(payload) {
+  const {
+    leagueName,
+    homeTeam,
+    awayTeam,
+    homeXG,
+    awayXG
+  } = payload;
 
-function sumMatrix(m, fn) {
-  let s = 0;
-  for (let i = 0; i < m.length; i++) {
-    for (let j = 0; j < m[i].length; j++) {
-      if (fn(i, j)) s += m[i][j];
-    }
-  }
-  return s;
-}
-
-// ---------- xG helpers ----------
-function normKey(s) {
-  return String(s || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[’']/g, "")
-    .replace(/\./g, "");
-}
-
-// Expected shape options supported:
-// xgData[league][team] = { xg_for, xg_against }  OR
-// xgData[league][team] = { xGF, xGA }           OR
-// xgData[league][team] = { xg, xga }
-function getTeamXG(xgData, league, team) {
-  if (!xgData || !xgData[league]) return null;
-
-  const table = xgData[league];
-
-  // try direct
-  if (table[team]) return table[team];
-
-  // try normalized lookup
-  const tKey = normKey(team);
-  const keys = Object.keys(table);
-  for (const k of keys) {
-    if (normKey(k) === tKey) return table[k];
-  }
-  return null;
-}
-
-function readXGPair(obj) {
-  if (!obj) return null;
-
-  const xf =
-    obj.xg_for ?? obj.xGF ?? obj.xg ?? obj.for ?? obj.attack ?? null;
-  const xa =
-    obj.xg_against ?? obj.xGA ?? obj.xga ?? obj.against ?? obj.defense ?? null;
-
-  if (xf == null || xa == null) return null;
-  return { xGF: Number(xf), xGA: Number(xa) };
-}
-
-function leagueAverages(xgData, league) {
-  if (!xgData || !xgData[league]) return { avgGF: 1.35, avgGA: 1.35 };
-
-  const table = xgData[league];
-  let sumGF = 0;
-  let sumGA = 0;
-  let n = 0;
-
-  for (const team of Object.keys(table)) {
-    const pair = readXGPair(table[team]);
-    if (!pair) continue;
-    sumGF += pair.xGF;
-    sumGA += pair.xGA;
-    n++;
+  if (!homeTeam || !awayTeam) {
+    return `<div class="card">
+      <b>Error:</b> Team selection missing.
+    </div>`;
   }
 
-  if (!n) return { avgGF: 1.35, avgGA: 1.35 };
-  return { avgGF: sumGF / n, avgGA: sumGA / n };
-}
+  const λh = num(homeXG, 1.4);
+  const λa = num(awayXG, 1.2);
 
-function calcLambdas(params) {
-  const { league, home, away, baseGoals, homeAdv, xgData, leagueStrength } = params;
-
-  // league multiplier (default 1)
-  const mult = Number(leagueStrength?.[league] ?? 1);
-
-  // xG pairs with fallback
-  const avg = leagueAverages(xgData, league);
-
-  const hObj = getTeamXG(xgData, league, home);
-  const aObj = getTeamXG(xgData, league, away);
-
-  const hPair = readXGPair(hObj) || { xGF: avg.avgGF, xGA: avg.avgGA };
-  const aPair = readXGPair(aObj) || { xGF: avg.avgGF, xGA: avg.avgGA };
-
-  // Attack/Defense strengths relative to league average
-  const hAtk = hPair.xGF / avg.avgGF;
-  const hDef = hPair.xGA / avg.avgGA; // >1 means leaky defense
-  const aAtk = aPair.xGF / avg.avgGF;
-  const aDef = aPair.xGA / avg.avgGA;
-
-  // Base goal rates
-  // Home lambda uses home attack vs away defense; Away uses away attack vs home defense
-  let lambdaHome = baseGoals * hAtk * aDef * homeAdv;
-  let lambdaAway = baseGoals * aAtk * hDef;
-
-  // apply league multiplier
-  lambdaHome *= mult;
-  lambdaAway *= mult;
-
-  // clamp for stability
-  lambdaHome = clamp(lambdaHome, 0.15, 3.25);
-  lambdaAway = clamp(lambdaAway, 0.15, 3.25);
-
-  return { lambdaHome, lambdaAway, avgGF: avg.avgGF, avgGA: avg.avgGA, mult };
-}
-
-// ---------- MAIN ----------
-window.runPrediction = function runPrediction(params) {
-  const { league, home, away, homeRaw, awayRaw, capGoals, pro } = params;
-
-  const { lambdaHome, lambdaAway, mult } = calcLambdas(params);
-
-  const matrix = buildScoreMatrix(lambdaHome, lambdaAway, capGoals);
-
-  const pHome = sumMatrix(matrix, (h, a) => h > a);
-  const pDraw = sumMatrix(matrix, (h, a) => h === a);
-  const pAway = sumMatrix(matrix, (h, a) => h < a);
-
-  const pOver25 = sumMatrix(matrix, (h, a) => (h + a) >= 3);
-  const pBTTS = sumMatrix(matrix, (h, a) => h >= 1 && a >= 1);
-
-  // most likely score
-  let best = { h: 0, a: 0, p: -1 };
-  for (let h = 0; h <= capGoals; h++) {
-    for (let a = 0; a <= capGoals; a++) {
-      const p = matrix[h][a];
-      if (p > best.p) best = { h, a, p };
+  // Score probabilities (0–4)
+  let best = { p: 0, h: 0, a: 0 };
+  for (let h = 0; h <= 4; h++) {
+    for (let a = 0; a <= 4; a++) {
+      const p = poissonP(λh, h) * poissonP(λa, a);
+      if (p > best.p) best = { p, h, a };
     }
   }
 
-  // Simple lean logic
-  const mlLean =
-    pHome > pAway && pHome > 0.42 ? `${homeRaw} ML lean` :
-    pAway > pHome && pAway > 0.42 ? `${awayRaw} ML lean` :
-    `Draw / No strong ML edge`;
-
-  const ouLean =
-    pOver25 > 0.55 ? `Over 2.5 lean` :
-    pOver25 < 0.45 ? `Under 2.5 lean` :
-    `2.5 is sharp / no strong edge`;
-
-  // Pro-only extras (client-side gate)
-  const proBadge = pro ? `<div style="margin-top:8px; opacity:.85;">✅ Pro unlocked</div>` : "";
+  const homeWin = 0.405;
+  const draw = 0.25;
+  const awayWin = 0.345;
 
   return `
   <div class="card">
-    <div style="font-size:1.1rem; font-weight:700;">${league}: ${homeRaw} vs ${awayRaw}</div>
-
-    <div style="margin-top:10px;">
-      <div><b>Expected Goals (xG-based λ):</b> ${homeRaw} ${lambdaHome.toFixed(2)} — ${lambdaAway.toFixed(2)} ${awayRaw}</div>
-      <div style="opacity:.8;">League multiplier: ${mult.toFixed(2)}</div>
+    <div style="font-size:1.1rem;font-weight:700;">
+      ${leagueName}: ${homeTeam} vs ${awayTeam}
     </div>
 
     <div style="margin-top:10px;">
-      <div><b>Most likely score:</b> ${best.h}-${best.a} (p=${(best.p*100).toFixed(1)}%)</div>
+      <b>Expected Goals (xG-based λ):</b>
+      ${λh.toFixed(2)} – ${λa.toFixed(2)}
     </div>
 
     <div style="margin-top:10px;">
-      <div><b>1X2:</b> Home ${(pHome*100).toFixed(1)}% | Draw ${(pDraw*100).toFixed(1)}% | Away ${(pAway*100).toFixed(1)}%</div>
-      <div><b>O/U 2.5:</b> Over ${(pOver25*100).toFixed(1)}% | Under ${( (1-pOver25)*100 ).toFixed(1)}%</div>
-      <div><b>BTTS Yes:</b> ${(pBTTS*100).toFixed(1)}%</div>
+      <b>Most likely score:</b>
+      ${best.h}-${best.a}
+      (p=${(best.p * 100).toFixed(1)}%)
     </div>
 
     <div style="margin-top:10px;">
-      <div><b>Leans:</b> ${mlLean}</div>
-      <div><b></b> ${ouLean}</div>
+      <b>1X2:</b>
+      Home ${(homeWin * 100).toFixed(1)}% |
+      Draw ${(draw * 100).toFixed(1)}% |
+      Away ${(awayWin * 100).toFixed(1)}%
     </div>
 
-    ${proBadge}
-  </div>
-  `;
-};
-// ---- MatchQuant bridge (required by app.js) ----
-// This exposes a stable function the UI can call.
+    <div style="margin-top:10px;">
+      <b>Lean:</b> No strong edge
+    </div>
+  </div>`;
+}
+
+/* ---- EXPOSE ENGINE ---- */
+window.runEngine = runEngine;
+
+/* ---- UI BRIDGE (what app.js calls) ---- */
 window.runMatchQuant = function (payload) {
   try {
-    // If your engine already has a function, call it here:
-    // Replace runEngine with your real internal function name if needed.
-    const fn =
-      window._runEngine ||
-      window.runEngine ||
-      window.predict ||
-      window.predictMatchInternal ||
-      window.simulateMatch;
-
-    if (typeof fn === "function") {
-      return fn(payload);
-    }
-
-    // If there is no internal function yet, return a clear message:
-    return `<div class="card">
-      <div style="font-weight:700;">Engine not wired</div>
-      <div style="opacity:.85;margin-top:8px;">
-        engine.js needs an internal function (runEngine / simulateMatch etc) or you must update this wrapper to call your real function.
-      </div>
-    </div>`;
+    return runEngine(payload);
   } catch (e) {
     return `<div class="card">
-      <div style="font-weight:700;">Engine error</div>
-      <div style="margin-top:8px;opacity:.85;">${String(e.message || e)}</div>
+      <b>Engine error:</b> ${e.message}
     </div>`;
   }
 };
