@@ -1,13 +1,27 @@
-// sw.js (DEBUG SAFE) — do not cache anything
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
+const CACHE = "matchquant-v6";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./style.css",
+  "./engine.js",
+  "./app.js",
+  "./fixtures.json",
+  "./h2h.json",
+  "./manifest.json"
+];
+
+self.addEventListener("install", (e) => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))
+  );
 });
 
-self.addEventListener("fetch", (event) => {
-  // Always go to network (no caching)
-  event.respondWith(fetch(event.request));
+self.addEventListener("fetch", (e) => {
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request).catch(()=>cached))
+  );
 });
