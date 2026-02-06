@@ -1,8 +1,6 @@
-/* ======================================================
-   MatchQuant app.js — HARD ANDROID FIX (poll league value)
-   Works with your index.html IDs:
-   leagueSelect, homeTeam, awayTeam, runBtn, results, sims, statusLine
-   ====================================================== */
+/* MatchQuant app.js — FIX teams dropdown on Android + correct IDs
+   Uses: leagueSelect, homeTeam, awayTeam, runBtn, results, sims, statusLine
+*/
 
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -12,14 +10,12 @@
     home: $("homeTeam"),
     away: $("awayTeam"),
     sims: $("sims"),
-    results: $("results"),
     runBtn: $("runBtn"),
+    results: $("results"),
     status: $("statusLine"),
   };
 
-  const log = (...a) => console.log("[MatchQuant]", ...a);
-
-  function setStatus(msg) {
+  function status(msg) {
     if (el.status) el.status.textContent = msg;
   }
 
@@ -27,10 +23,10 @@
     if (el.results) el.results.innerHTML = html;
   }
 
-  function opt(value, label) {
+  function opt(v, t) {
     const o = document.createElement("option");
-    o.value = value;
-    o.textContent = label;
+    o.value = v;
+    o.textContent = t;
     return o;
   }
 
@@ -44,147 +40,128 @@
   function fillSelect(sel, values, placeholder) {
     resetSelect(sel, placeholder, false);
     values.forEach((v) => sel.appendChild(opt(v, v)));
-    sel.disabled = false;
+    sel.disabled = false; // force enable
   }
 
-  async function loadJSON(path) {
-    const res = await fetch(path, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
-    return res.json();
+  async function loadTeams() {
+    // ✅ correct path (your teams.json is in /data)
+    const res = await fetch("./data/teams.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`teams.json failed (${res.status})`);
+    const json = await res.json();
+    return json;
   }
 
   function findEngine() {
     return window.predictMatch || window.simulateMatch || window.predict;
   }
 
-  function updateTeams(teamsByLeague) {
-    const league = el.league.value;
-
-    // always reset
-    resetSelect(el.home, "Select home team", true);
-    resetSelect(el.away, "Select away team", true);
-
-    if (!league) {
-      setStatus("Pick a league.");
-      return;
-    }
-
-    const teams = teamsByLeague[league];
-
-    if (!Array.isArray(teams) || teams.length === 0) {
-      setStatus(`No teams found for "${league}" in teams.json.`);
-      return;
-    }
-
-    fillSelect(el.home, teams, "Select home team");
-    fillSelect(el.away, teams, "Select away team");
-
-    setStatus(`Loaded ${teams.length} teams for ${league}.`);
-  }
-
-  function runPrediction() {
-    const league = el.league.value;
-    const home = el.home.value;
-    const away = el.away.value;
-
-    if (!league) return setResults(`<div class="card">Pick a league first.</div>`);
-    if (!home || !away) return setResults(`<div class="card">Pick both teams.</div>`);
-    if (home === away) return setResults(`<div class="card">Teams must be different.</div>`);
-
-    const engine = findEngine();
-    if (typeof engine !== "function") {
-      return setResults(`
-        <div class="card">
-          <b>Run button works ✅</b><br><br>
-          But <b>engine.js</b> is not exposing a function.<br>
-          Expected one of:
-          <ul>
-            <li>window.predictMatch</li>
-            <li>window.simulateMatch</li>
-            <li>window.predict</li>
-          </ul>
-        </div>
-      `);
-    }
-
-    const payload = { league, home, away, sims: Number(el.sims?.value || 10000) };
-
-    try {
-      const out = engine(payload);
-      setResults(
-        typeof out === "string"
-          ? out
-          : `<pre style="white-space:pre-wrap">${JSON.stringify(out, null, 2)}</pre>`
-      );
-    } catch (e) {
-      console.error(e);
-      setResults(`<div class="card">Engine error: ${e.message}</div>`);
-    }
+  function wireLeagueUpdate(updateTeams) {
+    // Android sometimes fails to fire "change" reliably, so use multiple
+    ["change", "input", "click", "touchend"].forEach((ev) => {
+      el.league.addEventListener(ev, () => {
+        setTimeout(updateTeams, 0);
+        setTimeout(updateTeams, 50);
+        setTimeout(updateTeams, 150);
+      });
+    });
   }
 
   async function init() {
     try {
       if (!el.league || !el.home || !el.away || !el.runBtn || !el.results) {
-        throw new Error("Missing required HTML IDs. Check index.html IDs.");
+        throw new Error("Missing HTML IDs. Check index.html IDs.");
       }
 
       resetSelect(el.league, "Select league", true);
       resetSelect(el.home, "Select home team", true);
       resetSelect(el.away, "Select away team", true);
 
+      status("Loading teams…");
       setResults(`<div style="opacity:.75">Loading leagues…</div>`);
-      setStatus("Loading ./data/teams.json…");
 
-      const teamsByLeague = await loadJSON("./data/teams.json");
-      window.__teamsByLeague = teamsByLeague;
-
+      const teamsByLeague = await loadTeams();
       const leagues = Object.keys(teamsByLeague).sort();
+
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
 
-      // populate leagues
+      // fill leagues
       resetSelect(el.league, "Select league", false);
       leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
       el.league.disabled = false;
 
-      // ✅ ANDROID HARD FIX: poll for league value changes
-      let lastLeague = "";
-      setInterval(() => {
-        const current = el.league.value;
-        if (current !== lastLeague) {
-          lastLeague = current;
-          log("League changed:", current);
-          updateTeams(teamsByLeague);
-        }
-      }, 250);
+      const updateTeams = () => {
+        const league = el.league.value;
 
-      // also try normal events (bonus)
-      ["change", "input", "click", "touchend"].forEach((ev) => {
-        el.league.addEventListener(ev, () => {
-          setTimeout(() => updateTeams(teamsByLeague), 0);
-        });
+        resetSelect(el.home, "Select home team", true);
+        resetSelect(el.away, "Select away team", true);
+
+        if (!league) {
+          status("Pick a league.");
+          return;
+        }
+
+        const teams = teamsByLeague[league];
+        if (!Array.isArray(teams) || teams.length === 0) {
+          status(`No teams found for ${league}`);
+          return;
+        }
+
+        fillSelect(el.home, teams, "Select home team");
+        fillSelect(el.away, teams, "Select away team");
+        status(`Loaded ${teams.length} teams for ${league}`);
+      };
+
+      wireLeagueUpdate(updateTeams);
+
+      el.runBtn.addEventListener("click", () => {
+        const league = el.league.value;
+        const home = el.home.value;
+        const away = el.away.value;
+
+        if (!league) return setResults(`<div class="card">Pick a league first.</div>`);
+        if (!home || !away) return setResults(`<div class="card">Pick both teams.</div>`);
+        if (home === away) return setResults(`<div class="card">Teams must be different.</div>`);
+
+        const engine = findEngine();
+        if (typeof engine !== "function") {
+          return setResults(`
+            <div class="card">
+              <b>Run button works ✅</b><br><br>
+              But engine.js is not exposing a function.<br>
+              Expected one of:
+              <ul>
+                <li>window.predictMatch</li>
+                <li>window.simulateMatch</li>
+                <li>window.predict</li>
+              </ul>
+            </div>
+          `);
+        }
+
+        const payload = { league, home, away, sims: Number(el.sims?.value || 10000) };
+
+        try {
+          const out = engine(payload);
+          setResults(
+            typeof out === "string"
+              ? out
+              : `<pre style="white-space:pre-wrap">${JSON.stringify(out, null, 2)}</pre>`
+          );
+        } catch (e) {
+          setResults(`<div class="card">Engine error: ${e.message}</div>`);
+        }
       });
 
-      // run button
-      el.runBtn.addEventListener("click", runPrediction);
-
+      status(`Loaded ${leagues.length} leagues. Select one.`);
       setResults(`<div style="opacity:.85">Ready. Select league + teams, then Run.</div>`);
-      setStatus(`Loaded ${leagues.length} leagues. Select one.`);
 
-    } catch (err) {
-      console.error(err);
-      setStatus("Error");
-      setResults(`
-        <div class="card">
-          <b>App error</b><br><br>
-          ${String(err.message || err)}
-          <br><br>
-          <b>Quick checks:</b>
-          <ul>
-            <li>teams.json must be at <code>/data/teams.json</code></li>
-            <li>index.html IDs must match: leagueSelect, homeTeam, awayTeam, runBtn, results</li>
-          </ul>
-        </div>
-      `);
+      // debug
+      window.__teamsByLeague = teamsByLeague;
+
+    } catch (e) {
+      console.error(e);
+      status("App error");
+      setResults(`<div class="card"><b>Error:</b> ${String(e.message || e)}</div>`);
     }
   }
 
