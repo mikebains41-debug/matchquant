@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MatchQuant</title>
-  <link rel="stylesheet" href="style.css?v=20" />
+  <link rel="stylesheet" href="style.css?v=22" />
 </head>
 
 <body>
@@ -25,15 +25,7 @@
           <select id="leagueSelect">
             <option value="">Select league</option>
           </select>
-          <div class="hint" id="statusLine"></div>
-        </div>
-
-        <div class="field">
-          <label for="fixtureSelect">Fixture (optional)</label>
-          <select id="fixtureSelect" disabled>
-            <option value="">Select fixture (optional)</option>
-          </select>
-          <div class="hint">Fixtures are optional (Phase 3+). Manual teams always works.</div>
+          <div class="hint" id="statusLine">Loading…</div>
         </div>
 
         <div class="field">
@@ -51,7 +43,7 @@
         </div>
 
         <div class="field">
-          <label for="sims">Sims (kept for UI)</label>
+          <label for="sims">Sims</label>
           <input id="sims" type="number" value="10000" min="1000" step="1000" />
         </div>
 
@@ -72,8 +64,8 @@
       </div>
 
       <div class="actions">
-        <button id="runBtn" class="btn primary">Run Predictions</button>
-        <button id="resetBtn" class="btn">Reset</button>
+        <button id="runBtn" class="btn primary" type="button">Run Predictions</button>
+        <button id="resetBtn" class="btn" type="button">Reset</button>
       </div>
     </section>
 
@@ -89,7 +81,30 @@
   </footer>
 
   <!-- IMPORTANT: order matters -->
-  <script src="engine.js?v=20"></script>
-  <script src="app.js?v=20"></script>
+  <script src="engine.js?v=22"></script>
+  <script src="app.js?v=22"></script>
+
+  <!-- Simple reset (clears selections + results) -->
+  <script>
+    (function () {
+      const resetBtn = document.getElementById("resetBtn");
+      if (!resetBtn) return;
+
+      resetBtn.addEventListener("click", () => {
+        const league = document.getElementById("leagueSelect");
+        const home = document.getElementById("homeTeam");
+        const away = document.getElementById("awayTeam");
+        const results = document.getElementById("results");
+        const status = document.getElementById("statusLine");
+
+        if (league) league.value = "";
+        if (home) { home.innerHTML = "<option value=''>Select home team</option>"; home.disabled = true; }
+        if (away) { away.innerHTML = "<option value=''>Select away team</option>"; away.disabled = true; }
+
+        if (results) results.innerHTML = "Pick league + teams, then press <b>Run Predictions</b>.";
+        if (status) status.textContent = "Reset. Select a league.";
+      });
+    })();
+  </script>
 </body>
 </html>
