@@ -1,9 +1,19 @@
-/* MatchQuant engine.js — FIXED: robust team-name matching + deterministic Poisson outputs */
+/* MatchQuant engine.js — FULL REPLACEMENT
+   Deterministic Poisson using:
+   - xg_tables.json league object with { att, def } per team
+   - "__league_factor" metadata (ignored as a team, used in model)
+   Outputs:
+   - 1X2 probs
+   - Most likely score
+   - O/U 2.5 probs
+   - BTTS
+   - Asian handicap lean (simple)
+*/
 
 window.runPrediction = function (p) {
   const { league, home, away, homeAdv, baseGoals, capGoals, xgRaw } = p;
 
-  // ---------- normalize helpers ----------
+  // ---------- normalize ----------
   const norm = (s) =>
     String(s || "")
       .trim()
@@ -18,6 +28,86 @@ window.runPrediction = function (p) {
     return Math.max(lo, Math.min(hi, n));
   };
 
+  // ---------- get league object ----------
+  const root = (xgRaw && xgRaw.leagues) ? xgRaw.leagues : xgRaw;
+  const leagueObj = (root && root[league] && typeof root[league] === "object") ? root[league] : null;
+
+  if (!leagueObj) {
+    alert(`MatchQuant says\n\nLeague not found in xg_tables.json:\n${league}\n\nCheck league names match.`);
+    return;
+  }
+
+  const leagueFactor = (typeof leagueObj.__league_factor === "number" && isFinite(leagueObj.__league_factor))
+    ? leagueObj.__league_factor
+    : 1.0;
+
+  // map normalized team -> real key
+  const teamKeyMap = {};
+  for (const k of Object.keys(leagueObj)) {
+    if (!k || String(k).startsWith("__")) continue;
+    teamKeyMap[norm(k)] = k;
+  }
+
+  // common aliases
+  const ALIASES = {
+    "man city": "manchester city",
+    "manchester city": "manchester city",
+    "man utd": "manchester united",
+    "man united": "manchester united",
+    "spurs": "tottenham",
+    "tottenham hotspur": "tottenham",
+    "newcastle": "newcastle united",
+    "west ham": "west ham",
+  };
+
+  function resolveTeamKey(team) {
+    const n = norm(team);
+    if (teamKeyMap[n]) return teamKeyMap[n];
+
+    const a = ALIASES[n];
+    if (a && teamKeyMap[a]) return teamKeyMap[a];
+
+    // last resort contains match
+    const keys = Object.keys(teamKeyMap);
+    const hit = keys.find((k) => k.includes(n) || n.includes(k));
+    return hit ? teamKeyMap[hit] : null;
+  }
+
+  function getAttDef(team) {
+    const key = resolveTeamKey(team);
+    if (!key) return null;
+    const obj = leagueObj[key];
+    const att = (obj && typeof obj.att === "number" && isFinite(obj.att)) ? obj.att : null;
+    const def = (obj && typeof obj.def === "number" && isFinite(obj.def)) ? obj.def : null;
+    if (!att || !def) return null;
+    return { att, def, key };
+  }
+
+  const hAD = getAttDef(home);
+  const aAD = getAttDef(away);
+
+  // if missing, fall back but tell user exactly why
+  const miss = [];
+  if (!hAD) miss.push(home);
+  if (!aAD) miss.push(away);
+
+  // ---------- model: expected goals ----------
+  // Interpreting:
+  // - att > 1 boosts scoring
+  // - def < 1 means strong defense (reduces opponent scoring), def > 1 weak defense (increases opponent scoring)
+  // muHome = baseGoals * leagueFactor * homeAdv * attHome * defAway
+  // muAway = baseGoals * leagueFactor * attAway * defHome
+  const bg = Number(baseGoals || 1.35);
+  const ha = Number(homeAdv || 1.10);
+
+  const attH = hAD ? hAD.att : 1.0;
+  const defH = hAD ? hAD.def : 1.0;
+  const attA = aAD ? aAD.att : 1.0;
+  const defA = aAD ? aAD.def : 1.0;
+
+  const muHome = bg * leagueFactor * ha * attH * defA;
+  const muAway = bg * leagueFactor * attA * defH;
+
   // ---------- Poisson ----------
   function factorial(n) {
     let r = 1;
@@ -28,67 +118,26 @@ window.runPrediction = function (p) {
     return Math.exp(-mu) * Math.pow(mu, k) / factorial(k);
   }
 
-  // ---------- build xG index ----------
-  const root = (xgRaw && xgRaw.leagues) ? xgRaw.leagues : xgRaw;
-  const leagueObj = root && root[league] ? root[league] : null;
-
-  // map normalized->original key
-  const teamKeyMap = {};
-  if (leagueObj && typeof leagueObj === "object") {
-    for (const k of Object.keys(leagueObj)) {
-      if (!k || k.startsWith("__")) continue;
-      teamKeyMap[norm(k)] = k;
-    }
-  }
-
-  // alias table (add more anytime)
-  const ALIASES = {
-    "man city": "manchester city",
-    "man utd": "manchester united",
-    "spurs": "tottenham",
-    "tottenham hotspur": "tottenham",
-    "wolves": "wolverhampton wanderers",
-    "newcastle": "newcastle united",
-    "brighton": "brighton",
-    "real madrid": "real madrid",
-    "atletico madrid": "atletico madrid",
-  };
-
-  function resolveTeamKey(team) {
-    const n = norm(team);
-    if (teamKeyMap[n]) return teamKeyMap[n];
-
-    const a = ALIASES[n];
-    if (a && teamKeyMap[a]) return teamKeyMap[a];
-
-    // fallback: fuzzy contains match (last resort)
-    const keys = Object.keys(teamKeyMap);
-    const hit = keys.find(k => k.includes(n) || n.includes(k));
-    return hit ? teamKeyMap[hit] : null;
-  }
-
-  function teamXG(team) {
-    const key = resolveTeamKey(team);
-    const v = key ? leagueObj?.[key]?.xGF : undefined;
-    return (typeof v === "number" && isFinite(v) && v > 0) ? v : Number(baseGoals || 1.35);
-  }
-
-  // ---------- inputs ----------
   const cap = clampInt(capGoals, 0, 12);
-  const muHome = teamXG(home) * Number(homeAdv || 1.10);
-  const muAway = teamXG(away);
 
-  // ---------- grid ----------
+  // marginals
   const ph = [], pa = [];
   for (let i = 0; i <= cap; i++) {
     ph[i] = poissonP(i, muHome);
     pa[i] = poissonP(i, muAway);
   }
 
+  // grid sums
   let bestScore = "0-0", bestProb = -1;
   let pW = 0, pD = 0, pL = 0;
   let pOver25 = 0, pUnder25 = 0;
   let pBTTS = 0;
+
+  // AH leans (common lines)
+  let pHomeCoverMinus05 = 0; // home -0.5 (same as win)
+  let pAwayPlus05 = 0;       // away +0.5 (away win or draw)
+  let pHomeCoverMinus025 = 0; // home -0.25 (win + half draw)
+  let pAwayPlus025 = 0;       // away +0.25 (win + half draw)
 
   const top = [];
 
@@ -107,19 +156,28 @@ window.runPrediction = function (p) {
       else pUnder25 += prob;
 
       if (hg >= 1 && ag >= 1) pBTTS += prob;
+
+      // AH approximations from grid
+      if (hg > ag) pHomeCoverMinus05 += prob;           // home win
+      if (hg >= ag) pAwayPlus05 += prob;               // away +0.5 cashes on draw or away win
+      if (hg > ag) pHomeCoverMinus025 += prob;         // win full
+      if (hg === ag) pHomeCoverMinus025 += prob * 0.5;  // draw half loss for home -0.25 (approx EV proxy)
+      if (hg < ag) pAwayPlus025 += prob;               // away win full
+      if (hg === ag) pAwayPlus025 += prob * 0.5;       // draw half win for away +0.25
     }
   }
 
   top.sort((a, b) => b[1] - a[1]);
   const top5 = top.slice(0, 5).map(([s, pr]) => `${s} (${(pr * 100).toFixed(1)}%)`).join("\n");
 
-  // show if still missing
-  const miss = [];
-  if (!resolveTeamKey(home)) miss.push(home);
-  if (!resolveTeamKey(away)) miss.push(away);
+  // choose simple AH lean
+  const ahLean =
+    (pHomeCoverMinus025 > pAwayPlus025)
+      ? `${home} -0.25 lean (${(pHomeCoverMinus025 * 100).toFixed(1)}%)`
+      : `${away} +0.25 lean (${(pAwayPlus025 * 100).toFixed(1)}%)`;
 
   const missLine = miss.length
-    ? `\n\n⚠️ Still missing xG for: ${miss.join(", ")}\n(Your xg_tables.json uses different team names.)`
+    ? `\n\n⚠️ Missing att/def for: ${miss.join(", ")}\nCheck team names in fixtures vs xg_tables.json`
     : "";
 
   alert(
@@ -134,9 +192,11 @@ window.runPrediction = function (p) {
     `Over 2.5: ${(pOver25 * 100).toFixed(1)}%\n` +
     `Under 2.5: ${(pUnder25 * 100).toFixed(1)}%\n\n` +
     `BTTS (Yes): ${(pBTTS * 100).toFixed(1)}%\n\n` +
-    `xG Model (means):\n` +
-    `${home}: ${muHome.toFixed(2)}\n` +
-    `${away}: ${muAway.toFixed(2)}\n\n` +
+    `Asian Handicap (quick lean):\n${ahLean}\n\n` +
+    `Model inputs:\n` +
+    `league_factor: ${leagueFactor.toFixed(2)}\n` +
+    `mu(home): ${muHome.toFixed(2)}\n` +
+    `mu(away): ${muAway.toFixed(2)}\n\n` +
     `Top 5 scorelines:\n${top5}` +
     missLine
   );
