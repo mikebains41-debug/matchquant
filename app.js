@@ -1,13 +1,8 @@
-/* MatchQuant app.js — FULL REPLACEMENT
-   - loads xg_tables.json + fixtures.json (optional)
-   - wires Run button
-   - renders results (no alert => no "github.io says")
-*/
+/* MatchQuant app.js — FULL REPLACEMENT (EV block only when odds entered, AH only when line selected) */
 
 (function () {
   const $ = (id) => document.getElementById(id);
 
-  // Required
   const elLeague  = $("league");
   const elFixture = $("fixture");
   const elHome    = $("home");
@@ -20,7 +15,6 @@
   const elResults = $("results");
   const elLoaded  = $("loaded");
 
-  // Optional odds
   const elHomeML  = $("homeML");
   const elDrawML  = $("drawML");
   const elAwayML  = $("awayML");
@@ -29,7 +23,6 @@
   const elBTTSYes = $("bttsYes");
   const elBTTSNo  = $("bttsNo");
 
-  // AH
   const elAhSide  = $("ahSide");
   const elAhLine  = $("ahLine");
   const elAhOdds  = $("ahOdds");
@@ -84,8 +77,8 @@
     fillSelect(elHome, teams, "Select home team");
     fillSelect(elAway, teams, "Select away team");
 
+    const list = fixtures?.[league];
     if (elFixture) {
-      const list = fixtures?.[league];
       if (Array.isArray(list)) {
         fillSelect(elFixture, list.map(f => `${f.home} vs ${f.away}`), "Select Fixture (optional)");
       } else {
@@ -125,8 +118,13 @@
   }
 
   function collectAH() {
-    const line = safeNum(elAhLine?.value);
-    if (line === null) return null; // none selected
+    // If user chose "(none)" then value is "" => return null
+    const raw = elAhLine?.value ?? "";
+    if (!raw) return null;
+
+    const line = safeNum(raw);
+    if (line === null) return null;
+
     const side = elAhSide?.value || "Home";
     const odds = safeNum(elAhOdds?.value);
     return { side, line, odds };
@@ -142,24 +140,30 @@
   function fmtPct(x) { return `${(x * 100).toFixed(1)}%`; }
 
   function renderResult(r) {
-    const topLines = r.top5
-      .map(x => `${x.score} (${(x.prob * 100).toFixed(1)}%)`)
-      .join("<br>");
+    const topLines = r.top5.map(x => `${x.score} (${(x.prob * 100).toFixed(1)}%)`).join("<br>");
 
     const miss = (r.missing && r.missing.length)
       ? `<div class="hr"></div><div class="small">⚠️ Team name mismatch in xg_tables.json for: <b>${r.missing.join(", ")}</b></div>`
       : "";
 
-    const ev = r.ev || {};
+    const ahBlock = r.ahOut ? `
+      <div style="margin-top:10px"><b>Asian Handicap</b></div>
+      <div class="small">(${r.ahOut.side} ${r.ahOut.line}) cover: <b>${fmtPct(r.ahOut.pCover)}</b> · push: ${fmtPct(r.ahOut.pPush)}</div>
+    ` : "";
+
+    // Only show EV section if odds were entered
+    const showEV = r._oddsEntered === true;
+
     const evLine = (label, obj) => {
-      if (!obj || obj.odds === null || obj.odds === undefined) return "";
-      const evTxt = (obj.ev === null) ? "" : ` <span class="small">(EV ${(obj.ev*100).toFixed(1)}%)</span>`;
+      if (!obj || obj.odds == null) return "";
+      const evTxt = (obj.ev === null) ? "" : ` <span class="small">(EV ${(obj.ev * 100).toFixed(1)}%)</span>`;
       return `<div>${label}: <b>${obj.odds}</b>${badgeForEV(obj.ev)}${evTxt}</div>`;
     };
 
-    const oddsBlock = (r.ev && Object.keys(r.ev).length) ? `
+    const ev = r.ev || {};
+    const oddsBlock = showEV ? `
       <div class="hr"></div>
-      <div><b>Odds EV check</b> <span class="small">(only if you entered odds)</span></div>
+      <div><b>Odds EV check</b> <span class="small">(based on odds you entered)</span></div>
       ${evLine(`${r.home} ML`, ev.homeML)}
       ${evLine(`Draw`, ev.drawML)}
       ${evLine(`${r.away} ML`, ev.awayML)}
@@ -168,11 +172,6 @@
       ${evLine(`BTTS Yes`, ev.bttsYes)}
       ${evLine(`BTTS No`, ev.bttsNo)}
       ${r.ahEV?.odds ? evLine(`AH (${r.ahOut?.side} ${r.ahOut?.line})`, r.ahEV) : ""}
-    ` : "";
-
-    const ahBlock = r.ahOut ? `
-      <div style="margin-top:10px"><b>Asian Handicap</b></div>
-      <div class="small">(${r.ahOut.side} ${r.ahOut.line}) cover: <b>${fmtPct(r.ahOut.pCover)}</b> · push: ${fmtPct(r.ahOut.pPush)}</div>
     ` : "";
 
     elResults.innerHTML = `
@@ -214,11 +213,6 @@
       <div style="color:#ffb4b4">
         <b>Prediction error:</b><br>
         <span class="mono">${msg}</span>
-        <div class="hr"></div>
-        <div class="small">
-          If you just updated files on GitHub Pages, refresh once (cache).
-          Also confirm these files exist at repo root: <span class="mono">xg_tables.json</span> and (optional) <span class="mono">fixtures.json</span>.
-        </div>
       </div>
     `;
   }
@@ -242,7 +236,6 @@
     elLeague.value = leagues[0] || "";
 
     onLeagueChange();
-
     setStatus(`Loaded: ${leagues.length} leagues${fixtures ? " · fixtures OK" : ""}`);
   }
 
@@ -262,6 +255,9 @@
         if (!home || !away) throw new Error("Pick both teams.");
         if (home === away) throw new Error("Home and Away cannot be the same team.");
 
+        const odds = collectOdds();
+        const ah = collectAH();
+
         const params = {
           league,
           home,
@@ -271,11 +267,13 @@
           capGoals: safeNum(elCap.value) ?? 8,
           sims: safeNum(elSims?.value) ?? 10000,
           xgRaw,
-          odds: collectOdds(),
-          ah: collectAH(),
+          odds,
+          ah,
         };
 
         const out = window.runPrediction(params);
+        // tell renderer whether odds were entered
+        out._oddsEntered = !!odds;
         renderResult(out);
       } catch (err) {
         console.error(err);
