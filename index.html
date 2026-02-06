@@ -4,17 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0b1323" />
-
-  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-inner">
       <h1>MatchQuant</h1>
@@ -22,30 +17,28 @@
     </div>
   </section>
 
-  <!-- APP -->
   <main class="wrap">
-
     <div class="card">
       <h2>Match Setup</h2>
 
       <div class="grid2">
         <div class="field">
-          <label for="league">League</label>
-          <select id="league"></select>
+          <label>League</label>
+          <select id="leagueSelect"></select>
         </div>
 
         <div class="field">
-          <label for="home">Home Team</label>
-          <select id="home" disabled></select>
+          <label>Home Team</label>
+          <select id="homeTeam" disabled></select>
         </div>
 
         <div class="field">
-          <label for="away">Away Team</label>
-          <select id="away" disabled></select>
+          <label>Away Team</label>
+          <select id="awayTeam" disabled></select>
         </div>
 
         <div class="field">
-          <label for="sims">Simulations</label>
+          <label>Simulations</label>
           <select id="sims">
             <option value="5000">5,000</option>
             <option value="10000" selected>10,000</option>
@@ -54,11 +47,8 @@
         </div>
       </div>
 
-      <button id="runBtn" class="btn">
-        Run Prediction
-      </button>
-
-      <div id="statusline" class="status"></div>
+      <button id="runBtn" class="btn">Run Prediction</button>
+      <div id="statusLine" class="status"></div>
     </div>
 
     <div class="card">
@@ -67,19 +57,16 @@
         Select a league and teams, then press <b>Run Prediction</b>.
       </div>
     </div>
-
   </main>
 
-  <!-- FOOTER -->
   <footer class="foot">
     MatchQuant • xG Engine • Fair Odds • No Bookmaker Bias
   </footer>
 
-  <!-- SCRIPTS (ORDER MATTERS) -->
+  <!-- IMPORTANT: engine.js FIRST, then app.js -->
   <script src="engine.js"></script>
   <script src="app.js"></script>
 
-  <!-- SERVICE WORKER -->
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js");
