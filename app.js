@@ -1,106 +1,103 @@
-// ================================
-// MatchQuant UI Controller
-// ================================
+// MatchQuant App Controller
+// FIXED: league names, team loading, clean bindings
 
 let TEAMS = {};
-let CURRENT_LEAGUE = null;
+let LEAGUE_STRENGTH = {};
+let XG_DATA = {};
 
-// ---------- DOM ----------
-const leagueSelect = document.getElementById("league");
-const homeSelect = document.getElementById("homeTeam");
-const awaySelect = document.getElementById("awayTeam");
-const resultsDiv = document.getElementById("results");
+document.addEventListener("DOMContentLoaded", init);
 
-// ---------- LOAD DATA ----------
-fetch("data/teams.json")
-  .then(res => res.json())
-  .then(data => {
-    TEAMS = data;
-    populateLeagues();
-  })
-  .catch(err => {
-    console.error("Failed to load teams.json", err);
-  });
+async function init() {
+  await loadData();
+  populateLeagues();
+  bindEvents();
+}
 
-// ---------- POPULATE LEAGUES ----------
+async function loadData() {
+  const [teams, leagueStrength, xg] = await Promise.all([
+    fetch("data/teams.json").then(r => r.json()),
+    fetch("data/league_strength.json").then(r => r.json()),
+    fetch("data/xg_2025_2026.json").then(r => r.json())
+  ]);
+
+  TEAMS = teams;
+  LEAGUE_STRENGTH = leagueStrength;
+  XG_DATA = xg;
+}
+
 function populateLeagues() {
+  const leagueSelect = document.getElementById("league");
   leagueSelect.innerHTML = "";
 
-  Object.keys(TEAMS).forEach(leagueName => {
+  Object.keys(TEAMS).forEach(league => {
     const opt = document.createElement("option");
-    opt.value = leagueName;
-    opt.textContent = leagueName;
+    opt.value = league;
+    opt.textContent = league;
     leagueSelect.appendChild(opt);
   });
 
-  // auto-select first league
-  CURRENT_LEAGUE = leagueSelect.value;
-  populateTeams(CURRENT_LEAGUE);
+  populateTeams(leagueSelect.value);
 }
 
-// ---------- POPULATE TEAMS ----------
-function populateTeams(leagueName) {
-  homeSelect.innerHTML = "";
-  awaySelect.innerHTML = "";
+function populateTeams(league) {
+  const home = document.getElementById("homeTeam");
+  const away = document.getElementById("awayTeam");
 
-  if (!TEAMS[leagueName]) return;
+  home.innerHTML = "";
+  away.innerHTML = "";
 
-  Object.keys(TEAMS[leagueName]).forEach(team => {
-    const opt1 = document.createElement("option");
-    opt1.value = team;
-    opt1.textContent = team;
-    homeSelect.appendChild(opt1);
-
-    const opt2 = document.createElement("option");
-    opt2.value = team;
-    opt2.textContent = team;
-    awaySelect.appendChild(opt2);
+  TEAMS[league].forEach(team => {
+    const o1 = new Option(team, team);
+    const o2 = new Option(team, team);
+    home.add(o1);
+    away.add(o2);
   });
 
-  // default away != home
-  if (awaySelect.options.length > 1) {
-    awaySelect.selectedIndex = 1;
-  }
+  away.selectedIndex = 1;
 }
 
-// ---------- EVENTS ----------
-leagueSelect.addEventListener("change", e => {
-  CURRENT_LEAGUE = e.target.value;
-  populateTeams(CURRENT_LEAGUE);
-});
+function bindEvents() {
+  document.getElementById("league").addEventListener("change", e => {
+    populateTeams(e.target.value);
+  });
 
-// ---------- RUN PREDICTION ----------
-function runPrediction() {
-  const home = homeSelect.value;
-  const away = awaySelect.value;
+  document.getElementById("runSim").addEventListener("click", runSimulation);
+}
 
-  if (!home || !away || home === away) {
-    resultsDiv.innerHTML = "Select two different teams.";
-    return;
-  }
+function runSimulation() {
+  const league = document.getElementById("league").value;
+  const home = document.getElementById("homeTeam").value;
+  const away = document.getElementById("awayTeam").value;
 
-  const result = runEngine(
-    CURRENT_LEAGUE,
+  const sims = Number(document.getElementById("sims").value || 10000);
+  const homeAdv = Number(document.getElementById("homeAdv").value || 1.1);
+  const baseGoals = Number(document.getElementById("baseGoals").value || 1.35);
+  const cap = Number(document.getElementById("goalCap").value || 8);
+
+  const result = simulateMatch({
+    league,
     home,
-    away
-  );
+    away,
+    sims,
+    homeAdv,
+    baseGoals,
+    cap,
+    xgData: XG_DATA,
+    leagueStrength: LEAGUE_STRENGTH
+  });
 
-  renderResults(result);
+  displayResult(result);
 }
 
-// ---------- RENDER ----------
-function renderResults(r) {
-  resultsDiv.innerHTML = `
-    <h3>${r.match}</h3>
-    <p><b>Predicted Score:</b> ${r.scoreline}</p>
-    <p><b>Home Win:</b> ${(r.homeWin * 100).toFixed(1)}%</p>
-    <p><b>Draw:</b> ${(r.draw * 100).toFixed(1)}%</p>
-    <p><b>Away Win:</b> ${(r.awayWin * 100).toFixed(1)}%</p>
-    <p><b>Over 2.5:</b> ${(r.over25 * 100).toFixed(1)}%</p>
-    <p><b>BTTS:</b> ${(r.btts * 100).toFixed(1)}%</p>
-    <p><b>AH Lean:</b> ${r.ahLean}</p>
+function displayResult(r) {
+  document.getElementById("result").innerHTML = `
+    <h3>Predicted Score</h3>
+    <p><strong>${r.home}</strong> ${r.avgHome.toFixed(2)} – ${r.avgAway.toFixed(2)} <strong>${r.away}</strong></p>
+
+    <h4>Markets</h4>
+    <p>Home Win: ${(r.homeWin * 100).toFixed(1)}%</p>
+    <p>Draw: ${(r.draw * 100).toFixed(1)}%</p>
+    <p>Away Win: ${(r.awayWin * 100).toFixed(1)}%</p>
+    <p>Over 2.5 Goals: ${(r.over25 * 100).toFixed(1)}%</p>
   `;
 }
-
-// expose for button
-window.runPrediction = runPrediction;
