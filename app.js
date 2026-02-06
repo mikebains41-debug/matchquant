@@ -1,185 +1,229 @@
-// app.js (MatchQuant) — robust league/team loader for GitHub Pages
-(function () {
-  const $ = (id) => document.getElementById(id);
+// MatchQuant UI wiring (data-driven dropdowns)
+// Works with teams.json + aliases.json + league_strength.json in /data
 
-  const leagueEl = $("league");
-  const homeEl = $("homeTeam");
-  const awayEl = $("awayTeam");
-  const resultsEl = $("results");
-  const runBtn = $("runBtn");
+const $ = (id) => document.getElementById(id);
 
-  // Fallback league names (used only if teams.json is index-based)
-  const DEFAULT_LEAGUE_NAMES = [
-    "Premier League",
-    "La Liga",
-    "Serie A",
-    "Bundesliga",
-    "Ligue 1",
-    "Primeira Liga",
-    "Eredivisie",
-    "Scottish Premiership",
-    "RFPL"
-  ];
+const leagueEl = $("league");
+const homeEl = $("homeTeam");
+const awayEl = $("awayTeam");
+const runBtn = $("runBtn");
+const resultsEl = $("results");
+const statusEl = $("status");
 
-  function setStatus(msg) {
-    if (resultsEl) resultsEl.textContent = msg;
+let TEAMS = null;
+let ALIASES = {};
+let LEAGUE_STRENGTH = {};
+
+function setStatus(msg) {
+  if (statusEl) statusEl.textContent = msg || "";
+}
+
+async function loadJSON(path) {
+  const res = await fetch(path, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
+  return res.json();
+}
+
+// supports multiple possible shapes:
+// A) { leagues: [{key,name,teams:[...]}] }
+// B) { "Premier League": ["Arsenal", ...], "La Liga": [...] }
+// C) [{league:"Premier League", teams:[...]}]
+function normalizeTeamsJson(raw) {
+  // Case A
+  if (raw && Array.isArray(raw.leagues)) {
+    return raw.leagues.map((l, idx) => ({
+      key: l.key || l.name || String(idx),
+      name: l.name || l.key || `League ${idx + 1}`,
+      teams: Array.isArray(l.teams) ? l.teams : [],
+    }));
   }
 
-  function clearSelect(sel) {
-    while (sel.firstChild) sel.removeChild(sel.firstChild);
+  // Case B (object map)
+  if (raw && !Array.isArray(raw) && typeof raw === "object") {
+    return Object.keys(raw).map((leagueName) => ({
+      key: leagueName,
+      name: leagueName,
+      teams: Array.isArray(raw[leagueName]) ? raw[leagueName] : [],
+    }));
   }
 
-  function addOption(sel, value, label) {
+  // Case C
+  if (Array.isArray(raw)) {
+    // maybe array of leagues or array of strings
+    if (raw.length && typeof raw[0] === "string") {
+      // unknown league; treat as one league
+      return [{ key: "League", name: "League", teams: raw }];
+    }
+    return raw.map((l, idx) => ({
+      key: l.key || l.name || l.league || String(idx),
+      name: l.name || l.league || l.key || `League ${idx + 1}`,
+      teams: Array.isArray(l.teams) ? l.teams : (Array.isArray(l.items) ? l.items : []),
+    }));
+  }
+
+  // fallback
+  return [];
+}
+
+function fillSelect(selectEl, options, placeholder) {
+  selectEl.innerHTML = "";
+  if (placeholder) {
     const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = label;
-    sel.appendChild(opt);
+    opt.value = "";
+    opt.textContent = placeholder;
+    selectEl.appendChild(opt);
   }
-
-  function normalizeTeamsJson(raw) {
-    // We want: { leagueName: [teamName, ...], ... }
-    // Support shapes:
-    // 1) { "Premier League": ["Arsenal", ...], "La Liga": [...] }
-    // 2) [ ["Arsenal",...], ["Real Madrid",...], ... ]  (array of arrays)
-    // 3) [ { name: "Premier League", teams: [...] }, ... ]
-    // 4) { "0": [...], "1":[...], ... } (index keys)
-
-    const map = {};
-
-    if (Array.isArray(raw)) {
-      if (raw.length && typeof raw[0] === "object" && !Array.isArray(raw[0])) {
-        // array of objects
-        for (let i = 0; i < raw.length; i++) {
-          const obj = raw[i] || {};
-          const name = (obj.name || obj.league || DEFAULT_LEAGUE_NAMES[i] || `League ${i + 1}`).toString();
-          const teams = Array.isArray(obj.teams) ? obj.teams : [];
-          map[name] = teams.map(String);
-        }
-      } else {
-        // array of arrays
-        for (let i = 0; i < raw.length; i++) {
-          const name = DEFAULT_LEAGUE_NAMES[i] || `League ${i + 1}`;
-          const teams = Array.isArray(raw[i]) ? raw[i] : [];
-          map[name] = teams.map(String);
-        }
-      }
-      return map;
-    }
-
-    if (raw && typeof raw === "object") {
-      const keys = Object.keys(raw);
-
-      // If keys look like 0..N, map them to DEFAULT_LEAGUE_NAMES
-      const allNumeric = keys.length && keys.every((k) => String(+k) === k);
-      if (allNumeric) {
-        keys.sort((a, b) => (+a) - (+b));
-        keys.forEach((k, i) => {
-          const name = DEFAULT_LEAGUE_NAMES[i] || `League ${i + 1}`;
-          const teams = Array.isArray(raw[k]) ? raw[k] : [];
-          map[name] = teams.map(String);
-        });
-        return map;
-      }
-
-      // Normal object keyed by league name
-      for (const k of keys) {
-        const teams = Array.isArray(raw[k]) ? raw[k] : [];
-        map[String(k)] = teams.map(String);
-      }
-      return map;
-    }
-
-    return map;
+  for (const v of options) {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    selectEl.appendChild(opt);
   }
+}
 
-  async function loadJSON(path) {
-    const res = await fetch(`${path}?v=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
-    return await res.json();
-  }
+function getLeagueList() {
+  return TEAMS || [];
+}
 
-  function populateLeagueSelect(teamMap) {
-    clearSelect(leagueEl);
-    const leagues = Object.keys(teamMap);
+function getTeamsForLeagueKey(leagueKey) {
+  const leagues = getLeagueList();
+  const found = leagues.find((l) => l.key === leagueKey || l.name === leagueKey);
+  return found ? (found.teams || []) : [];
+}
 
-    if (!leagues.length) {
-      addOption(leagueEl, "", "No leagues found");
+// optional alias mapping if engine expects a different spelling
+function aliasTeam(name) {
+  return ALIASES?.[name] || name;
+}
+
+function renderError(err) {
+  resultsEl.textContent = `Error: ${err?.message || err}`;
+}
+
+async function boot() {
+  try {
+    setStatus("Loading data…");
+
+    const [teamsRaw, aliasesRaw, strengthRaw] = await Promise.all([
+      loadJSON("data/teams.json"),
+      loadJSON("data/aliases.json").catch(() => ({})),
+      loadJSON("data/league_strength.json").catch(() => ({})),
+    ]);
+
+    TEAMS = normalizeTeamsJson(teamsRaw);
+    ALIASES = aliasesRaw || {};
+    LEAGUE_STRENGTH = strengthRaw || {};
+
+    // ✅ FIX: if TEAMS is empty, show a clear message
+    if (!TEAMS.length) {
+      setStatus("");
+      resultsEl.textContent =
+        "teams.json loaded but no leagues/teams were found. Open data/teams.json and make sure it contains league names + team lists.";
+      // still populate league dropdown with nothing to prevent undefined numeric options
+      fillSelect(leagueEl, [], "Choose league");
+      fillSelect(homeEl, [], "Choose home");
+      fillSelect(awayEl, [], "Choose away");
       return;
     }
 
-    leagues.forEach((name) => addOption(leagueEl, name, name));
-  }
+    // populate league dropdown with league NAMES (not numbers)
+    const leagueNames = TEAMS.map((l) => l.name);
+    fillSelect(leagueEl, leagueNames, "Choose league");
 
-  function populateTeamSelects(teamMap, leagueName) {
-    const teams = teamMap[leagueName] || [];
+    // default to first real league
+    leagueEl.value = leagueNames[0];
 
-    clearSelect(homeEl);
-    clearSelect(awayEl);
+    // load teams for selected league
+    const teams = getTeamsForLeagueKey(leagueEl.value);
+    fillSelect(homeEl, teams, "Choose home");
+    fillSelect(awayEl, teams, "Choose away");
 
-    if (!teams.length) {
-      addOption(homeEl, "", "No teams found");
-      addOption(awayEl, "", "No teams found");
-      return;
+    // sensible defaults
+    if (teams.length >= 2) {
+      homeEl.value = teams[0];
+      awayEl.value = teams[1];
     }
 
-    teams.forEach((t) => {
-      addOption(homeEl, t, t);
-      addOption(awayEl, t, t);
+    // when league changes, update teams
+    leagueEl.addEventListener("change", () => {
+      const t = getTeamsForLeagueKey(leagueEl.value);
+      fillSelect(homeEl, t, "Choose home");
+      fillSelect(awayEl, t, "Choose away");
+      if (t.length >= 2) {
+        homeEl.value = t[0];
+        awayEl.value = t[1];
+      }
     });
 
-    // Default: home first team, away second team (if possible)
-    homeEl.value = teams[0];
-    awayEl.value = teams[1] || teams[0];
+    runBtn.addEventListener("click", runPrediction);
+
+    setStatus("Ready.");
+  } catch (e) {
+    setStatus("");
+    renderError(e);
   }
+}
 
-  async function init() {
-    try {
-      setStatus("Loading teams...");
-      const rawTeams = await loadJSON("data/teams.json");
-      const teamMap = normalizeTeamsJson(rawTeams);
+function runPrediction() {
+  try {
+    const leagueName = leagueEl.value;
+    const homeTeam = homeEl.value;
+    const awayTeam = awayEl.value;
 
-      populateLeagueSelect(teamMap);
-      const firstLeague = leagueEl.value;
-      populateTeamSelects(teamMap, firstLeague);
-
-      leagueEl.addEventListener("change", () => {
-        populateTeamSelects(teamMap, leagueEl.value);
-      });
-
-      // Run button (calls your existing engine if present)
-      runBtn?.addEventListener("click", () => {
-        try {
-          const payload = {
-            league: leagueEl.value,
-            home: homeEl.value,
-            away: awayEl.value,
-            sims: Number($("sims")?.value || 10000),
-            homeAdv: Number($("homeAdv")?.value || 1.1),
-            baseGoals: Number($("baseGoals")?.value || 1.35),
-          };
-
-          // If your engine exposes something, call it; otherwise show payload
-          if (window.MatchQuantEngine && typeof window.MatchQuantEngine.run === "function") {
-            const out = window.MatchQuantEngine.run(payload);
-            resultsEl.textContent = typeof out === "string" ? out : JSON.stringify(out, null, 2);
-          } else if (typeof window.runPrediction === "function") {
-            const out = window.runPrediction(payload);
-            resultsEl.textContent = typeof out === "string" ? out : JSON.stringify(out, null, 2);
-          } else {
-            resultsEl.textContent =
-              "Engine hook not found (engine.js). Teams dropdowns are fixed.\n\n" +
-              JSON.stringify(payload, null, 2);
-          }
-        } catch (e) {
-          resultsEl.textContent = "Run error: " + (e?.message || e);
-        }
-      });
-
-      setStatus("Loaded. Pick league + teams, then press Run Prediction.");
-    } catch (e) {
-      setStatus("ERROR: " + (e?.message || e));
+    if (!leagueName || !homeTeam || !awayTeam) {
+      resultsEl.textContent = "Pick league + both teams first.";
+      return;
     }
-  }
+    if (homeTeam === awayTeam) {
+      resultsEl.textContent = "Home and Away cannot be the same team.";
+      return;
+    }
 
-  document.addEventListener("DOMContentLoaded", init);
-})();
+    const sims = Number($("sims")?.value || 10000);
+    const homeAdv = Number($("homeAdv")?.value || 1.1);
+    const baseGoals = Number($("baseGoals")?.value || 1.35);
+
+    // Optional league multiplier
+    const leagueMult =
+      (LEAGUE_STRENGTH && (LEAGUE_STRENGTH[leagueName] ?? LEAGUE_STRENGTH[leagueName.toLowerCase()])) || 1.0;
+
+    // ✅ IMPORTANT: send the names using keys engine expects
+    const payload = {
+      leagueName,
+      homeTeam: aliasTeam(homeTeam),
+      awayTeam: aliasTeam(awayTeam),
+      sims,
+      homeAdv,
+      baseGoals,
+      leagueMult,
+    };
+
+    // engine.js should provide a function. We support common names.
+    const fn =
+      window.runMatchQuant ||
+      window.runPrediction ||
+      window.predictMatch ||
+      window.engineRun;
+
+    if (typeof fn !== "function") {
+      resultsEl.textContent =
+        "engine.js did not expose a runner function. Make sure engine.js defines window.runMatchQuant = function(payload){...}";
+      return;
+    }
+
+    const out = fn(payload);
+
+    // ✅ FIX: render HTML properly if out is HTML
+    if (typeof out === "string" && out.includes("<")) {
+      resultsEl.innerHTML = out;
+    } else if (typeof out === "string") {
+      resultsEl.textContent = out;
+    } else {
+      resultsEl.textContent = JSON.stringify(out, null, 2);
+    }
+  } catch (e) {
+    renderError(e);
+  }
+}
+
+boot();
