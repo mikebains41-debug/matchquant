@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MatchQuant</title>
-  <link rel="stylesheet" href="style.css?v=22" />
+  <link rel="stylesheet" href="style.css?v=400" />
 </head>
 
 <body>
@@ -81,12 +81,12 @@
   </footer>
 
   <!-- IMPORTANT: order matters -->
-  <script src="engine.js?v=22"></script>
-  <script src="app.js?v=22"></script>
+  <script src="engine.js?v=400"></script>
+  <script src="app.js?v=400"></script>
 
-  <!-- Simple reset (clears selections + results) -->
+  <!-- Reset (clears selections + results) -->
   <script>
-    (function () {
+    (() => {
       const resetBtn = document.getElementById("resetBtn");
       if (!resetBtn) return;
 
