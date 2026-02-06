@@ -9,8 +9,8 @@
   // ---- IDs expected in index.html ----
   // leagueSelect, fixtureSelect, homeTeam, awayTeam, sims, homeAdv, baseGoals, goalCap, results
   const el = {
-    league: $("leagueSelect"),
-    fixture: $("fixtureSelect"),
+    league: $("league"),
+    fixture: $("fixture"),
     home: $("homeTeam"),
     away: $("awayTeam"),
     sims: $("sims"),
