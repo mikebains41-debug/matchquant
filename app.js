@@ -42,7 +42,7 @@
   function fillSelect(sel, values, placeholder) {
     resetSelect(sel, placeholder, false);
     values.forEach((v) => sel.appendChild(opt(v, v)));
-    sel.disabled = false; // force-enable
+    sel.disabled = false;
   }
 
   async function loadJSON(path) {
@@ -56,14 +56,14 @@
   }
 
   function wireLeagueHandlers(updateTeams) {
-    // Android browsers sometimes don’t fire "change" the way you expect.
-    // So we listen to multiple events and also poll briefly after interaction.
     const events = ["change", "input", "click", "touchend"];
-    events.forEach((ev) => el.league.addEventListener(ev, () => {
-      setTimeout(updateTeams, 0);
-      setTimeout(updateTeams, 50);
-      setTimeout(updateTeams, 150);
-    }));
+    events.forEach((ev) =>
+      el.league.addEventListener(ev, () => {
+        setTimeout(updateTeams, 0);
+        setTimeout(updateTeams, 50);
+        setTimeout(updateTeams, 150);
+      })
+    );
   }
 
   async function init() {
@@ -77,15 +77,14 @@
       resetSelect(el.away, "Select away team", true);
 
       setResults(`<div style="opacity:.75">Loading leagues…</div>`);
-      setStatus("Loading ./data/teams.json…");
+      setStatus("Loading data/teams.json…");
 
-      // ✅ Correct GitHub Pages path for repo site
-      const teamsByLeague = await loadJSON("./data/teams.json");
+      // ✅ Use relative path that works on GitHub Pages
+      const teamsByLeague = await loadJSON("data/teams.json");
 
       const leagues = Object.keys(teamsByLeague).sort();
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
 
-      // Populate leagues + enable
       resetSelect(el.league, "Select league", false);
       leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
       el.league.disabled = false;
@@ -93,7 +92,6 @@
       const updateTeams = () => {
         const league = el.league.value;
 
-        // Always reset teams first
         resetSelect(el.home, "Select home team", true);
         resetSelect(el.away, "Select away team", true);
 
@@ -111,24 +109,18 @@
         fillSelect(el.home, teams, "Select home team");
         fillSelect(el.away, teams, "Select away team");
 
-        // If you want them enabled even before picking, keep this:
-        el.home.disabled = false;
-        el.away.disabled = false;
-
         setStatus(`Loaded ${teams.length} teams for ${league}.`);
       };
 
       wireLeagueHandlers(updateTeams);
 
-      // Run button
-      el.runBtn.addEventListener("click", () => runPrediction(teamsByLeague));
+      // ✅ Run button wired correctly
+      el.runBtn.addEventListener("click", runPrediction);
 
       setResults(`<div style="opacity:.85">Ready. Select league + teams, then Run.</div>`);
       setStatus(`Loaded ${leagues.length} leagues. Select one.`);
 
-      // Debug
       window.__teamsByLeague = teamsByLeague;
-
     } catch (err) {
       console.error(err);
       setStatus("Error");
@@ -139,8 +131,8 @@
           <br><br>
           <b>Quick checks:</b>
           <ul>
-            <li>teams.json must be at <code>/data/teams.json</code> in your repo</li>
-            <li>index.html IDs must match: leagueSelect, homeTeam, awayTeam</li>
+            <li>teams.json must be at <code>data/teams.json</code></li>
+            <li>index.html IDs must match: leagueSelect, homeTeam, awayTeam, runBtn</li>
           </ul>
         </div>
       `);
@@ -172,7 +164,12 @@
       `);
     }
 
-    const payload = { league, home, away, sims: Number(el.sims?.value || 10000) };
+    const payload = {
+      league,
+      home,
+      away,
+      sims: Number(el.sims?.value || 10000),
+    };
 
     try {
       const out = engine(payload);
