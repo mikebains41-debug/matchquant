@@ -1,27 +1,28 @@
-const CACHE = "matchquant-v6";
+const CACHE_NAME = "matchquant-v1";
+
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
-  "./engine.js",
   "./app.js",
+  "./engine.js",
+  "./manifest.json",
+  "./data/teams.json",
+  "./data/xg_2025_2026.json",
   "./fixtures.json",
-  "./h2h.json",
-  "./manifest.json"
+  "./h2h.json"
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
-});
-
-self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
 self.addEventListener("fetch", (e) => {
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(()=>cached))
+    caches.match(e.request).then(
+      (res) => res || fetch(e.request)
+    )
   );
 });
