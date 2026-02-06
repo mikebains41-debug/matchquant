@@ -1,166 +1,106 @@
-/* MatchQuant app.js (Option B+) 
-   - Teams auto-built from fixtures.json (no missing teams)
-   - Alias mapping via data/aliases.json
-   - League strength multipliers via data/league_strength.json
-   - Optional Pro unlock gate (no server)
-*/
+// ================================
+// MatchQuant UI Controller
+// ================================
 
-let FIXTURES = {};
-let ALIASES = {};
-let LEAGUE_STRENGTH = {};
-let XG_DATA = null;
+let TEAMS = {};
+let CURRENT_LEAGUE = null;
 
-// ---------- PRO UNLOCK (no-server gate) ----------
-function isPro() {
-  return localStorage.getItem("mq_pro") === "1";
-}
-function tryProUnlockFromQuery() {
-  const url = new URL(window.location.href);
-  const key = url.searchParams.get("prokey");
-  // change this to any string you want
-  const VALID = "MATCHQUANTPRO2026";
-  if (key && key === VALID) {
-    localStorage.setItem("mq_pro", "1");
-    // remove key from URL after storing
-    url.searchParams.delete("prokey");
-    history.replaceState({}, "", url.toString());
-  }
-}
+// ---------- DOM ----------
+const leagueSelect = document.getElementById("league");
+const homeSelect = document.getElementById("homeTeam");
+const awaySelect = document.getElementById("awayTeam");
+const resultsDiv = document.getElementById("results");
 
-// ---------- LOADERS ----------
-async function loadJson(path) {
-  const res = await fetch(path + "?v=1");
-  if (!res.ok) throw new Error("Failed to load: " + path);
-  return await res.json();
-}
-
-async function safeLoadJson(path, fallback) {
-  try {
-    return await loadJson(path);
-  } catch {
-    return fallback;
-  }
-}
-
-// ---------- ALIAS + NORMALIZE ----------
-function norm(s) {
-  return String(s || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[’']/g, "")
-    .replace(/\./g, "");
-}
-
-// returns canonical name for matching data sources
-function canon(league, teamName) {
-  const L = ALIASES[league] || {};
-  const key = norm(teamName);
-  return L[key] || teamName;
-}
-
-// build team list from fixtures.json
-function teamsFromFixtures(league) {
-  const rows = FIXTURES[league] || [];
-  const set = new Set();
-  rows.forEach((m) => {
-    if (m.home) set.add(m.home);
-    if (m.away) set.add(m.away);
-    // also support alternate keys if your fixtures use different field names
-    if (m.Home) set.add(m.Home);
-    if (m.Away) set.add(m.Away);
+// ---------- LOAD DATA ----------
+fetch("data/teams.json")
+  .then(res => res.json())
+  .then(data => {
+    TEAMS = data;
+    populateLeagues();
+  })
+  .catch(err => {
+    console.error("Failed to load teams.json", err);
   });
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
-}
 
-function leaguesFromFixtures() {
-  return Object.keys(FIXTURES).sort((a, b) => a.localeCompare(b));
-}
+// ---------- POPULATE LEAGUES ----------
+function populateLeagues() {
+  leagueSelect.innerHTML = "";
 
-function fillSelect(selectEl, items, placeholder) {
-  selectEl.innerHTML = "";
-  const ph = document.createElement("option");
-  ph.value = "";
-  ph.textContent = placeholder;
-  selectEl.appendChild(ph);
-
-  items.forEach((v) => {
+  Object.keys(TEAMS).forEach(leagueName => {
     const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    selectEl.appendChild(opt);
+    opt.value = leagueName;
+    opt.textContent = leagueName;
+    leagueSelect.appendChild(opt);
   });
+
+  // auto-select first league
+  CURRENT_LEAGUE = leagueSelect.value;
+  populateTeams(CURRENT_LEAGUE);
 }
 
-// ---------- UI ----------
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    tryProUnlockFromQuery();
+// ---------- POPULATE TEAMS ----------
+function populateTeams(leagueName) {
+  homeSelect.innerHTML = "";
+  awaySelect.innerHTML = "";
 
-    // required
-    FIXTURES = await loadJson("./fixtures.json");
+  if (!TEAMS[leagueName]) return;
 
-    // optional files (safe)
-    ALIASES = await safeLoadJson("./data/aliases.json", {});
-    LEAGUE_STRENGTH = await safeLoadJson("./data/league_strength.json", {});
-    XG_DATA = await safeLoadJson("./data/xg_2025_2026.json", null);
+  Object.keys(TEAMS[leagueName]).forEach(team => {
+    const opt1 = document.createElement("option");
+    opt1.value = team;
+    opt1.textContent = team;
+    homeSelect.appendChild(opt1);
 
-    const leagueSel = document.getElementById("league");
-    const homeSel = document.getElementById("homeTeam");
-    const awaySel = document.getElementById("awayTeam");
-    const runBtn = document.getElementById("runBtn");
-    const resultsEl = document.getElementById("results");
+    const opt2 = document.createElement("option");
+    opt2.value = team;
+    opt2.textContent = team;
+    awaySelect.appendChild(opt2);
+  });
 
-    const leagues = leaguesFromFixtures();
-    fillSelect(leagueSel, leagues, "Choose league");
-
-    leagueSel.addEventListener("change", () => {
-      const league = leagueSel.value;
-      const teams = teamsFromFixtures(league);
-      fillSelect(homeSel, teams, "Home team");
-      fillSelect(awaySel, teams, "Away team");
-    });
-
-    // default league
-    if (leagues.length) {
-      leagueSel.value = leagues[0];
-      leagueSel.dispatchEvent(new Event("change"));
-    }
-
-    runBtn.addEventListener("click", () => {
-      const league = leagueSel.value;
-      const homeRaw = homeSel.value;
-      const awayRaw = awaySel.value;
-
-      if (!league || !homeRaw || !awayRaw || homeRaw === awayRaw) {
-        resultsEl.innerHTML = "Select league, home team, and away team.";
-        return;
-      }
-
-      const home = canon(league, homeRaw);
-      const away = canon(league, awayRaw);
-
-      const params = {
-        league,
-        home,
-        away,
-        homeRaw,
-        awayRaw,
-        sims: parseInt(document.getElementById("sims").value || "10000", 10),
-        homeAdv: parseFloat(document.getElementById("homeAdv").value || "1.10"),
-        baseGoals: parseFloat(document.getElementById("baseGoals").value || "1.35"),
-        capGoals: 10,
-        xgData: XG_DATA,
-        fixtures: FIXTURES,
-        leagueStrength: LEAGUE_STRENGTH,
-        pro: isPro()
-      };
-
-      resultsEl.innerHTML = window.runPrediction(params);
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("MatchQuant failed to start. Check console/logs.");
+  // default away != home
+  if (awaySelect.options.length > 1) {
+    awaySelect.selectedIndex = 1;
   }
+}
+
+// ---------- EVENTS ----------
+leagueSelect.addEventListener("change", e => {
+  CURRENT_LEAGUE = e.target.value;
+  populateTeams(CURRENT_LEAGUE);
 });
+
+// ---------- RUN PREDICTION ----------
+function runPrediction() {
+  const home = homeSelect.value;
+  const away = awaySelect.value;
+
+  if (!home || !away || home === away) {
+    resultsDiv.innerHTML = "Select two different teams.";
+    return;
+  }
+
+  const result = runEngine(
+    CURRENT_LEAGUE,
+    home,
+    away
+  );
+
+  renderResults(result);
+}
+
+// ---------- RENDER ----------
+function renderResults(r) {
+  resultsDiv.innerHTML = `
+    <h3>${r.match}</h3>
+    <p><b>Predicted Score:</b> ${r.scoreline}</p>
+    <p><b>Home Win:</b> ${(r.homeWin * 100).toFixed(1)}%</p>
+    <p><b>Draw:</b> ${(r.draw * 100).toFixed(1)}%</p>
+    <p><b>Away Win:</b> ${(r.awayWin * 100).toFixed(1)}%</p>
+    <p><b>Over 2.5:</b> ${(r.over25 * 100).toFixed(1)}%</p>
+    <p><b>BTTS:</b> ${(r.btts * 100).toFixed(1)}%</p>
+    <p><b>AH Lean:</b> ${r.ahLean}</p>
+  `;
+}
+
+// expose for button
+window.runPrediction = runPrediction;
