@@ -1,4 +1,4 @@
-/* MatchQuant app.js — FINAL */
+/* MatchQuant app.js — FINAL STABLE */
 
 let xgRaw = null;
 
@@ -17,10 +17,7 @@ fetch("xg_tables.json")
 function loadLeagues() {
   leagueSel.innerHTML = "";
   Object.keys(xgRaw).forEach(l => {
-    const opt = document.createElement("option");
-    opt.value = l;
-    opt.textContent = l;
-    leagueSel.appendChild(opt);
+    leagueSel.add(new Option(l, l));
   });
   leagueSel.onchange = loadTeams;
   loadTeams();
@@ -30,16 +27,12 @@ function loadTeams() {
   homeSel.innerHTML = "";
   awaySel.innerHTML = "";
 
-  const league = leagueSel.value;
-  const leagueObj = xgRaw[league];
-
+  const leagueObj = xgRaw[leagueSel.value];
   Object.keys(leagueObj)
     .filter(k => !k.startsWith("__"))
     .forEach(team => {
-      const o1 = new Option(team, team);
-      const o2 = new Option(team, team);
-      homeSel.add(o1);
-      awaySel.add(o2);
+      homeSel.add(new Option(team, team));
+      awaySel.add(new Option(team, team));
     });
 }
 
@@ -48,11 +41,11 @@ runBtn.onclick = () => {
     league: leagueSel.value,
     home: homeSel.value,
     away: awaySel.value,
-    homeAdv: Number(document.getElementById("homeAdv").value),
-    baseGoals: Number(document.getElementById("baseGoals").value),
-    capGoals: Number(document.getElementById("capGoals").value),
-    ahSide: document.getElementById("ahSide")?.value,
-    ahLine: document.getElementById("ahLine")?.value,
+    homeAdv: Number(document.getElementById("homeAdv").value || 1.1),
+    baseGoals: Number(document.getElementById("baseGoals").value || 1.35),
+    capGoals: Number(document.getElementById("capGoals").value || 8),
+    ahSide: document.getElementById("ahSide")?.value || null,
+    ahLine: document.getElementById("ahLine")?.value || null,
     xgRaw
   });
 };
