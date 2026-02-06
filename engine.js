@@ -1,122 +1,129 @@
-/* MatchQuant engine.js — FINAL (CRASH-PROOF) */
+/* MatchQuant engine.js — FULL REPLACEMENT (Deterministic Poisson + att/def tables + modal output) */
 
-window.runPrediction = function (p) {
-  try {
-    const {
-      league,
-      home,
-      away,
-      homeAdv,
-      baseGoals,
-      capGoals,
-      xgRaw,
-      ahSide = null,
-      ahLine = null
-    } = p;
+(function () {
+  // ---------- Modal helpers (replaces alert) ----------
+  window.showMQ = function (text) {
+    const box = document.getElementById("mqContent");
+    const modal = document.getElementById("mqModal");
+    if (!box || !modal) return; // safety
+    box.textContent = String(text || "");
+    modal.classList.remove("hidden");
+  };
 
-    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+  window.closeMQ = function () {
+    const modal = document.getElementById("mqModal");
+    if (!modal) return;
+    modal.classList.add("hidden");
+  };
 
-    function factorial(n) {
-      let r = 1;
-      for (let i = 2; i <= n; i++) r *= i;
-      return r;
-    }
+  // ---------- core helpers ----------
+  const norm = (s) =>
+    String(s || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[’']/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ");
 
-    function poisson(k, mu) {
-      return Math.exp(-mu) * Math.pow(mu, k) / factorial(k);
-    }
-
-    // ---------- league ----------
-    const leagueObj = xgRaw?.[league];
-    if (!leagueObj) throw new Error("League missing");
-
-    const leagueFactor = leagueObj.__league_factor || 1.0;
-
-    function findTeam(name) {
-      const n = name.toLowerCase().trim();
-      return Object.entries(leagueObj).find(
-        ([k]) => !k.startsWith("__") && k.toLowerCase() === n
-      )?.[1];
-    }
-
-    const homeT = findTeam(home);
-    const awayT = findTeam(away);
-
-    if (!homeT || !awayT) throw new Error("Team mismatch");
-
-    // ---------- xG ----------
-    const muHome =
-      baseGoals * leagueFactor * homeT.att * awayT.def * homeAdv;
-
-    const muAway =
-      baseGoals * leagueFactor * awayT.att * homeT.def;
-
-    const cap = clamp(parseInt(capGoals || 8), 6, 12);
-
-    let pW = 0, pD = 0, pL = 0;
-    let pOver25 = 0, pUnder25 = 0, pBTTS = 0;
-    let bestScore = "0-0", bestProb = -1;
-
-    const top = [];
-
-    for (let hg = 0; hg <= cap; hg++) {
-      for (let ag = 0; ag <= cap; ag++) {
-        const prob = poisson(hg, muHome) * poisson(ag, muAway);
-        const score = `${hg}-${ag}`;
-
-        top.push([score, prob]);
-
-        if (prob > bestProb) {
-          bestProb = prob;
-          bestScore = score;
-        }
-
-        if (hg > ag) pW += prob;
-        else if (hg < ag) pL += prob;
-        else pD += prob;
-
-        if (hg + ag >= 3) pOver25 += prob;
-        else pUnder25 += prob;
-
-        if (hg >= 1 && ag >= 1) pBTTS += prob;
-      }
-    }
-
-    top.sort((a, b) => b[1] - a[1]);
-    const top5 = top
-      .slice(0, 5)
-      .map(([s, p]) => `${s} (${(p * 100).toFixed(1)}%)`)
-      .join("\n");
-
-    // ---------- Asian Handicap (SAFE) ----------
-    let ahLean = "N/A";
-    if (ahSide && ahLine !== null && !isNaN(parseFloat(ahLine))) {
-      const line = parseFloat(ahLine);
-      if (ahSide === "Home") {
-        ahLean = pW + pD * 0.5 > 0.5 ? `Home ${line}` : "No edge";
-      } else {
-        ahLean = pL + pD * 0.5 > 0.5 ? `Away ${line}` : "No edge";
-      }
-    }
-
-    alert(
-      `MatchQuant says\n\n` +
-      `${home} vs ${away}\n\n` +
-      `Win Probabilities:\n` +
-      `${home}: ${(pW * 100).toFixed(1)}%\n` +
-      `Draw: ${(pD * 100).toFixed(1)}%\n` +
-      `${away}: ${(pL * 100).toFixed(1)}%\n\n` +
-      `Most Likely Score: ${bestScore}\n\n` +
-      `O/U 2.5:\n` +
-      `Over 2.5: ${(pOver25 * 100).toFixed(1)}%\n` +
-      `Under 2.5: ${(pUnder25 * 100).toFixed(1)}%\n\n` +
-      `BTTS Yes: ${(pBTTS * 100).toFixed(1)}%\n\n` +
-      `Asian Handicap Lean:\n${ahLean}\n\n` +
-      `xG means:\n${home}: ${muHome.toFixed(2)}\n${away}: ${muAway.toFixed(2)}\n\n` +
-      `Top 5 Scorelines:\n${top5}`
-    );
-
-  } catch (e) {
-    alert("Prediction error:\n" + e.message);
+  function clampInt(n, lo, hi) {
+    n = parseInt(n, 10);
+    if (!isFinite(n)) n = lo;
+    return Math.max(lo, Math.min(hi, n));
   }
-};
+
+  function factorial(n) {
+    let r = 1;
+    for (let i = 2; i <= n; i++) r *= i;
+    return r;
+  }
+
+  function poissonP(k, mu) {
+    return Math.exp(-mu) * Math.pow(mu, k) / factorial(k);
+  }
+
+  function pct(x) {
+    return (x * 100).toFixed(1) + "%";
+  }
+
+  function num(x, fallback = null) {
+    const v = Number(x);
+    return isFinite(v) ? v : fallback;
+  }
+
+  // Convert decimal odds -> implied probability
+  function impliedProbFromOdds(odds) {
+    const o = num(odds, null);
+    if (!o || o <= 1) return null;
+    return 1 / o;
+  }
+
+  // EV from prob + decimal odds
+  function evFromProbOdds(prob, odds) {
+    const o = num(odds, null);
+    if (o === null || o <= 1) return null;
+    // EV per 1 unit stake
+    return prob * (o - 1) - (1 - prob);
+  }
+
+  function evBadge(ev) {
+    if (ev === null) return "";
+    if (ev >= 0.06) return "✅ +EV (strong)";
+    if (ev >= 0.02) return "✅ +EV";
+    if (ev > -0.02) return "⚖️ near fair";
+    return "❌ -EV";
+  }
+
+  // ---------- ATT/DEF model reader ----------
+  function getLeagueRoot(xgRaw) {
+    if (!xgRaw) return null;
+    // support {leagues:{...}} or direct {...}
+    return xgRaw.leagues ? xgRaw.leagues : xgRaw;
+  }
+
+  function buildTeamKeyMap(leagueObj) {
+    const map = {};
+    if (!leagueObj || typeof leagueObj !== "object") return map;
+    Object.keys(leagueObj).forEach((k) => {
+      if (!k || k.startsWith("__")) return;
+      map[norm(k)] = k;
+    });
+    return map;
+  }
+
+  const ALIASES = {
+    "man city": "manchester city",
+    "man utd": "manchester united",
+    "spurs": "tottenham",
+    "tottenham hotspur": "tottenham",
+    "wolves": "wolverhampton wanderers",
+    "newcastle": "newcastle united",
+    "inter": "inter milan",
+    "ac milan": "milan",
+  };
+
+  function resolveTeamKey(team, teamKeyMap) {
+    const n = norm(team);
+    if (teamKeyMap[n]) return teamKeyMap[n];
+
+    const a = ALIASES[n];
+    if (a && teamKeyMap[a]) return teamKeyMap[a];
+
+    // fuzzy contains match (last resort)
+    const keys = Object.keys(teamKeyMap);
+    const hit = keys.find((k) => k.includes(n) || n.includes(k));
+    return hit ? teamKeyMap[hit] : null;
+  }
+
+  function leagueFactor(leagueObj) {
+    const v = leagueObj && typeof leagueObj.__league_factor === "number" ? leagueObj.__league_factor : 1.0;
+    return isFinite(v) && v > 0 ? v : 1.0;
+  }
+
+  function teamAttDef(leagueObj, teamKey) {
+    const row = (leagueObj && teamKey) ? leagueObj[teamKey] : null;
+    // expected: {att: number, def: number}
+    const att = row && typeof row.att === "number" ? row.att : null;
+    const def = row && typeof row.def === "number" ? row.def : null;
+    return {
+      att: (att && isFinite(att) && att > 0) ? att : 1.0,
+      def: (def && isFinite(def) && def > 0) ? def : 1.0,
