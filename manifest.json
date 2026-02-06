@@ -3,9 +3,8 @@
   "short_name": "MatchQuant",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0a0f1a",
-  "theme_color": "#0b1220",
-  "description": "Soccer Prediction Engine (xG lambdas + Monte Carlo + fixtures + H2H)",
+  "background_color": "#0b1323",
+  "theme_color": "#0b1323",
   "icons": [
     {
       "src": "icon-192.png",
