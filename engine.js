@@ -1,6 +1,4 @@
-/* MatchQuant engine.js — FINAL STABLE VERSION
-   Deterministic Poisson + OU + BTTS + AH
-*/
+/* MatchQuant engine.js — FINAL (CRASH-PROOF) */
 
 window.runPrediction = function (p) {
   try {
@@ -12,19 +10,11 @@ window.runPrediction = function (p) {
       baseGoals,
       capGoals,
       xgRaw,
-      ahSide,
-      ahLine
+      ahSide = null,
+      ahLine = null
     } = p;
 
-    // ---------- helpers ----------
     const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-
-    const norm = s =>
-      String(s || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9 ]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
 
     function factorial(n) {
       let r = 1;
@@ -36,63 +26,45 @@ window.runPrediction = function (p) {
       return Math.exp(-mu) * Math.pow(mu, k) / factorial(k);
     }
 
-    // ---------- get league ----------
+    // ---------- league ----------
     const leagueObj = xgRaw?.[league];
-    if (!leagueObj) throw new Error("League not found in xg_tables.json");
+    if (!leagueObj) throw new Error("League missing");
 
     const leagueFactor = leagueObj.__league_factor || 1.0;
 
-    // ---------- resolve team ----------
-    function getTeam(team) {
-      const n = norm(team);
-      for (const key of Object.keys(leagueObj)) {
-        if (key.startsWith("__")) continue;
-        if (norm(key) === n) return leagueObj[key];
-      }
-      return null;
+    function findTeam(name) {
+      const n = name.toLowerCase().trim();
+      return Object.entries(leagueObj).find(
+        ([k]) => !k.startsWith("__") && k.toLowerCase() === n
+      )?.[1];
     }
 
-    const homeT = getTeam(home);
-    const awayT = getTeam(away);
+    const homeT = findTeam(home);
+    const awayT = findTeam(away);
 
-    if (!homeT || !awayT)
-      throw new Error("Team name mismatch in xg_tables.json");
+    if (!homeT || !awayT) throw new Error("Team mismatch");
 
-    // ---------- expected goals ----------
+    // ---------- xG ----------
     const muHome =
-      baseGoals *
-      leagueFactor *
-      homeT.att *
-      awayT.def *
-      homeAdv;
+      baseGoals * leagueFactor * homeT.att * awayT.def * homeAdv;
 
     const muAway =
-      baseGoals *
-      leagueFactor *
-      awayT.att *
-      homeT.def;
+      baseGoals * leagueFactor * awayT.att * homeT.def;
 
     const cap = clamp(parseInt(capGoals || 8), 6, 12);
 
-    // ---------- probability grid ----------
-    let bestScore = "0-0";
-    let bestProb = -1;
+    let pW = 0, pD = 0, pL = 0;
+    let pOver25 = 0, pUnder25 = 0, pBTTS = 0;
+    let bestScore = "0-0", bestProb = -1;
 
-    let pW = 0,
-      pD = 0,
-      pL = 0,
-      pOver25 = 0,
-      pUnder25 = 0,
-      pBTTS = 0;
-
-    const topScores = [];
+    const top = [];
 
     for (let hg = 0; hg <= cap; hg++) {
       for (let ag = 0; ag <= cap; ag++) {
         const prob = poisson(hg, muHome) * poisson(ag, muAway);
         const score = `${hg}-${ag}`;
 
-        topScores.push([score, prob]);
+        top.push([score, prob]);
 
         if (prob > bestProb) {
           bestProb = prob;
@@ -110,15 +82,15 @@ window.runPrediction = function (p) {
       }
     }
 
-    topScores.sort((a, b) => b[1] - a[1]);
-    const top5 = topScores
+    top.sort((a, b) => b[1] - a[1]);
+    const top5 = top
       .slice(0, 5)
       .map(([s, p]) => `${s} (${(p * 100).toFixed(1)}%)`)
       .join("\n");
 
-    // ---------- Asian Handicap lean ----------
+    // ---------- Asian Handicap (SAFE) ----------
     let ahLean = "N/A";
-    if (ahSide && ahLine !== undefined) {
+    if (ahSide && ahLine !== null && !isNaN(parseFloat(ahLine))) {
       const line = parseFloat(ahLine);
       if (ahSide === "Home") {
         ahLean = pW + pD * 0.5 > 0.5 ? `Home ${line}` : "No edge";
@@ -127,26 +99,24 @@ window.runPrediction = function (p) {
       }
     }
 
-    // ---------- output ----------
     alert(
       `MatchQuant says\n\n` +
-        `${home} vs ${away}\n\n` +
-        `Win Probabilities:\n` +
-        `${home}: ${(pW * 100).toFixed(1)}%\n` +
-        `Draw: ${(pD * 100).toFixed(1)}%\n` +
-        `${away}: ${(pL * 100).toFixed(1)}%\n\n` +
-        `Most Likely Score: ${bestScore}\n\n` +
-        `O/U 2.5:\n` +
-        `Over 2.5: ${(pOver25 * 100).toFixed(1)}%\n` +
-        `Under 2.5: ${(pUnder25 * 100).toFixed(1)}%\n\n` +
-        `BTTS Yes: ${(pBTTS * 100).toFixed(1)}%\n\n` +
-        `Asian Handicap Lean:\n${ahLean}\n\n` +
-        `xG means:\n` +
-        `${home}: ${muHome.toFixed(2)}\n` +
-        `${away}: ${muAway.toFixed(2)}\n\n` +
-        `Top 5 Scorelines:\n${top5}`
+      `${home} vs ${away}\n\n` +
+      `Win Probabilities:\n` +
+      `${home}: ${(pW * 100).toFixed(1)}%\n` +
+      `Draw: ${(pD * 100).toFixed(1)}%\n` +
+      `${away}: ${(pL * 100).toFixed(1)}%\n\n` +
+      `Most Likely Score: ${bestScore}\n\n` +
+      `O/U 2.5:\n` +
+      `Over 2.5: ${(pOver25 * 100).toFixed(1)}%\n` +
+      `Under 2.5: ${(pUnder25 * 100).toFixed(1)}%\n\n` +
+      `BTTS Yes: ${(pBTTS * 100).toFixed(1)}%\n\n` +
+      `Asian Handicap Lean:\n${ahLean}\n\n` +
+      `xG means:\n${home}: ${muHome.toFixed(2)}\n${away}: ${muAway.toFixed(2)}\n\n` +
+      `Top 5 Scorelines:\n${top5}`
     );
-  } catch (err) {
-    alert(`MatchQuant error:\n${err.message}`);
+
+  } catch (e) {
+    alert("Prediction error:\n" + e.message);
   }
 };
