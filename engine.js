@@ -202,3 +202,34 @@ window.runPrediction = function runPrediction(params) {
   </div>
   `;
 };
+// ---- MatchQuant bridge (required by app.js) ----
+// This exposes a stable function the UI can call.
+window.runMatchQuant = function (payload) {
+  try {
+    // If your engine already has a function, call it here:
+    // Replace runEngine with your real internal function name if needed.
+    const fn =
+      window._runEngine ||
+      window.runEngine ||
+      window.predict ||
+      window.predictMatchInternal ||
+      window.simulateMatch;
+
+    if (typeof fn === "function") {
+      return fn(payload);
+    }
+
+    // If there is no internal function yet, return a clear message:
+    return `<div class="card">
+      <div style="font-weight:700;">Engine not wired</div>
+      <div style="opacity:.85;margin-top:8px;">
+        engine.js needs an internal function (runEngine / simulateMatch etc) or you must update this wrapper to call your real function.
+      </div>
+    </div>`;
+  } catch (e) {
+    return `<div class="card">
+      <div style="font-weight:700;">Engine error</div>
+      <div style="margin-top:8px;opacity:.85;">${String(e.message || e)}</div>
+    </div>`;
+  }
+};
