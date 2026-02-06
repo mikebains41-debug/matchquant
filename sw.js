@@ -1,4 +1,4 @@
-const CACHE_NAME = "matchquant-v1";
+const CACHE_NAME = "matchquant-v2";
 
 const ASSETS = [
   "./",
@@ -7,10 +7,11 @@ const ASSETS = [
   "./app.js",
   "./engine.js",
   "./manifest.json",
-  "./data/teams.json",
-  "./data/xg_2025_2026.json",
   "./fixtures.json",
-  "./h2h.json"
+  "./h2h.json",
+  "./data/xg_2025_2026.json",
+  "./data/aliases.json",
+  "./data/league_strength.json"
 ];
 
 self.addEventListener("install", (e) => {
@@ -21,8 +22,6 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("fetch", (e) => {
   e.respondWith(
-    caches.match(e.request).then(
-      (res) => res || fetch(e.request)
-    )
+    caches.match(e.request).then((res) => res || fetch(e.request))
   );
 });
