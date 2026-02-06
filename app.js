@@ -40,24 +40,28 @@
   function fillSelect(sel, values, placeholder) {
     resetSelect(sel, placeholder, false);
     values.forEach((v) => sel.appendChild(opt(v, v)));
-    sel.disabled = false; // force enable
+    sel.disabled = false;
   }
 
   async function loadTeams() {
-    // ✅ correct path (your teams.json is in /data)
+    // teams.json is in /data
     const res = await fetch("./data/teams.json", { cache: "no-store" });
     if (!res.ok) throw new Error(`teams.json failed (${res.status})`);
-    const json = await res.json();
-    return json;
+    return await res.json();
   }
 
   function findEngine() {
+    // Your engine exposes window.MQ.predictMatchInternal
+    if (window.MQ && typeof window.MQ.predictMatchInternal === "function") {
+      return window.MQ.predictMatchInternal;
+    }
+    // fallback if you later expose these
     return window.predictMatch || window.simulateMatch || window.predict;
   }
 
   function wireLeagueUpdate(updateTeams) {
-    // Android sometimes fails to fire "change" reliably, so use multiple
-    ["change", "input", "click", "touchend"].forEach((ev) => {
+    // Android select sometimes misses "change" — use multiple signals
+    ["change", "input", "blur", "focusout"].forEach((ev) => {
       el.league.addEventListener(ev, () => {
         setTimeout(updateTeams, 0);
         setTimeout(updateTeams, 50);
@@ -81,10 +85,9 @@
 
       const teamsByLeague = await loadTeams();
       const leagues = Object.keys(teamsByLeague).sort();
-
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
 
-      // fill leagues
+      // Fill leagues
       resetSelect(el.league, "Select league", false);
       leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
       el.league.disabled = false;
@@ -127,18 +130,23 @@
           return setResults(`
             <div class="card">
               <b>Run button works ✅</b><br><br>
-              But engine.js is not exposing a function.<br>
-              Expected one of:
-              <ul>
-                <li>window.predictMatch</li>
-                <li>window.simulateMatch</li>
-                <li>window.predict</li>
-              </ul>
+              But engine.js isn’t exposing a callable function.<br>
+              Expected: <code>window.MQ.predictMatchInternal</code>
             </div>
           `);
         }
 
-        const payload = { league, home, away, sims: Number(el.sims?.value || 10000) };
+        // Note: engine.js expects leagueName/homeTeam/awayTeam
+        const payload = {
+          leagueName: league,
+          homeTeam: home,
+          awayTeam: away,
+          sims: Number(el.sims?.value || 10000),
+          // you can wire these later if you want:
+          // homeAdv: Number(document.getElementById("homeAdv")?.value || 1.1),
+          // baseGoals: Number(document.getElementById("baseGoals")?.value || 1.35),
+          // goalCap: Number(document.getElementById("goalCap")?.value || 8),
+        };
 
         try {
           const out = engine(payload);
@@ -157,7 +165,6 @@
 
       // debug
       window.__teamsByLeague = teamsByLeague;
-
     } catch (e) {
       console.error(e);
       status("App error");
@@ -167,3 +174,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+```0
