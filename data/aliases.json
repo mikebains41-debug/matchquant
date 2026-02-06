@@ -1,0 +1,30 @@
+{
+  "Premier League": {
+    "man utd": "Manchester United",
+    "man united": "Manchester United",
+    "spurs": "Tottenham",
+    "wolves": "Wolverhampton",
+    "brighton & hove albion": "Brighton"
+  },
+  "La Liga": {
+    "atleti": "Atletico Madrid",
+    "athletic club": "Athletic Bilbao",
+    "real sociedad": "Real Sociedad"
+  },
+  "Serie A": {
+    "inter milan": "Inter",
+    "internazionale": "Inter",
+    "juve": "Juventus"
+  },
+  "Bundesliga": {
+    "bayern": "Bayern Munich",
+    "rb leipzig": "RB Leipzig"
+  },
+  "Ligue 1": {
+    "paris sg": "PSG",
+    "paris saint-germain": "PSG"
+  },
+  "Primeira Liga": {
+    "sporting": "Sporting CP"
+  }
+}
