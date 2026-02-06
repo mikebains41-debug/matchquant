@@ -1,113 +1,89 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
-  <link rel="stylesheet" href="style.css?v=400" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1323" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <header class="hero">
+  <!-- HERO -->
+  <section class="hero">
     <div class="hero-inner">
       <h1>MatchQuant</h1>
-      <p>Soccer Prediction Engine (Poisson + Pro Markets)</p>
+      <p>Professional xG-based football predictions</p>
     </div>
-  </header>
+  </section>
 
+  <!-- APP -->
   <main class="wrap">
-    <section class="card">
-      <h2>Inputs</h2>
 
-      <div class="grid">
+    <div class="card">
+      <h2>Match Setup</h2>
+
+      <div class="grid2">
         <div class="field">
-          <label for="leagueSelect">League</label>
-          <select id="leagueSelect">
-            <option value="">Select league</option>
+          <label for="league">League</label>
+          <select id="league"></select>
+        </div>
+
+        <div class="field">
+          <label for="home">Home Team</label>
+          <select id="home" disabled></select>
+        </div>
+
+        <div class="field">
+          <label for="away">Away Team</label>
+          <select id="away" disabled></select>
+        </div>
+
+        <div class="field">
+          <label for="sims">Simulations</label>
+          <select id="sims">
+            <option value="5000">5,000</option>
+            <option value="10000" selected>10,000</option>
+            <option value="20000">20,000</option>
           </select>
-          <div class="hint" id="statusLine">Loading…</div>
-        </div>
-
-        <div class="field">
-          <label for="homeTeam">Home Team</label>
-          <select id="homeTeam" disabled>
-            <option value="">Select home team</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="awayTeam">Away Team</label>
-          <select id="awayTeam" disabled>
-            <option value="">Select away team</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="sims">Sims</label>
-          <input id="sims" type="number" value="10000" min="1000" step="1000" />
-        </div>
-
-        <div class="field">
-          <label for="homeAdv">Home Advantage</label>
-          <input id="homeAdv" type="number" value="1.10" step="0.01" />
-        </div>
-
-        <div class="field">
-          <label for="baseGoals">Base Goals</label>
-          <input id="baseGoals" type="number" value="1.35" step="0.01" />
-        </div>
-
-        <div class="field">
-          <label for="goalCap">Goal Cap</label>
-          <input id="goalCap" type="number" value="8" min="4" max="12" step="1" />
         </div>
       </div>
 
-      <div class="actions">
-        <button id="runBtn" class="btn primary" type="button">Run Predictions</button>
-        <button id="resetBtn" class="btn" type="button">Reset</button>
-      </div>
-    </section>
+      <button id="runBtn" class="btn">
+        Run Prediction
+      </button>
 
-    <section class="card">
+      <div id="statusline" class="status"></div>
+    </div>
+
+    <div class="card">
       <h2>Results</h2>
       <div id="results" class="results">
-        Pick league + teams, then press <b>Run Predictions</b>.
+        Select a league and teams, then press <b>Run Prediction</b>.
       </div>
-    </section>
+    </div>
+
   </main>
 
+  <!-- FOOTER -->
   <footer class="foot">
-    © 2026 MatchQuant. All rights reserved.<br />
-    Probabilistic model — not betting advice.
+    MatchQuant • xG Engine • Fair Odds • No Bookmaker Bias
   </footer>
 
-  <!-- IMPORTANT: order matters -->
-  <script src="engine.js?v=400"></script>
-  <script src="app.js?v=400"></script>
+  <!-- SCRIPTS (ORDER MATTERS) -->
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
 
-  <!-- Reset -->
+  <!-- SERVICE WORKER -->
   <script>
-    (() => {
-      const resetBtn = document.getElementById("resetBtn");
-      if (!resetBtn) return;
-
-      resetBtn.addEventListener("click", () => {
-        const league = document.getElementById("leagueSelect");
-        const home = document.getElementById("homeTeam");
-        const away = document.getElementById("awayTeam");
-        const results = document.getElementById("results");
-        const status = document.getElementById("statusLine");
-
-        if (league) league.value = "";
-        if (home) { home.innerHTML = "<option value=''>Select home team</option>"; home.disabled = true; }
-        if (away) { away.innerHTML = "<option value=''>Select away team</option>"; away.disabled = true; }
-
-        if (results) results.innerHTML =
-          "Pick league + teams, then press <b>Run Predictions</b>.";
-        if (status) status.textContent = "Reset. Select a league.";
-      });
-    })();
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
   </script>
 </body>
 </html>
