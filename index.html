@@ -10,6 +10,7 @@
 <body>
   <main class="wrap">
     <h1>MatchQuant</h1>
+    <p class="sub">Soccer Prediction Engine (Poisson + Pro Markets)</p>
 
     <div class="grid">
       <label>League
@@ -28,7 +29,7 @@
         <select id="away"></select>
       </label>
 
-      <label>Sims
+      <label>Sims (kept for UI)
         <input id="sims" type="number" value="10000" />
       </label>
 
@@ -44,7 +45,77 @@
         <input id="capGoals" type="number" value="8" />
       </label>
 
-      <button id="runBtn" type="button">Run Prediction</button>
+      <div class="divider"></div>
+
+      <h2 class="section">Odds (optional) — for EV badges</h2>
+
+      <label>Home ML odds
+        <input id="oddsHome" type="number" step="0.01" placeholder="e.g. 1.85" />
+      </label>
+
+      <label>Draw odds
+        <input id="oddsDraw" type="number" step="0.01" placeholder="e.g. 3.60" />
+      </label>
+
+      <label>Away ML odds
+        <input id="oddsAway" type="number" step="0.01" placeholder="e.g. 4.20" />
+      </label>
+
+      <label>Over 2.5 odds
+        <input id="oddsOver25" type="number" step="0.01" placeholder="e.g. 1.95" />
+      </label>
+
+      <label>Under 2.5 odds
+        <input id="oddsUnder25" type="number" step="0.01" placeholder="e.g. 1.90" />
+      </label>
+
+      <label>BTTS Yes odds
+        <input id="oddsBTTSYes" type="number" step="0.01" placeholder="e.g. 1.80" />
+      </label>
+
+      <label>BTTS No odds
+        <input id="oddsBTTSNo" type="number" step="0.01" placeholder="e.g. 2.05" />
+      </label>
+
+      <div class="divider"></div>
+
+      <h2 class="section">Asian Handicap (optional)</h2>
+
+      <label>AH Side
+        <select id="ahSide">
+          <option value="home">Home</option>
+          <option value="away">Away</option>
+        </select>
+      </label>
+
+      <label>AH Line
+        <select id="ahLine">
+          <option value="-1.5">-1.5</option>
+          <option value="-1.25">-1.25</option>
+          <option value="-1.0">-1.0</option>
+          <option value="-0.75">-0.75</option>
+          <option value="-0.5">-0.5</option>
+          <option value="-0.25" selected>-0.25</option>
+          <option value="0">0</option>
+          <option value="0.25">+0.25</option>
+          <option value="0.5">+0.5</option>
+          <option value="0.75">+0.75</option>
+          <option value="1.0">+1.0</option>
+          <option value="1.25">+1.25</option>
+          <option value="1.5">+1.5</option>
+        </select>
+      </label>
+
+      <label>AH Odds
+        <input id="ahOdds" type="number" step="0.01" placeholder="e.g. 1.95" />
+      </label>
+
+      <button id="runBtn" type="button" class="cta">Run Prediction</button>
+    </div>
+
+    <div class="panel">
+      <h2 class="section">Results</h2>
+      <pre id="results" class="results">Pick league + teams, then press Run Prediction.</pre>
     </div>
 
     <div id="footerLoaded" class="footer"></div>
@@ -54,4 +125,4 @@
   <script src="engine.js"></script>
   <script src="app.js"></script>
 </body>
-</html>
+        </html>
