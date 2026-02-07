@@ -111,8 +111,22 @@
   },
 
   "Primeira Liga": {
-    "Benfica": { "xg": 1.920, "xga": 0.920 },
-    "Sporting CP": { "xg": 1.830, "xga": 0.490 },
-    "Porto": { "xg": 1.720, "xga": 0.470 }
+    "Arouca": { "xg": 1.12, "xga": 1.48 },
+    "AVS": { "xg": 0.78, "xga": 1.93 },
+    "Benfica": { "xg": 1.92, "xga": 0.92 },
+    "Boavista": { "xg": 1.05, "xga": 1.61 },
+    "Braga": { "xg": 1.74, "xga": 1.21 },
+    "Casa Pia": { "xg": 1.01, "xga": 1.29 },
+    "Estoril": { "xg": 1.18, "xga": 1.44 },
+    "Famalicao": { "xg": 1.22, "xga": 1.36 },
+    "Farense": { "xg": 0.97, "xga": 1.52 },
+    "Gil Vicente": { "xg": 1.09, "xga": 1.47 },
+    "Moreirense": { "xg": 1.11, "xga": 1.33 },
+    "Nacional": { "xg": 0.95, "xga": 1.58 },
+    "Portimonense": { "xg": 0.93, "xga": 1.63 },
+    "Porto": { "xg": 1.72, "xga": 0.47 },
+    "Rio Ave": { "xg": 1.08, "xga": 1.42 },
+    "Sporting CP": { "xg": 1.83, "xga": 0.49 },
+    "Vitoria Guimaraes": { "xg": 1.34, "xga": 1.18 }
   }
 }
