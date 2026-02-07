@@ -1,4 +1,4 @@
-/* app.js — MatchQuant (home/away xG splits + safe league avg fallback) */
+/* app.js — MatchQuant (home/away xG splits + safe league avg fallback + cards/corners) */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -17,7 +17,8 @@
       .trim()
       .toLowerCase()
       .replace(/\s+/g, " ")
-      .replace(/[’']/g, "");
+      .replace(/[’']/g, "")
+      .replace(/[.]/g, "");
 
   function status(msg) {
     if (el.status) el.status.textContent = msg;
@@ -89,7 +90,9 @@
       return { xg: baseGoals, xga: baseGoals };
     }
 
-    let sxg = 0, sxga = 0, n = 0;
+    let sxg = 0,
+      sxga = 0,
+      n = 0;
 
     for (const [team, row] of Object.entries(table)) {
       if (!row || team.startsWith("__")) continue;
@@ -129,10 +132,34 @@
     const axga = Number(row.away_xga);
 
     const ok =
-      Number.isFinite(hxg) && Number.isFinite(hxga) &&
-      Number.isFinite(axg) && Number.isFinite(axga);
+      Number.isFinite(hxg) &&
+      Number.isFinite(hxga) &&
+      Number.isFinite(axg) &&
+      Number.isFinite(axga);
 
     return ok ? { home_xg: hxg, home_xga: hxga, away_xg: axg, away_xga: axga } : null;
+  }
+
+  // cards/corners row format:
+  // { cards_for, cards_against, corners_for, corners_against, d4? }
+  function getCardsCorners(cardsCorners, league, team) {
+    const row = cardsCorners?.[league]?.[team];
+    if (!row) return null;
+
+    const cf = Number(row.cards_for);
+    const ca = Number(row.cards_against);
+    const kof = Number(row.corners_for);
+    const koa = Number(row.corners_against);
+
+    const ok =
+      Number.isFinite(cf) &&
+      Number.isFinite(ca) &&
+      Number.isFinite(kof) &&
+      Number.isFinite(koa);
+
+    return ok
+      ? { cards_for: cf, cards_against: ca, corners_for: kof, corners_against: koa, d4: row.d4 }
+      : null;
   }
 
   async function init() {
@@ -155,11 +182,23 @@
       let xgSplits = {};
       let leagueStrength = {};
       let aliases = {};
+      let cardsCorners = {};
 
-      try { xgTables = await fetchJson("./data/xg_2025_2026.json"); } catch {}
-      try { xgSplits = await fetchJson("./data/xg_home_away_2025_2026.json"); } catch {}
-      try { leagueStrength = await fetchJson("./data/league_strength.json"); } catch {}
-      try { aliases = await fetchJson("./data/aliases.json"); } catch {}
+      try {
+        xgTables = await fetchJson("./data/xg_2025_2026.json");
+      } catch {}
+      try {
+        xgSplits = await fetchJson("./data/xg_home_away_2025_2026.json");
+      } catch {}
+      try {
+        leagueStrength = await fetchJson("./data/league_strength.json");
+      } catch {}
+      try {
+        aliases = await fetchJson("./data/aliases.json");
+      } catch {}
+      try {
+        cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json");
+      } catch {}
 
       const leagues = Object.keys(teamsByLeague || {}).sort();
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
@@ -212,7 +251,8 @@
         // league multiplier
         let leagueMult = 1.0;
         if (typeof leagueStrength?.[league] === "number") leagueMult = leagueStrength[league];
-        else if (typeof xgTables?.[league]?.__league_factor === "number") leagueMult = xgTables[league].__league_factor;
+        else if (typeof xgTables?.[league]?.__league_factor === "number")
+          leagueMult = xgTables[league].__league_factor;
 
         const baseGoals = 1.35;
         const homeAdv = 1.10;
@@ -227,9 +267,9 @@
         const overallA = safeOverallOrLeagueAvg(xgTables, league, aliAway, baseGoals);
 
         // home uses HOME split; away uses AWAY split
-        const home_xg  = splitH?.home_xg  ?? overallH.xg;
+        const home_xg = splitH?.home_xg ?? overallH.xg;
         const home_xga = splitH?.home_xga ?? overallH.xga;
-        const away_xg  = splitA?.away_xg  ?? overallA.xg;
+        const away_xg = splitA?.away_xg ?? overallA.xg;
         const away_xga = splitA?.away_xga ?? overallA.xga;
 
         // convert to multipliers around base
@@ -240,6 +280,20 @@
 
         const xgHome = baseGoals * H_att * A_def;
         const xgAway = baseGoals * A_att * H_def;
+
+        // Cards & Corners (C,D1,D2,D3)
+        const ccH = getCardsCorners(cardsCorners, league, aliHome);
+        const ccA = getCardsCorners(cardsCorners, league, aliAway);
+
+        const cardsHome =
+          ccH && ccA ? (ccH.cards_for + ccA.cards_against) / 2 : null;
+        const cardsAway =
+          ccH && ccA ? (ccA.cards_for + ccH.cards_against) / 2 : null;
+
+        const cornersHome =
+          ccH && ccA ? (ccH.corners_for + ccA.corners_against) / 2 : null;
+        const cornersAway =
+          ccH && ccA ? (ccA.corners_for + ccH.corners_against) / 2 : null;
 
         const out = engine({
           leagueName: league,
@@ -261,6 +315,8 @@
 
         const toPct = (x) => (x * 100).toFixed(1) + "%";
         const fairOdds = (p) => (!p || p <= 0 ? "—" : (1 / p).toFixed(2));
+
+        const fmt = (x, d = 2) => (x == null ? "—" : Number(x).toFixed(d));
 
         setResults(`
           <div style="font-size:18px;font-weight:800;margin-bottom:6px;">
@@ -287,9 +343,18 @@
             Away: <b>${toPct(x12.away)}</b> (fair <b>${fairOdds(x12.away)}</b>)
           </div>
 
+          <hr style="border:0;border-top:1px solid rgba(255,255,255,.08);margin:12px 0;">
+
+          <div style="font-weight:800;margin-bottom:6px;">Cards & Corners (model)</div>
+          <div style="line-height:1.6;">
+            Cards: Home <b>${fmt(cardsHome, 2)}</b> • Away <b>${fmt(cardsAway, 2)}</b><br>
+            Corners: Home <b>${fmt(cornersHome, 2)}</b> • Away <b>${fmt(cornersAway, 2)}</b>
+          </div>
+
           <div style="margin-top:12px;opacity:.75;font-size:12px;">
             Splits used: Home(${splitH ? "home split" : "overall/league avg"}) • Away(${splitA ? "away split" : "overall/league avg"})
             <br/>Raw xG used: H xg=${home_xg.toFixed(2)} xga=${home_xga.toFixed(2)} • A xg=${away_xg.toFixed(2)} xga=${away_xga.toFixed(2)}
+            <br/>Cards/Corners: ${ccH && ccA ? "team rows found ✅" : "missing rows (check team names/aliases) ⚠️"}
           </div>
         `);
 
@@ -307,3 +372,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+```0
