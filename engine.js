@@ -1,13 +1,18 @@
-// engine.js — MatchQuant Engine (Goals + Totals + Team Totals + Asian Handicap (quarter lines) + Cards + Corners)
-// Exposes: window.MQ.predictMatchInternal(payload)
-// NOTE: This is a full replacement for your current engine.js
+// engine.js — MatchQuant Engine (WORKING DROP-IN)
+// ✅ Goals + 1X2 + O/U + BTTS + Team Totals + Asian Handicap (FULL: incl quarter lines) + Cards + Corners
+// ✅ No "export" / no modules — works on GitHub Pages
+// ✅ Exposes: window.MQ.predictMatchInternal(payload)
+// ✅ Compatible with your app.js call style (sync)
+
+// NOTE: Your app.js MUST pass cardsHome/cardsAway/cornersHome/cornersAway if you want those to be team-specific.
+// If it doesn’t, engine will use sensible league defaults.
 
 (() => {
+  // -------------------------
+  // Helpers
+  // -------------------------
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-  // -------------------------
-  // Math helpers
-  // -------------------------
   function factorial(n) {
     n = n | 0;
     if (n < 0) return NaN;
@@ -22,13 +27,13 @@
     return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k);
   }
 
-  function fairOdds(p) {
+  function fairOddsFromProb(p) {
     if (!(p > 0)) return null;
     return +(1 / p).toFixed(2);
   }
 
   // -------------------------
-  // Goals grid (home goals x away goals)
+  // Score grid (H goals x A goals)
   // -------------------------
   function buildScoreGrid(lamH, lamA, goalCap = 8) {
     const cap = clamp(parseInt(goalCap || 8, 10), 4, 12);
@@ -46,7 +51,7 @@
       }
     }
 
-    // normalize (cap truncation loses tail mass)
+    // Normalize because goalCap truncates tail mass
     if (sum > 0) {
       for (let h = 0; h <= cap; h++) {
         for (let a = 0; a <= cap; a++) grid[h][a] /= sum;
@@ -83,9 +88,9 @@
     }
     return {
       home, draw, away,
-      homeOdds: fairOdds(home),
-      drawOdds: fairOdds(draw),
-      awayOdds: fairOdds(away)
+      homeOdds: fairOddsFromProb(home),
+      drawOdds: fairOddsFromProb(draw),
+      awayOdds: fairOddsFromProb(away),
     };
   }
 
@@ -101,7 +106,7 @@
         else under += p;
       }
     }
-    return { over, under, overOdds: fairOdds(over), underOdds: fairOdds(under) };
+    return { over, under, overOdds: fairOddsFromProb(over), underOdds: fairOddsFromProb(under) };
   }
 
   function calcBTTS(grid) {
@@ -116,167 +121,147 @@
         else no += p;
       }
     }
-    return { yes, no, yesOdds: fairOdds(yes), noOdds: fairOdds(no) };
+    return { yes, no, yesOdds: fairOddsFromProb(yes), noOdds: fairOddsFromProb(no) };
   }
 
   // -------------------------
-  // Asian Handicap — FAIR ODDS from score grid (supports quarter lines correctly)
-  // Returns HOME side W/P/L & DNB fair odds per line
+  // Asian Handicap (FULL: integer/half/quarter)
+  // We compute W/P/L for HOME and AWAY directly from the score grid.
+  // "fairOdds" is DNB fair (push removed): 1 / (win/(win+lose))
   // -------------------------
-  function computeAsianHandicapFair(scoreProb, maxGoals = 10) {
-    const clampInt = (n, lo, hi) => Math.max(lo, Math.min(hi, n | 0));
+  function buildDiffDistribution(scoreProb, maxGoals) {
+    const MG = maxGoals;
+    const offset = MG;
+    const diffProb = Array(2 * MG + 1).fill(0);
 
-    // Build goal-diff distribution: diff = H - A, integer range [-maxGoals, +maxGoals]
-    const offset = maxGoals;
-    const diffProb = Array(2 * maxGoals + 1).fill(0);
-
-    for (let h = 0; h <= maxGoals; h++) {
+    for (let h = 0; h <= MG; h++) {
       const row = scoreProb[h] || {};
-      for (let a = 0; a <= maxGoals; a++) {
+      for (let a = 0; a <= MG; a++) {
         const p = Number(row[a] ?? 0);
         if (!p) continue;
         const d = h - a;
-        if (d < -maxGoals || d > maxGoals) continue;
+        if (d < -MG || d > MG) continue;
         diffProb[d + offset] += p;
       }
     }
 
-    // Prefix sums for fast range queries
+    // Prefix sums for fast queries
     const pref = Array(diffProb.length + 1).fill(0);
     for (let i = 0; i < diffProb.length; i++) pref[i + 1] = pref[i] + diffProb[i];
 
     const sumIdx = (i0, i1) => {
-      i0 = clampInt(i0, 0, diffProb.length - 1);
-      i1 = clampInt(i1, 0, diffProb.length - 1);
+      i0 = Math.max(0, Math.min(diffProb.length - 1, i0 | 0));
+      i1 = Math.max(0, Math.min(diffProb.length - 1, i1 | 0));
       if (i1 < i0) return 0;
       return pref[i1 + 1] - pref[i0];
     };
 
-    const P_diff_ge = (x) => sumIdx(x + offset, maxGoals + offset);
-    const P_diff_gt = (x) => P_diff_ge(x + 1);
-    const P_diff_le = (x) => sumIdx(-maxGoals + offset, x + offset);
-    const P_diff_lt = (x) => P_diff_le(x - 1);
-    const P_diff_eq = (x) => diffProb[x + offset] ?? 0;
+    const P_ge = (x) => sumIdx(x + offset, MG + offset);
+    const P_gt = (x) => P_ge(x + 1);
+    const P_le = (x) => sumIdx(-MG + offset, x + offset);
+    const P_lt = (x) => P_le(x - 1);
+    const P_eq = (x) => diffProb[x + offset] ?? 0;
 
-    function evalHalfOrInt(line) {
-      let win = 0, push = 0, lose = 0;
+    return { P_ge, P_gt, P_le, P_lt, P_eq };
+  }
 
-      const isInteger = Math.abs(line - Math.round(line)) < 1e-12;
-      const isHalf = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12 && !isInteger;
+  function isQuarterOnly(line) {
+    const q = Math.round(line * 4);
+    const isQuarterStep = Math.abs(line * 4 - q) < 1e-12;
+    const isHalfStep = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12;
+    return isQuarterStep && !isHalfStep;
+  }
 
-      if (!isInteger && !isHalf) {
-        throw new Error("evalHalfOrInt only accepts integer or half lines");
-      }
+  function evalHalfOrIntFromDiff(dist, line) {
+    // line must be integer or half
+    const isInteger = Math.abs(line - Math.round(line)) < 1e-12;
+    const isHalf = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12 && !isInteger;
+    if (!isInteger && !isHalf) throw new Error("line must be integer or half");
 
-      if (isInteger) {
-        // Push when diff + line == 0 => diff == -line
-        const t = -Math.round(line);
-        win = P_diff_gt(t);
-        push = P_diff_eq(t);
-        lose = P_diff_lt(t);
-        return { win, push, lose };
-      }
-
-      // Half line => no push
-      const t = -line;                // x.5
-      const smallestWin = Math.floor(t) + 1; // first integer > t
-      const largestLose = Math.floor(t);     // last integer < t
-      win = P_diff_ge(smallestWin);
-      push = 0;
-      lose = P_diff_le(largestLose);
+    // Bet condition for HOME at line L:
+    // win if diff + L > 0
+    // push if diff + L == 0  (only possible for integer L)
+    // lose if diff + L < 0
+    if (isInteger) {
+      const t = -Math.round(line); // push at diff == t
+      const win = dist.P_gt(t);
+      const push = dist.P_eq(t);
+      const lose = dist.P_lt(t);
       return { win, push, lose };
     }
 
-    function isQuarterLine(line) {
-      const q = Math.round(line * 4);
-      const isQuarterStep = Math.abs(line * 4 - q) < 1e-12;
-      const isHalfStep = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12;
-      return isQuarterStep && !isHalfStep;
-    }
+    // half line: no push possible (diff integer, threshold x.5)
+    const t = -line;                 // x.5
+    const smallestWin = Math.floor(t) + 1; // first integer > t
+    const largestLose = Math.floor(t);     // last integer < t
+    const win = dist.P_ge(smallestWin);
+    const push = 0;
+    const lose = dist.P_le(largestLose);
+    return { win, push, lose };
+  }
 
-    function homeAhWPL(line) {
-      if (!isQuarterLine(line)) return evalHalfOrInt(line);
+  function evalAsianLineHome(dist, line) {
+    if (!isQuarterOnly(line)) return evalHalfOrIntFromDiff(dist, line);
 
-      // Split stake into two adjacent half-lines
-      const lower = Math.floor(line * 2) / 2;
-      const upper = lower + 0.5;
+    // quarter: split stake into adjacent half lines
+    const lower = Math.floor(line * 2) / 2;
+    const upper = lower + 0.5;
 
-      const a = evalHalfOrInt(lower);
-      const b = evalHalfOrInt(upper);
+    const a = evalHalfOrIntFromDiff(dist, lower);
+    const b = evalHalfOrIntFromDiff(dist, upper);
 
-      return {
-        win: 0.5 * (a.win + b.win),
-        push: 0.5 * (a.push + b.push),
-        lose: 0.5 * (a.lose + b.lose),
-      };
-    }
+    return {
+      win: 0.5 * (a.win + b.win),
+      push: 0.5 * (a.push + b.push),
+      lose: 0.5 * (a.lose + b.lose),
+    };
+  }
 
-    function toFair(wpl) {
-      const win = wpl.win;
-      const push = wpl.push;
-      const lose = wpl.lose;
+  function toDnbFair(wpl) {
+    const win = wpl.win, push = wpl.push, lose = wpl.lose;
+    const denom = win + lose;
+    const dnbWinProb = denom > 0 ? win / denom : 0;
+    const fairOdds = dnbWinProb > 0 ? +(1 / dnbWinProb).toFixed(2) : null;
+    return { win, push, lose, dnbWinProb, fairOdds };
+  }
 
-      // DNB-adjust: remove pushes
-      const denom = win + lose;
-      const dnbWinProb = denom > 0 ? win / denom : 0;
-      const fair = dnbWinProb > 0 ? 1 / dnbWinProb : null;
-
-      return {
-        win,
-        push,
-        lose,
-        dnbWinProb,
-        fairOdds: fair == null ? null : +fair.toFixed(2),
-      };
-    }
+  function buildAHPack(grid, goalCap = 8) {
+    const cap = clamp(parseInt(goalCap || 8, 10), 4, 12);
+    const dist = buildDiffDistribution(grid, cap);
 
     const lines = [
       -2, -1.75, -1.5, -1.25, -1, -0.75, -0.5, -0.25,
        0,  0.25,  0.5,  0.75,  1,  1.25,  1.5,  1.75, 2
     ];
 
-    return lines.map((line) => {
-      const wpl = homeAhWPL(line);
-      const f = toFair(wpl);
-      return {
-        line,
-        home_win: +f.win.toFixed(6),
-        home_push: +f.push.toFixed(6),
-        home_lose: +f.lose.toFixed(6),
-        home_dnbWinProb: +f.dnbWinProb.toFixed(6),
-        home_fair: f.fairOdds,
-      };
-    });
-  }
-
-  // Build AH pack (home + away) from the fair ladder
-  function buildAHPack(grid, goalCap = 8) {
-    const cap = clamp(parseInt(goalCap || 8, 10), 4, 12);
-    const ladder = computeAsianHandicapFair(grid, cap);
-
     const out = { home: {}, away: {} };
 
-    // HOME prices already computed
-    for (const r of ladder) {
-      out.home[String(r.line)] = {
-        win: r.home_win,
-        push: r.home_push,
-        lose: r.home_lose,
-        dnbWinProb: r.home_dnbWinProb,
-        fairOdds: r.home_fair,
-      };
-    }
+    for (const L of lines) {
+      // HOME at line L
+      const homeWPL = evalAsianLineHome(dist, L);
+      const home = toDnbFair(homeWPL);
 
-    // AWAY side = mirror the line for home (-line) using the same W/P/L but swapped win/lose
-    // Reason: Away +x equals Home -x
-    for (const r of ladder) {
-      const awayLine = -r.line;
-      out.away[String(awayLine)] = {
-        win: r.home_lose,
-        push: r.home_push,
-        lose: r.home_win,
-        dnbWinProb: +( (r.home_lose + r.home_win) > 0 ? (r.home_lose / (r.home_lose + r.home_win)) : 0 ).toFixed(6),
-        fairOdds: (r.home_lose > 0 ? +(1 / (r.home_lose / (r.home_lose + r.home_win))).toFixed(2) : null),
+      // AWAY at line L is same as HOME at line (-L) but with win/lose swapped on the *bet result*
+      // Easiest correct way:
+      // Compute HOME WPL at (-L), then map to AWAY WPL at (L):
+      const homeAtNeg = evalAsianLineHome(dist, -L);
+      const awayWPL = { win: homeAtNeg.lose, push: homeAtNeg.push, lose: homeAtNeg.win };
+      const away = toDnbFair(awayWPL);
+
+      out.home[String(L)] = {
+        win: +home.win.toFixed(6),
+        push: +home.push.toFixed(6),
+        lose: +home.lose.toFixed(6),
+        dnbWinProb: +home.dnbWinProb.toFixed(6),
+        fairOdds: home.fairOdds,
+      };
+
+      out.away[String(L)] = {
+        win: +away.win.toFixed(6),
+        push: +away.push.toFixed(6),
+        lose: +away.lose.toFixed(6),
+        dnbWinProb: +away.dnbWinProb.toFixed(6),
+        fairOdds: away.fairOdds,
       };
     }
 
@@ -284,8 +269,15 @@
   }
 
   // -------------------------
-  // Team totals packs
+  // Totals packs
   // -------------------------
+  function buildTotalsPack(grid) {
+    const lines = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5];
+    const out = {};
+    lines.forEach((ln) => (out[String(ln)] = calcOverUnder(grid, ln)));
+    return out;
+  }
+
   function calcTeamTotal(grid, team = "home", line = 1.5) {
     let over = 0, under = 0;
     for (const hStr of Object.keys(grid)) {
@@ -299,14 +291,7 @@
         else under += p;
       }
     }
-    return { over, under, overOdds: fairOdds(over), underOdds: fairOdds(under) };
-  }
-
-  function buildTotalsPack(grid) {
-    const lines = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5];
-    const out = {};
-    lines.forEach((ln) => (out[String(ln)] = calcOverUnder(grid, ln)));
-    return out;
+    return { over, under, overOdds: fairOddsFromProb(over), underOdds: fairOddsFromProb(under) };
   }
 
   function buildTeamTotalsPack(grid) {
@@ -320,7 +305,7 @@
   }
 
   // -------------------------
-  // 1D poisson totals for cards/corners
+  // Cards/Corners total models (1D Poisson)
   // -------------------------
   function build1DTotal(lambda, cap = 30) {
     const c = clamp(parseInt(cap || 30, 10), 10, 60);
@@ -332,17 +317,11 @@
       probs[k] = p;
       sum += p;
     }
-
-    if (sum > 0) {
-      for (let k = 0; k <= c; k++) probs[k] /= sum;
-    }
+    if (sum > 0) for (let k = 0; k <= c; k++) probs[k] /= sum;
 
     let bestK = 0, bestP = probs[0];
     for (let k = 1; k <= c; k++) {
-      if (probs[k] > bestP) {
-        bestP = probs[k];
-        bestK = k;
-      }
+      if (probs[k] > bestP) { bestP = probs[k]; bestK = k; }
     }
 
     return { lambda, cap: c, probs, mostLikelyTotal: { k: bestK, p: bestP } };
@@ -355,23 +334,22 @@
       if (k > line) over += p;
       else under += p;
     }
-    return { over, under, overOdds: fairOdds(over), underOdds: fairOdds(under) };
+    return { over, under, overOdds: fairOddsFromProb(over), underOdds: fairOddsFromProb(under) };
   }
 
   // -------------------------
-  // MAIN: app.js calls this synchronously
+  // MAIN entry (SYNC)
   // -------------------------
   function predictMatchInternal(payload) {
-    // required inputs
+    // Inputs from app.js
     const xgHome = Number(payload.xgHome ?? 1.35);
     const xgAway = Number(payload.xgAway ?? 1.35);
 
-    // tuning knobs
     const leagueMult = Number(payload.leagueMult ?? 1.0);
     const homeAdv = Number(payload.homeAdv ?? 1.10);
     const goalCap = clamp(parseInt(payload.goalCap ?? 8, 10), 4, 12);
 
-    // Goals lambdas
+    // Lambdas
     let lamH = xgHome * leagueMult * homeAdv;
     let lamA = xgAway * leagueMult;
 
@@ -380,18 +358,16 @@
 
     const { grid } = buildScoreGrid(lamH, lamA, goalCap);
 
-    // core
     const mostLikely = mostLikelyScore(grid);
     const x12 = calc1X2(grid);
     const ou25 = calcOverUnder(grid, 2.5);
     const btts = calcBTTS(grid);
 
-    // packs
     const totals = buildTotalsPack(grid);
     const teamTotals = buildTeamTotalsPack(grid);
-    const ah = buildAHPack(grid, goalCap); // quarter lines + DNB fair odds
+    const ah = buildAHPack(grid, goalCap);
 
-    // cards/corners inputs (optional: you can pass from your data file)
+    // Cards/Corners: if app.js passes cardsHome/cardsAway etc, we use them.
     const cardsHome = Number(payload.cardsHome);
     const cardsAway = Number(payload.cardsAway);
     const cornersHome = Number(payload.cornersHome);
@@ -400,7 +376,7 @@
     const haveCards = Number.isFinite(cardsHome) && Number.isFinite(cardsAway);
     const haveCorners = Number.isFinite(cornersHome) && Number.isFinite(cornersAway);
 
-    // defaults if not provided
+    // Defaults if not provided (league-ish typical)
     const cardsTotalLam = haveCards ? clamp(cardsHome + cardsAway, 1.5, 10.0) : 4.6;
     const cornersTotalLam = haveCorners ? clamp(cornersHome + cornersAway, 4.0, 18.0) : 9.8;
 
