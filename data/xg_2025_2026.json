@@ -110,9 +110,9 @@
     "Metz": { "xg": 0.974, "xga": 2.025 }
   },
 
-  "Portugal": {
+  "Primeira Liga": {
     "Benfica": { "xg": 1.92, "xga": 0.92 },
     "Sporting CP": { "xg": 1.83, "xga": 0.49 },
-    "FC Porto": { "xg": 1.72, "xga": 0.47 }
+    "Porto": { "xg": 1.72, "xga": 0.47 }
   }
 }
