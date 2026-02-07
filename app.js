@@ -1,4 +1,4 @@
-/* app.js — MatchQuant (home/away xG splits + safe league avg fallback + cards/corners) */
+/* app.js — MatchQuant (works with xg_tables.json {att, def} + cards/corners) */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -12,7 +12,6 @@
     status: $("statusLine"),
   };
 
-  // normalize for alias lookups
   const norm = (s) =>
     String(s || "")
       .trim()
@@ -58,19 +57,17 @@
   }
 
   function findEngine() {
-    if (window.MQ && typeof window.MQ.predictMatchInternal === "function") {
-      return window.MQ.predictMatchInternal;
-    }
-    return null;
+    return window.MQ && typeof window.MQ.predictMatchInternal === "function"
+      ? window.MQ.predictMatchInternal
+      : null;
   }
 
-  // Android fix: wire multiple events
   function wireLeagueUpdate(updateTeams) {
     ["change", "input", "click", "touchend"].forEach((ev) => {
       el.league?.addEventListener(ev, () => {
         setTimeout(updateTeams, 0);
-        setTimeout(updateTeams, 50);
-        setTimeout(updateTeams, 150);
+        setTimeout(updateTeams, 60);
+        setTimeout(updateTeams, 160);
       });
     });
   }
@@ -82,67 +79,34 @@
     return leagueAliases[key] || teamName;
   }
 
-  // --- league-level fallback averages ---
+  // ✅ xg_tables.json format: {att, def}
   function leagueAverages(xgTables, league, baseGoals = 1.35) {
     const table = xgTables?.[league];
-    if (!table || typeof table !== "object") {
-      return { xg: baseGoals, xga: baseGoals };
-    }
+    if (!table || typeof table !== "object") return { xg: baseGoals, xga: baseGoals };
 
-    let sxg = 0,
-      sxga = 0,
-      n = 0;
-
+    let sxg = 0, sxga = 0, n = 0;
     for (const [team, row] of Object.entries(table)) {
-      if (!row || team.startsWith("__")) continue;
-
-      const xg = Number(row.xg);
-      const xga = Number(row.xga);
-
+      if (!row || String(team).startsWith("__")) continue;
+      const xg = Number(row.att);
+      const xga = Number(row.def);
       if (Number.isFinite(xg) && Number.isFinite(xga)) {
-        sxg += xg;
-        sxga += xga;
-        n += 1;
+        sxg += xg; sxga += xga; n++;
       }
     }
-
     if (!n) return { xg: baseGoals, xga: baseGoals };
     return { xg: sxg / n, xga: sxga / n };
   }
 
-  // --- safe resolver: team → league avg → base ---
   function safeOverallOrLeagueAvg(xgTables, league, team, baseGoals = 1.35) {
     const row = xgTables?.[league]?.[team];
-    const xg = Number(row?.xg);
-    const xga = Number(row?.xga);
-
-    if (Number.isFinite(xg) && Number.isFinite(xga)) {
-      return { xg, xga };
-    }
+    const xg = Number(row?.att);
+    const xga = Number(row?.def);
+    if (Number.isFinite(xg) && Number.isFinite(xga)) return { xg, xga };
     return leagueAverages(xgTables, league, baseGoals);
   }
 
-  // split table format: { home_xg, home_xga, away_xg, away_xga }
-  function getSplit(xgSplits, league, team) {
-    const row = xgSplits?.[league]?.[team];
-    if (!row) return null;
-
-    const home_xg = Number(row.home_xg);
-    const home_xga = Number(row.home_xga);
-    const away_xg = Number(row.away_xg);
-    const away_xga = Number(row.away_xga);
-
-    const ok =
-      Number.isFinite(home_xg) &&
-      Number.isFinite(home_xga) &&
-      Number.isFinite(away_xg) &&
-      Number.isFinite(away_xga);
-
-    return ok ? { home_xg, home_xga, away_xg, away_xga } : null;
-  }
-
   // cards/corners row format:
-  // { cards_for, cards_against, corners_for, corners_against, d4? }
+  // { cards_for, cards_against, corners_for, corners_against }
   function getCardsCorners(cardsCorners, league, team) {
     const row = cardsCorners?.[league]?.[team];
     if (!row) return null;
@@ -158,15 +122,7 @@
       Number.isFinite(corners_for) &&
       Number.isFinite(corners_against);
 
-    return ok
-      ? {
-          cards_for,
-          cards_against,
-          corners_for,
-          corners_against,
-          d4: row.d4,
-        }
-      : null;
+    return ok ? { cards_for, cards_against, corners_for, corners_against } : null;
   }
 
   function fmtNum(x, d = 2) {
@@ -188,7 +144,7 @@
   async function init() {
     try {
       if (!el.league || !el.home || !el.away || !el.runBtn || !el.results) {
-        throw new Error("Missing HTML IDs. Make sure index.html IDs match app.js.");
+        throw new Error("Missing HTML IDs. index.html IDs must match app.js.");
       }
 
       resetSelect(el.league, "Select league", true);
@@ -202,26 +158,15 @@
 
       // optional data
       let xgTables = {};
-      let xgSplits = {};
       let leagueStrength = {};
       let aliases = {};
       let cardsCorners = {};
 
-      try {
-        xgTables = await fetchJson("./data/xg_2025_2026.json");
-      } catch {}
-      try {
-        xgSplits = await fetchJson("./data/xg_home_away_2025_2026.json");
-      } catch {}
-      try {
-        leagueStrength = await fetchJson("./data/league_strength.json");
-      } catch {}
-      try {
-        aliases = await fetchJson("./data/aliases.json");
-      } catch {}
-      try {
-        cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json");
-      } catch {}
+      // ✅ IMPORTANT: load your xg_tables.json
+      try { xgTables = await fetchJson("./data/xg_tables.json"); } catch {}
+      try { leagueStrength = await fetchJson("./data/league_strength.json"); } catch {}
+      try { aliases = await fetchJson("./data/aliases.json"); } catch {}
+      try { cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json"); } catch {}
 
       const leagues = Object.keys(teamsByLeague || {}).sort();
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
@@ -238,9 +183,7 @@
         if (!league) return status("Pick a league.");
 
         const teams = teamsByLeague[league];
-        if (!Array.isArray(teams) || !teams.length) {
-          return status(`No teams found for ${league}`);
-        }
+        if (!Array.isArray(teams) || !teams.length) return status(`No teams found for ${league}`);
 
         fillSelect(el.home, teams, "Select home team");
         fillSelect(el.away, teams, "Select away team");
@@ -281,30 +224,20 @@
         const homeAdv = 1.10;
         const goalCap = 8;
 
-        // xG splits first
-        const splitH = getSplit(xgSplits, league, aliHome);
-        const splitA = getSplit(xgSplits, league, aliAway);
-
-        // SAFE overall fallback (team -> league avg -> base)
+        // ✅ xG overall fallback (team -> league avg -> base)
         const overallH = safeOverallOrLeagueAvg(xgTables, league, aliHome, baseGoals);
         const overallA = safeOverallOrLeagueAvg(xgTables, league, aliAway, baseGoals);
 
-        // home uses HOME split; away uses AWAY split
-        const home_xg = splitH?.home_xg ?? overallH.xg;
-        const home_xga = splitH?.home_xga ?? overallH.xga;
-        const away_xg = splitA?.away_xg ?? overallA.xg;
-        const away_xga = splitA?.away_xga ?? overallA.xga;
-
         // convert to multipliers around base
-        const H_att = clamp(home_xg / baseGoals, 0.6, 1.8);
-        const H_def = clamp(home_xga / baseGoals, 0.6, 1.8);
-        const A_att = clamp(away_xg / baseGoals, 0.6, 1.8);
-        const A_def = clamp(away_xga / baseGoals, 0.6, 1.8);
+        const H_att = clamp(overallH.xg / baseGoals, 0.6, 1.8);
+        const H_def = clamp(overallH.xga / baseGoals, 0.6, 1.8);
+        const A_att = clamp(overallA.xg / baseGoals, 0.6, 1.8);
+        const A_def = clamp(overallA.xga / baseGoals, 0.6, 1.8);
 
         const xgHome = baseGoals * H_att * A_def;
         const xgAway = baseGoals * A_att * H_def;
 
-        // Cards & Corners (C,D1,D2,D3) — blend rule
+        // ✅ Cards & Corners (blend team for + opp against)
         const ccH = getCardsCorners(cardsCorners, league, aliHome);
         const ccA = getCardsCorners(cardsCorners, league, aliAway);
 
@@ -314,6 +247,7 @@
         const cornersHome = ccH && ccA ? (ccH.corners_for + ccA.corners_against) / 2 : null;
         const cornersAway = ccH && ccA ? (ccA.corners_for + ccH.corners_against) / 2 : null;
 
+        // ✅ IMPORTANT: pass cards/corners into engine payload
         const out = engine({
           leagueName: league,
           homeTeam: home,
@@ -325,12 +259,18 @@
           baseGoals,
           goalCap,
           sims: Number(el.sims?.value || 10000),
+          cardsHome,
+          cardsAway,
+          cornersHome,
+          cornersAway,
         });
 
         const x12 = out.x12 || {};
         const ou = out.ou25 || {};
         const btts = out.btts || {};
         const ml = out.mostLikely || {};
+        const cards = out.cards || {};
+        const corners = out.corners || {};
 
         setResults(`
           <div style="font-size:18px;font-weight:800;margin-bottom:6px;">
@@ -361,14 +301,21 @@
 
           <div style="font-weight:800;margin-bottom:6px;">Cards & Corners (model)</div>
           <div style="line-height:1.6;">
-            Cards: Home <b>${fmtNum(cardsHome, 2)}</b> • Away <b>${fmtNum(cardsAway, 2)}</b><br>
-            Corners: Home <b>${fmtNum(cornersHome, 2)}</b> • Away <b>${fmtNum(cornersAway, 2)}</b>
+            Team Cards (inputs): Home <b>${fmtNum(cardsHome, 2)}</b> • Away <b>${fmtNum(cardsAway, 2)}</b><br>
+            Team Corners (inputs): Home <b>${fmtNum(cornersHome, 2)}</b> • Away <b>${fmtNum(cornersAway, 2)}</b><br><br>
+
+            Total Cards λ: <b>${fmtNum(cards.lambdaTotal, 2)}</b> • Most likely total: <b>${cards?.mostLikelyTotal?.k ?? "—"}</b><br>
+            O4.5: <b>${toPct(cards?.ou45?.over)}</b> (fair <b>${fairOdds(cards?.ou45?.over)}</b>) •
+            U4.5: <b>${toPct(cards?.ou45?.under)}</b> (fair <b>${fairOdds(cards?.ou45?.under)}</b>)<br><br>
+
+            Total Corners λ: <b>${fmtNum(corners.lambdaTotal, 2)}</b> • Most likely total: <b>${corners?.mostLikelyTotal?.k ?? "—"}</b><br>
+            O9.5: <b>${toPct(corners?.ou95?.over)}</b> (fair <b>${fairOdds(corners?.ou95?.over)}</b>) •
+            U9.5: <b>${toPct(corners?.ou95?.under)}</b> (fair <b>${fairOdds(corners?.ou95?.under)}</b>)
           </div>
 
           <div style="margin-top:12px;opacity:.75;font-size:12px;">
-            Splits used: Home(${splitH ? "home split" : "overall/league avg"}) • Away(${splitA ? "away split" : "overall/league avg"})
-            <br/>Raw xG used: H xg=${home_xg.toFixed(2)} xga=${home_xga.toFixed(2)} • A xg=${away_xg.toFixed(2)} xga=${away_xga.toFixed(2)}
-            <br/>Cards/Corners: ${ccH && ccA ? "team rows found ✅" : "missing rows (check team names/aliases) ⚠️"}
+            xG source: xg_tables.json (att/def).<br/>
+            Cards/Corners rows: ${ccH && ccA ? "found ✅" : "missing ⚠️ (check team names/aliases + file in /data)"}
           </div>
         `);
 
@@ -386,4 +333,3 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
-```0
