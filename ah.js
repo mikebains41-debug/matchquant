@@ -52,7 +52,7 @@
         return { win, push, lose };
       }
 
-      const t = -line;                 // x.5
+      const t = -line; // x.5
       const smallestWin = Math.floor(t) + 1;
       const largestLose = Math.floor(t);
 
