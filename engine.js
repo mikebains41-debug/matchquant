@@ -21,8 +21,9 @@
   }
 
   function fairOdds(p) {
-    if (!(p > 0)) return null;
-    return +(1 / p).toFixed(2);
+    const pp = Number(p);
+    if (!Number.isFinite(pp) || pp <= 0) return null;
+    return +(1 / pp).toFixed(2);
   }
 
   function buildScoreGrid(lamH, lamA, goalCap = 8) {
@@ -41,7 +42,7 @@
       }
     }
 
-    // normalize truncated tail
+    // normalize truncated tail mass
     if (sum > 0) {
       for (let h = 0; h <= cap; h++) {
         for (let a = 0; a <= cap; a++) grid[h][a] /= sum;
@@ -116,7 +117,7 @@
 
   // 1D totals (cards/corners)
   function build1DTotal(lambda, cap = 30) {
-    const c = clamp(parseInt(cap || 30, 10), 10, 60);
+    const c = clamp(parseInt(cap || 30, 10), 10, 80);
     const probs = new Array(c + 1).fill(0);
 
     let sum = 0;
@@ -125,12 +126,14 @@
       probs[k] = p;
       sum += p;
     }
+
     if (sum > 0) for (let k = 0; k <= c; k++) probs[k] /= sum;
 
     let bestK = 0, bestP = probs[0];
     for (let k = 1; k <= c; k++) {
       if (probs[k] > bestP) { bestP = probs[k]; bestK = k; }
     }
+
     return { lambda, cap: c, probs, mostLikelyTotal: { k: bestK, p: bestP } };
   }
 
@@ -144,7 +147,13 @@
     return { over, under, overOdds: fairOdds(over), underOdds: fairOdds(under) };
   }
 
+  function toFiniteOrNull(x) {
+    const n = Number(x);
+    return Number.isFinite(n) ? n : null;
+  }
+
   function predictMatchInternal(payload) {
+    // ----- GOALS -----
     const xgHome = Number(payload.xgHome ?? 1.35);
     const xgAway = Number(payload.xgAway ?? 1.35);
 
@@ -152,7 +161,6 @@
     const homeAdv = Number(payload.homeAdv ?? 1.10);
     const goalCap = clamp(parseInt(payload.goalCap ?? 8, 10), 4, 12);
 
-    // these MUST vary per match if xgHome/xgAway vary
     let lamH = xgHome * leagueMult * homeAdv;
     let lamA = xgAway * leagueMult;
 
@@ -166,20 +174,21 @@
     const ou25 = calcOverUnder(grid, 2.5);
     const btts = calcBTTS(grid);
 
-    // cards/corners
-    const cardsHome = Number(payload.cardsHome);
-    const cardsAway = Number(payload.cardsAway);
-    const cornersHome = Number(payload.cornersHome);
-    const cornersAway = Number(payload.cornersAway);
+    // ----- CARDS / CORNERS -----
+    const cardsHome = toFiniteOrNull(payload.cardsHome);
+    const cardsAway = toFiniteOrNull(payload.cardsAway);
+    const cornersHome = toFiniteOrNull(payload.cornersHome);
+    const cornersAway = toFiniteOrNull(payload.cornersAway);
 
-    const haveCards = Number.isFinite(cardsHome) && Number.isFinite(cardsAway);
-    const haveCorners = Number.isFinite(cornersHome) && Number.isFinite(cornersAway);
+    const haveCards = cardsHome !== null && cardsAway !== null;
+    const haveCorners = cornersHome !== null && cornersAway !== null;
 
-    const cardsTotalLam = haveCards ? clamp(cardsHome + cardsAway, 1.5, 10.0) : 4.6;
-    const cornersTotalLam = haveCorners ? clamp(cornersHome + cornersAway, 4.0, 18.0) : 9.8;
+    // If missing, use league-typical defaults (you can tune these)
+    const cardsTotalLam = haveCards ? clamp(cardsHome + cardsAway, 1.5, 12.0) : 4.6;
+    const cornersTotalLam = haveCorners ? clamp(cornersHome + cornersAway, 4.0, 22.0) : 9.8;
 
-    const cardsTotal = build1DTotal(cardsTotalLam, 20);
-    const cornersTotal = build1DTotal(cornersTotalLam, 30);
+    const cardsTotal = build1DTotal(cardsTotalLam, 25);
+    const cornersTotal = build1DTotal(cornersTotalLam, 40);
 
     return {
       lamH,
@@ -188,11 +197,19 @@
       x12,
       ou25,
       btts,
+
+      // Keep team inputs so UI can show them
+      cardsHome,
+      cardsAway,
+      cornersHome,
+      cornersAway,
+
       cards: {
         lambdaTotal: cardsTotalLam,
         mostLikelyTotal: cardsTotal.mostLikelyTotal,
         ou45: ou1D(cardsTotal, 4.5),
       },
+
       corners: {
         lambdaTotal: cornersTotalLam,
         mostLikelyTotal: cornersTotal.mostLikelyTotal,
