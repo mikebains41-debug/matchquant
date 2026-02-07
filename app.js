@@ -12,6 +12,7 @@
     status: $("statusLine"),
   };
 
+  // normalize for alias lookups
   const norm = (s) =>
     String(s || "")
       .trim()
@@ -19,6 +20,8 @@
       .replace(/\s+/g, " ")
       .replace(/[’']/g, "")
       .replace(/[.]/g, "");
+
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
   function status(msg) {
     if (el.status) el.status.textContent = msg;
@@ -64,7 +67,7 @@
   // Android fix: wire multiple events
   function wireLeagueUpdate(updateTeams) {
     ["change", "input", "click", "touchend"].forEach((ev) => {
-      el.league.addEventListener(ev, () => {
+      el.league?.addEventListener(ev, () => {
         setTimeout(updateTeams, 0);
         setTimeout(updateTeams, 50);
         setTimeout(updateTeams, 150);
@@ -77,10 +80,6 @@
     if (!leagueAliases) return teamName;
     const key = norm(teamName);
     return leagueAliases[key] || teamName;
-  }
-
-  function clamp(n, lo, hi) {
-    return Math.max(lo, Math.min(hi, n));
   }
 
   // --- league-level fallback averages ---
@@ -114,30 +113,32 @@
   // --- safe resolver: team → league avg → base ---
   function safeOverallOrLeagueAvg(xgTables, league, team, baseGoals = 1.35) {
     const row = xgTables?.[league]?.[team];
-    if (row && Number.isFinite(Number(row.xg)) && Number.isFinite(Number(row.xga))) {
-      return { xg: Number(row.xg), xga: Number(row.xga) };
+    const xg = Number(row?.xg);
+    const xga = Number(row?.xga);
+
+    if (Number.isFinite(xg) && Number.isFinite(xga)) {
+      return { xg, xga };
     }
     return leagueAverages(xgTables, league, baseGoals);
   }
 
-  // split table format:
-  // { home_xg, home_xga, away_xg, away_xga }
+  // split table format: { home_xg, home_xga, away_xg, away_xga }
   function getSplit(xgSplits, league, team) {
     const row = xgSplits?.[league]?.[team];
     if (!row) return null;
 
-    const hxg = Number(row.home_xg);
-    const hxga = Number(row.home_xga);
-    const axg = Number(row.away_xg);
-    const axga = Number(row.away_xga);
+    const home_xg = Number(row.home_xg);
+    const home_xga = Number(row.home_xga);
+    const away_xg = Number(row.away_xg);
+    const away_xga = Number(row.away_xga);
 
     const ok =
-      Number.isFinite(hxg) &&
-      Number.isFinite(hxga) &&
-      Number.isFinite(axg) &&
-      Number.isFinite(axga);
+      Number.isFinite(home_xg) &&
+      Number.isFinite(home_xga) &&
+      Number.isFinite(away_xg) &&
+      Number.isFinite(away_xga);
 
-    return ok ? { home_xg: hxg, home_xga: hxga, away_xg: axg, away_xga: axga } : null;
+    return ok ? { home_xg, home_xga, away_xg, away_xga } : null;
   }
 
   // cards/corners row format:
@@ -146,20 +147,42 @@
     const row = cardsCorners?.[league]?.[team];
     if (!row) return null;
 
-    const cf = Number(row.cards_for);
-    const ca = Number(row.cards_against);
-    const kof = Number(row.corners_for);
-    const koa = Number(row.corners_against);
+    const cards_for = Number(row.cards_for);
+    const cards_against = Number(row.cards_against);
+    const corners_for = Number(row.corners_for);
+    const corners_against = Number(row.corners_against);
 
     const ok =
-      Number.isFinite(cf) &&
-      Number.isFinite(ca) &&
-      Number.isFinite(kof) &&
-      Number.isFinite(koa);
+      Number.isFinite(cards_for) &&
+      Number.isFinite(cards_against) &&
+      Number.isFinite(corners_for) &&
+      Number.isFinite(corners_against);
 
     return ok
-      ? { cards_for: cf, cards_against: ca, corners_for: kof, corners_against: koa, d4: row.d4 }
+      ? {
+          cards_for,
+          cards_against,
+          corners_for,
+          corners_against,
+          d4: row.d4,
+        }
       : null;
+  }
+
+  function fmtNum(x, d = 2) {
+    if (x == null || !Number.isFinite(Number(x))) return "—";
+    return Number(x).toFixed(d);
+  }
+
+  function toPct(x) {
+    if (x == null || !Number.isFinite(Number(x))) return "—";
+    return (Number(x) * 100).toFixed(1) + "%";
+  }
+
+  function fairOdds(p) {
+    const pp = Number(p);
+    if (!pp || !Number.isFinite(pp) || pp <= 0) return "—";
+    return (1 / pp).toFixed(2);
   }
 
   async function init() {
@@ -177,7 +200,7 @@
 
       const teamsByLeague = await fetchJson("./data/teams.json");
 
-      // optional
+      // optional data
       let xgTables = {};
       let xgSplits = {};
       let leagueStrength = {};
@@ -258,7 +281,7 @@
         const homeAdv = 1.10;
         const goalCap = 8;
 
-        // pull splits first
+        // xG splits first
         const splitH = getSplit(xgSplits, league, aliHome);
         const splitA = getSplit(xgSplits, league, aliAway);
 
@@ -281,19 +304,15 @@
         const xgHome = baseGoals * H_att * A_def;
         const xgAway = baseGoals * A_att * H_def;
 
-        // Cards & Corners (C,D1,D2,D3)
+        // Cards & Corners (C,D1,D2,D3) — blend rule
         const ccH = getCardsCorners(cardsCorners, league, aliHome);
         const ccA = getCardsCorners(cardsCorners, league, aliAway);
 
-        const cardsHome =
-          ccH && ccA ? (ccH.cards_for + ccA.cards_against) / 2 : null;
-        const cardsAway =
-          ccH && ccA ? (ccA.cards_for + ccH.cards_against) / 2 : null;
+        const cardsHome = ccH && ccA ? (ccH.cards_for + ccA.cards_against) / 2 : null;
+        const cardsAway = ccH && ccA ? (ccA.cards_for + ccH.cards_against) / 2 : null;
 
-        const cornersHome =
-          ccH && ccA ? (ccH.corners_for + ccA.corners_against) / 2 : null;
-        const cornersAway =
-          ccH && ccA ? (ccA.corners_for + ccH.corners_against) / 2 : null;
+        const cornersHome = ccH && ccA ? (ccH.corners_for + ccA.corners_against) / 2 : null;
+        const cornersAway = ccH && ccA ? (ccA.corners_for + ccH.corners_against) / 2 : null;
 
         const out = engine({
           leagueName: league,
@@ -312,11 +331,6 @@
         const ou = out.ou25 || {};
         const btts = out.btts || {};
         const ml = out.mostLikely || {};
-
-        const toPct = (x) => (x * 100).toFixed(1) + "%";
-        const fairOdds = (p) => (!p || p <= 0 ? "—" : (1 / p).toFixed(2));
-
-        const fmt = (x, d = 2) => (x == null ? "—" : Number(x).toFixed(d));
 
         setResults(`
           <div style="font-size:18px;font-weight:800;margin-bottom:6px;">
@@ -347,8 +361,8 @@
 
           <div style="font-weight:800;margin-bottom:6px;">Cards & Corners (model)</div>
           <div style="line-height:1.6;">
-            Cards: Home <b>${fmt(cardsHome, 2)}</b> • Away <b>${fmt(cardsAway, 2)}</b><br>
-            Corners: Home <b>${fmt(cornersHome, 2)}</b> • Away <b>${fmt(cornersAway, 2)}</b>
+            Cards: Home <b>${fmtNum(cardsHome, 2)}</b> • Away <b>${fmtNum(cardsAway, 2)}</b><br>
+            Corners: Home <b>${fmtNum(cornersHome, 2)}</b> • Away <b>${fmtNum(cornersAway, 2)}</b>
           </div>
 
           <div style="margin-top:12px;opacity:.75;font-size:12px;">
