@@ -4,27 +4,43 @@
     "man united": "Manchester United",
     "spurs": "Tottenham",
     "wolves": "Wolverhampton",
+    "wolverhampton wanderers": "Wolverhampton",
     "brighton & hove albion": "Brighton"
   },
   "La Liga": {
     "atleti": "Atletico Madrid",
     "athletic club": "Athletic Bilbao",
-    "real sociedad": "Real Sociedad"
+    "real sociedad": "Real Sociedad",
+    "real betis": "Real Betis"
   },
   "Serie A": {
     "inter milan": "Inter",
     "internazionale": "Inter",
-    "juve": "Juventus"
+    "juve": "Juventus",
+    "ac milan": "AC Milan",
+    "milan": "AC Milan"
   },
   "Bundesliga": {
     "bayern": "Bayern Munich",
-    "rb leipzig": "RB Leipzig"
+    "rb leipzig": "RB Leipzig",
+    "rasenballsport leipzig": "RB Leipzig",
+    "borussia m.gladbach": "Borussia Monchengladbach",
+    "borussia m'gladbach": "Borussia Monchengladbach",
+    "fc cologne": "FC Koln",
+    "fc köln": "FC Koln"
   },
   "Ligue 1": {
     "paris sg": "PSG",
-    "paris saint-germain": "PSG"
+    "paris saint-germain": "PSG",
+    "paris saint germain": "PSG"
   },
   "Primeira Liga": {
-    "sporting": "Sporting CP"
+    "sporting": "Sporting CP",
+    "sporting lisbon": "Sporting CP",
+    "sporting clube de portugal": "Sporting CP",
+    "fc porto": "Porto",
+    "porto": "Porto",
+    "sl benfica": "Benfica",
+    "benfica": "Benfica"
   }
 }
