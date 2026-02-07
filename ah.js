@@ -1,26 +1,30 @@
 // ah.js — Asian Handicap (fair odds) from scoreline probabilities
 // Usage:
-// const ah = window.MQ_AH.computeAsianHandicapFair(scoreGrid, goalCap);
-// where scoreGrid is engine's score probability grid: grid[h][a] = P(h,a)
+// const ahRows = window.MQ_AH.computeAsianHandicapFair(scoreGrid, goalCap);
 
 (() => {
-  function computeAsianHandicapFair(scoreProb, maxGoals = 10) {
-    const clampInt = (n, lo, hi) => Math.max(lo, Math.min(hi, n | 0));
+  "use strict";
 
-    const offset = maxGoals;
-    const diffProb = Array(2 * maxGoals + 1).fill(0);
+  function computeAsianHandicapFair(scoreGrid, goalCap = 10) {
+    const clampInt = (n, lo, hi) => Math.max(lo, Math.min(hi, (n | 0)));
 
-    for (let h = 0; h <= maxGoals; h++) {
-      const row = scoreProb[h] || {};
-      for (let a = 0; a <= maxGoals; a++) {
-        const p = Number(row[a] ?? 0);
+    // Build goal-diff distribution: diff = H - A in [-goalCap, +goalCap]
+    const offset = goalCap;
+    const diffProb = Array(2 * goalCap + 1).fill(0);
+
+    for (let h = 0; h <= goalCap; h++) {
+      const row = scoreGrid?.[h] ?? {};
+      for (let a = 0; a <= goalCap; a++) {
+        const p = Number(row?.[a] ?? 0);
         if (!p) continue;
+
         const d = h - a;
-        if (d < -maxGoals || d > maxGoals) continue;
+        if (d < -goalCap || d > goalCap) continue;
         diffProb[d + offset] += p;
       }
     }
 
+    // Prefix sums for fast ranges
     const pref = Array(diffProb.length + 1).fill(0);
     for (let i = 0; i < diffProb.length; i++) pref[i + 1] = pref[i] + diffProb[i];
 
@@ -31,41 +35,47 @@
       return pref[i1 + 1] - pref[i0];
     };
 
-    const P_diff_ge = (x) => sumIdx(x + offset, maxGoals + offset);
-    const P_diff_gt = (x) => P_diff_ge(x + 1);
-    const P_diff_le = (x) => sumIdx(-maxGoals + offset, x + offset);
-    const P_diff_lt = (x) => P_diff_le(x - 1);
-    const P_diff_eq = (x) => diffProb[x + offset] ?? 0;
+    // Probabilities in diff domain (integer x)
+    const P_ge = (x) => sumIdx(x + offset, goalCap + offset);                  // diff >= x
+    const P_gt = (x) => P_ge(x + 1);                                           // diff > x
+    const P_le = (x) => sumIdx(-goalCap + offset, x + offset);                 // diff <= x
+    const P_lt = (x) => P_le(x - 1);                                           // diff < x
+    const P_eq = (x) => Number(diffProb[x + offset] ?? 0);                     // diff == x
 
+    // For HOME bet at AH line L:
+    // Result depends on diff compared to threshold (-L)
     function evalHalfOrInt(line) {
-      let win = 0, push = 0, lose = 0;
-
       const isInteger = Math.abs(line - Math.round(line)) < 1e-12;
-      const isHalf = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12 && !isInteger;
+      const isHalf = !isInteger && Math.abs(line * 2 - Math.round(line * 2)) < 1e-12;
 
       if (!isInteger && !isHalf) {
-        throw new Error("evalHalfOrInt only accepts integer or half lines");
+        throw new Error("AH line must be integer or half (quarter handled separately).");
       }
 
+      // Integer line: push possible
       if (isInteger) {
-        const t = -Math.round(line);
-        win = P_diff_gt(t);
-        push = P_diff_eq(t);
-        lose = P_diff_lt(t);
-        return { win, push, lose };
+        const t = -Math.round(line); // push when diff == t
+        return {
+          win: P_gt(t),
+          push: P_eq(t),
+          lose: P_lt(t),
+        };
       }
 
-      const t = -line;               // x.5
+      // Half line: no push
+      // Example line = -0.5 => t = 0.5 => win when diff >= 1, lose when diff <= 0
+      const t = -line; // x.5
       const smallestWin = Math.floor(t) + 1;
       const largestLose = Math.floor(t);
 
-      win = P_diff_ge(smallestWin);
-      push = 0;
-      lose = P_diff_le(largestLose);
-
-      return { win, push, lose };
+      return {
+        win: P_ge(smallestWin),
+        push: 0,
+        lose: P_le(largestLose),
+      };
     }
 
+    // Quarter line check: multiple of 0.25 but NOT multiple of 0.5
     function isQuarterLine(line) {
       const q = Math.round(line * 4);
       const isQuarterStep = Math.abs(line * 4 - q) < 1e-12;
@@ -73,10 +83,12 @@
       return isQuarterStep && !isHalfStep;
     }
 
-    function homeAhWPL(line) {
+    // Quarter lines are split stake into two adjacent half-lines
+    function homeWPL(line) {
       if (!isQuarterLine(line)) return evalHalfOrInt(line);
 
-      const lower = Math.floor(line * 2) / 2;
+      // Example: -0.25 => split between 0.0 and -0.5
+      const lower = Math.floor(line * 2) / 2; // nearest lower half-step
       const upper = lower + 0.5;
 
       const a = evalHalfOrInt(lower);
@@ -89,6 +101,7 @@
       };
     }
 
+    // Convert to DNB-style fair odds (push removed)
     function toFair(wpl) {
       const win = wpl.win;
       const push = wpl.push;
@@ -103,7 +116,7 @@
         push,
         lose,
         dnbWinProb,
-        fairOdds: fairOdds == null ? null : +fairOdds.toFixed(2),
+        fairOdds: fairOdds == null ? null : Number(fairOdds.toFixed(2)),
       };
     }
 
@@ -113,21 +126,23 @@
     ];
 
     return lines.map((line) => {
-      const wpl = homeAhWPL(line);
+      const wpl = homeWPL(line);
       const f = toFair(wpl);
+
       return {
         line,
-        home_win: +f.win.toFixed(6),
-        home_push: +f.push.toFixed(6),
-        home_lose: +f.lose.toFixed(6),
-        home_dnbWinProb: +f.dnbWinProb.toFixed(6),
+        home_win: Number(f.win.toFixed(6)),
+        home_push: Number(f.push.toFixed(6)),
+        home_lose: Number(f.lose.toFixed(6)),
+        home_dnbWinProb: Number(f.dnbWinProb.toFixed(6)),
         home_fair: f.fairOdds,
       };
     });
   }
 
+  // Expose API to browser
   window.MQ_AH = window.MQ_AH || {};
   window.MQ_AH.computeAsianHandicapFair = computeAsianHandicapFair;
 
-  console.log("✅ ah.js loaded (MQ_AH.computeAsianHandicapFair ready)");
+  console.log("✅ ah.js loaded: window.MQ_AH.computeAsianHandicapFair ready");
 })();
