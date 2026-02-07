@@ -11,19 +11,19 @@
     "Fulham": { "xg": 1.175, "xga": 1.593 },
     "Everton": { "xg": 1.223, "xga": 1.538 },
     "Newcastle United": { "xg": 1.584, "xga": 1.249 },
-    "Bournemouth": { "xg": 1.74, "xga": 1.459 },
+    "Bournemouth": { "xg": 1.740, "xga": 1.459 },
     "Brighton": { "xg": 1.558, "xga": 1.592 },
     "Tottenham": { "xg": 1.221, "xga": 1.377 },
     "Crystal Palace": { "xg": 1.718, "xga": 1.542 },
     "Leeds": { "xg": 1.484, "xga": 1.472 },
     "Nottingham Forest": { "xg": 1.113, "xga": 1.669 },
-    "West Ham": { "xg": 1.25, "xga": 1.985 },
-    "Burnley": { "xg": 0.925, "xga": 2.23 },
-    "Wolverhampton": { "xg": 0.934, "xga": 1.56 }
+    "West Ham": { "xg": 1.250, "xga": 1.985 },
+    "Burnley": { "xg": 0.925, "xga": 2.230 },
+    "Wolverhampton": { "xg": 0.934, "xga": 1.560 }
   },
 
   "La Liga": {
-    "Barcelona": { "xg": 2.92, "xga": 1.418 },
+    "Barcelona": { "xg": 2.920, "xga": 1.418 },
     "Real Madrid": { "xg": 2.485, "xga": 1.181 },
     "Atletico Madrid": { "xg": 1.802, "xga": 1.132 },
     "Villarreal": { "xg": 1.815, "xga": 1.378 },
@@ -46,7 +46,7 @@
   },
 
   "Bundesliga": {
-    "Bayern Munich": { "xg": 3.04, "xga": 0.995 },
+    "Bayern Munich": { "xg": 3.040, "xga": 0.995 },
     "Borussia Dortmund": { "xg": 1.904, "xga": 1.129 },
     "Hoffenheim": { "xg": 1.766, "xga": 1.454 },
     "Stuttgart": { "xg": 1.912, "xga": 1.391 },
@@ -61,7 +61,7 @@
     "Hamburger SV": { "xg": 1.312, "xga": 1.654 },
     "Wolfsburg": { "xg": 1.399, "xga": 1.913 },
     "Werder Bremen": { "xg": 1.234, "xga": 1.854 },
-    "Mainz": { "xg": 1.586, "xga": 1.99 },
+    "Mainz": { "xg": 1.586, "xga": 1.990 },
     "St. Pauli": { "xg": 0.993, "xga": 1.829 },
     "Heidenheim": { "xg": 1.349, "xga": 2.205 }
   },
@@ -69,7 +69,7 @@
   "Serie A": {
     "Inter": { "xg": 2.482, "xga": 0.843 },
     "AC Milan": { "xg": 1.858, "xga": 1.078 },
-    "Napoli": { "xg": 1.58, "xga": 1.139 },
+    "Napoli": { "xg": 1.580, "xga": 1.139 },
     "Juventus": { "xg": 1.894, "xga": 0.872 },
     "Roma": { "xg": 1.513, "xga": 1.169 },
     "Como": { "xg": 1.819, "xga": 1.161 },
@@ -83,8 +83,8 @@
     "Genoa": { "xg": 1.291, "xga": 1.562 },
     "Cremonese": { "xg": 1.057, "xga": 1.827 },
     "Parma Calcio 1913": { "xg": 1.056, "xga": 1.728 },
-    "Lecce": { "xg": 0.85, "xga": 1.696 },
-    "Fiorentina": { "xg": 1.603, "xga": 1.67 },
+    "Lecce": { "xg": 0.850, "xga": 1.696 },
+    "Fiorentina": { "xg": 1.603, "xga": 1.670 },
     "Pisa": { "xg": 1.188, "xga": 1.884 },
     "Verona": { "xg": 1.124, "xga": 1.414 }
   },
@@ -94,25 +94,25 @@
     "Lens": { "xg": 2.172, "xga": 1.252 },
     "Marseille": { "xg": 2.122, "xga": 1.246 },
     "Lyon": { "xg": 1.735, "xga": 1.222 },
-    "Lille": { "xg": 1.76, "xga": 1.442 },
-    "Rennes": { "xg": 1.544, "xga": 1.73 },
+    "Lille": { "xg": 1.760, "xga": 1.442 },
+    "Rennes": { "xg": 1.544, "xga": 1.730 },
     "Strasbourg": { "xg": 1.688, "xga": 1.325 },
     "Toulouse": { "xg": 1.339, "xga": 1.311 },
-    "Lorient": { "xg": 1.463, "xga": 1.5 },
-    "Monaco": { "xg": 1.812, "xga": 1.54 },
+    "Lorient": { "xg": 1.463, "xga": 1.500 },
+    "Monaco": { "xg": 1.812, "xga": 1.540 },
     "Angers": { "xg": 1.031, "xga": 1.712 },
     "Brest": { "xg": 1.438, "xga": 1.529 },
     "Nice": { "xg": 1.392, "xga": 1.826 },
     "Paris FC": { "xg": 1.348, "xga": 1.685 },
     "Le Havre": { "xg": 1.102, "xga": 1.495 },
     "Nantes": { "xg": 1.074, "xga": 1.739 },
-    "Auxerre": { "xg": 1.154, "xga": 1.57 },
+    "Auxerre": { "xg": 1.154, "xga": 1.570 },
     "Metz": { "xg": 0.974, "xga": 2.025 }
   },
 
   "Primeira Liga": {
-    "Benfica": { "xg": 1.92, "xga": 0.92 },
-    "Sporting CP": { "xg": 1.83, "xga": 0.49 },
-    "Porto": { "xg": 1.72, "xga": 0.47 }
+    "Benfica": { "xg": 1.920, "xga": 0.920 },
+    "Sporting CP": { "xg": 1.830, "xga": 0.490 },
+    "Porto": { "xg": 1.720, "xga": 0.470 }
   }
 }
