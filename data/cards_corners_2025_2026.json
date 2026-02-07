@@ -1,0 +1,28 @@
+{
+  "Primeira Liga": {
+    "Benfica": {
+      "cards_for": 2.2,
+      "cards_against": 2.5,
+      "corners_for": 6.3,
+      "corners_against": 4.1
+    },
+    "Sporting CP": {
+      "cards_for": 2.0,
+      "cards_against": 2.6,
+      "corners_for": 6.8,
+      "corners_against": 3.9
+    },
+    "Porto": {
+      "cards_for": 2.4,
+      "cards_against": 2.7,
+      "corners_for": 6.1,
+      "corners_against": 4.2
+    }
+  },
+
+  "Premier League": {},
+  "La Liga": {},
+  "Serie A": {},
+  "Bundesliga": {},
+  "Ligue 1": {}
+}
