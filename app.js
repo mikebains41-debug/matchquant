@@ -1,4 +1,4 @@
-/* app.js — MatchQuant (works with engine.js + ./data/*.json) */
+/* app.js — MatchQuant (home/away xG splits supported) */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -74,47 +74,48 @@
   function applyAlias(aliasesByLeague, league, teamName) {
     const leagueAliases = aliasesByLeague?.[league];
     if (!leagueAliases) return teamName;
-
-    // aliases file uses lowercase keys like "man utd"
     const key = norm(teamName);
     return leagueAliases[key] || teamName;
   }
 
-  function getTeamStrength(xgTables, league, team) {
-    // supports: {att, def} OR {xg, xga}
-    const lg = xgTables?.[league] || {};
-    const row = lg?.[team];
-
-    if (!row) return { att: 1.0, def: 1.0, found: false };
-
-    // format A: att/def
-    if (row.att != null || row.def != null) {
-      return {
-        att: Number(row.att ?? 1.0),
-        def: Number(row.def ?? 1.0),
-        found: true,
-      };
-    }
-
-    // format B: xg/xga (convert into multipliers around league mean ~1.35)
-    if (row.xg != null || row.xga != null) {
-      // simple scaling so it behaves like multipliers
-      // baseGoals will be multiplied by att and def (def used as opponent multiplier)
-      const xg = Number(row.xg ?? 1.35);
-      const xga = Number(row.xga ?? 1.35);
-
-      // convert to “multiplier-ish”
-      const att = clamp(xg / 1.35, 0.6, 1.6);
-      const def = clamp(xga / 1.35, 0.6, 1.6);
-
-      return { att, def, found: true };
-    }
-
-    return { att: 1.0, def: 1.0, found: false };
-  }
-
   function clamp(n, lo, hi) {
     return Math.max(lo, Math.min(hi, n));
+  }
+
+  // overall table: {xg,xga} or {att,def}
+  function getOverall(xgTables, league, team) {
+    const row = xgTables?.[league]?.[team];
+    if (!row) return null;
+
+    if (row.xg != null || row.xga != null) {
+      return { xg: Number(row.xg ?? 1.35), xga: Number(row.xga ?? 1.35) };
+    }
+    if (row.att != null || row.def != null) {
+      // if someone still uses att/def multipliers, interpret them into xg-ish
+      // base 1.35 scaled
+      const att = clamp(Number(row.att ?? 1.0), 0.4, 2.2);
+      const def = clamp(Number(row.def ?? 1.0), 0.4, 2.2);
+      return { xg: 1.35 * att, xga: 1.35 * def };
+    }
+    return null;
+  }
+
+  // split table format:
+  // { home_xg, home_xga, away_xg, away_xga }
+  function getSplit(xgSplits, league, team) {
+    const row = xgSplits?.[league]?.[team];
+    if (!row) return null;
+
+    const hxg = Number(row.home_xg);
+    const hxga = Number(row.home_xga);
+    const axg = Number(row.away_xg);
+    const axga = Number(row.away_xga);
+
+    const ok =
+      Number.isFinite(hxg) && Number.isFinite(hxga) &&
+      Number.isFinite(axg) && Number.isFinite(axga);
+
+    return ok ? { home_xg: hxg, home_xga: hxga, away_xg: axg, away_xga: axga } : null;
   }
 
   async function init() {
@@ -134,10 +135,12 @@
 
       // optional
       let xgTables = {};
+      let xgSplits = {};
       let leagueStrength = {};
       let aliases = {};
 
       try { xgTables = await fetchJson("./data/xg_2025_2026.json"); } catch {}
+      try { xgSplits = await fetchJson("./data/xg_home_away_2025_2026.json"); } catch {}
       try { leagueStrength = await fetchJson("./data/league_strength.json"); } catch {}
       try { aliases = await fetchJson("./data/aliases.json"); } catch {}
 
@@ -185,26 +188,40 @@
           );
         }
 
-        // Apply alias mapping
+        // aliases
         const aliHome = applyAlias(aliases, league, home);
         const aliAway = applyAlias(aliases, league, away);
 
-        // League multiplier
+        // league multiplier
         let leagueMult = 1.0;
         if (typeof leagueStrength?.[league] === "number") leagueMult = leagueStrength[league];
         else if (typeof xgTables?.[league]?.__league_factor === "number") leagueMult = xgTables[league].__league_factor;
 
-        // Strengths
-        const H = getTeamStrength(xgTables, league, aliHome);
-        const A = getTeamStrength(xgTables, league, aliAway);
+        // pull splits first, else overall
+        const splitH = getSplit(xgSplits, league, aliHome);
+        const splitA = getSplit(xgSplits, league, aliAway);
 
+        const overallH = getOverall(xgTables, league, aliHome);
+        const overallA = getOverall(xgTables, league, aliAway);
+
+        // home uses HOME split; away uses AWAY split
+        const home_xg  = splitH?.home_xg  ?? overallH?.xg  ?? 1.35;
+        const home_xga = splitH?.home_xga ?? overallH?.xga ?? 1.35;
+        const away_xg  = splitA?.away_xg  ?? overallA?.xg  ?? 1.35;
+        const away_xga = splitA?.away_xga ?? overallA?.xga ?? 1.35;
+
+        // convert to multipliers around base
         const baseGoals = 1.35;
         const homeAdv = 1.10;
         const goalCap = 8;
 
-        // Expected goals
-        const xgHome = baseGoals * H.att * A.def;
-        const xgAway = baseGoals * A.att * H.def;
+        const H_att = clamp(home_xg / baseGoals, 0.6, 1.8);
+        const H_def = clamp(home_xga / baseGoals, 0.6, 1.8);
+        const A_att = clamp(away_xg / baseGoals, 0.6, 1.8);
+        const A_def = clamp(away_xga / baseGoals, 0.6, 1.8);
+
+        const xgHome = baseGoals * H_att * A_def;
+        const xgAway = baseGoals * A_att * H_def;
 
         const out = engine({
           leagueName: league,
@@ -216,6 +233,7 @@
           homeAdv,
           baseGoals,
           goalCap,
+          sims: Number(el.sims?.value || 10000),
         });
 
         const x12 = out.x12 || {};
@@ -252,9 +270,8 @@
           </div>
 
           <div style="margin-top:12px;opacity:.75;font-size:12px;">
-            Notes: Aliases applied: ${aliHome !== home ? `${home}→${aliHome}` : "none"} •
-            ${aliAway !== away ? `${away}→${aliAway}` : "none"} •
-            xG rows found: H=${H.found ? "yes" : "no"} A=${A.found ? "yes" : "no"}
+            Splits used: Home(${splitH ? "home split" : "overall"}) • Away(${splitA ? "away split" : "overall"})
+            <br/>Raw split xG: H xg=${home_xg.toFixed(2)} xga=${home_xga.toFixed(2)} • A xg=${away_xg.toFixed(2)} xga=${away_xga.toFixed(2)}
           </div>
         `);
 
