@@ -1,4 +1,4 @@
-// engine.js — MatchQuant Engine (Upgraded)
+// engine.js — MatchQuant Engine (Goals + Totals + Team Totals + AH + Cards + Corners)
 // Exposes: window.MQ.predictMatchInternal(payload)
 // Sync output for app.js
 
@@ -24,6 +24,7 @@
     return +(1 / p).toFixed(2);
   }
 
+  // --- goals grid (home goals x away goals) ---
   function buildScoreGrid(lamH, lamA, goalCap = 8) {
     const cap = clamp(parseInt(goalCap || 8, 10), 4, 12);
     const grid = {};
@@ -40,12 +41,13 @@
       }
     }
 
-    // normalize (in case cap truncation loses mass)
+    // normalize (cap truncation loses tail mass)
     if (sum > 0) {
       for (let h = 0; h <= cap; h++) {
         for (let a = 0; a <= cap; a++) grid[h][a] /= sum;
       }
     }
+
     return { grid, cap };
   }
 
@@ -74,7 +76,7 @@
         else away += p;
       }
     }
-    return { home, draw, away };
+    return { home, draw, away, homeOdds: fairOdds(home), drawOdds: fairOdds(draw), awayOdds: fairOdds(away) };
   }
 
   function calcOverUnder(grid, line = 2.5) {
@@ -85,8 +87,7 @@
       for (const aStr of Object.keys(row)) {
         const a = Number(aStr);
         const p = row[aStr];
-        const total = h + a;
-        if (total > line) over += p;
+        if (h + a > line) over += p;
         else under += p;
       }
     }
@@ -108,8 +109,7 @@
     return { yes, no, yesOdds: fairOdds(yes), noOdds: fairOdds(no) };
   }
 
-  // Asian Handicap probability (simple, no pushes unless line is integer)
-  // Returns {cover, push, fail, coverOdds}
+  // --- asian handicap ---
   function calcAH(grid, side = "home", line = -0.5) {
     let cover = 0, push = 0, fail = 0;
 
@@ -119,11 +119,7 @@
       for (const aStr of Object.keys(row)) {
         const a = Number(aStr);
         const p = row[aStr];
-
-        // score diff from home view
         const diff = h - a;
-
-        // apply handicap to chosen side
         const adj = side === "home" ? (diff + line) : (-diff + line);
 
         if (adj > 0) cover += p;
@@ -132,19 +128,13 @@
       }
     }
 
-    // fair odds for "cover" (ignoring pushes)
     const eff = 1 - push;
     const coverNoPush = eff > 0 ? cover / eff : 0;
 
-    return {
-      cover,
-      push,
-      fail,
-      coverOdds: fairOdds(coverNoPush),
-    };
+    return { cover, push, fail, coverOdds: fairOdds(coverNoPush) };
   }
 
-  // Team totals from grid
+  // --- team totals ---
   function calcTeamTotal(grid, team = "home", line = 1.5) {
     let over = 0, under = 0;
     for (const hStr of Object.keys(grid)) {
@@ -153,9 +143,8 @@
       for (const aStr of Object.keys(row)) {
         const a = Number(aStr);
         const p = row[aStr];
-
-        const goals = team === "home" ? h : a;
-        if (goals > line) over += p;
+        const g = team === "home" ? h : a;
+        if (g > line) over += p;
         else under += p;
       }
     }
@@ -189,6 +178,43 @@
     return out;
   }
 
+  // --- 1D poisson totals for cards/corners ---
+  function build1DTotal(lambda, cap = 30) {
+    const c = clamp(parseInt(cap || 30, 10), 10, 60);
+    const probs = new Array(c + 1).fill(0);
+
+    let sum = 0;
+    for (let k = 0; k <= c; k++) {
+      const p = poissonPMF(k, lambda);
+      probs[k] = p;
+      sum += p;
+    }
+
+    if (sum > 0) {
+      for (let k = 0; k <= c; k++) probs[k] /= sum;
+    }
+
+    let bestK = 0, bestP = probs[0];
+    for (let k = 1; k <= c; k++) {
+      if (probs[k] > bestP) {
+        bestP = probs[k];
+        bestK = k;
+      }
+    }
+
+    return { lambda, cap: c, probs, mostLikelyTotal: { k: bestK, p: bestP } };
+  }
+
+  function ou1D(total, line) {
+    let over = 0, under = 0;
+    for (let k = 0; k < total.probs.length; k++) {
+      const p = total.probs[k];
+      if (k > line) over += p;
+      else under += p;
+    }
+    return { over, under, overOdds: fairOdds(over), underOdds: fairOdds(under) };
+  }
+
   // IMPORTANT: app.js calls this synchronously
   function predictMatchInternal(payload) {
     const xgHome = Number(payload.xgHome ?? 1.35);
@@ -198,7 +224,7 @@
     const homeAdv = Number(payload.homeAdv ?? 1.10);
     const goalCap = Number(payload.goalCap ?? 8);
 
-    // Final lambdas
+    // Goals lambdas
     let lamH = xgHome * leagueMult * homeAdv;
     let lamA = xgAway * leagueMult;
 
@@ -207,15 +233,32 @@
 
     const { grid } = buildScoreGrid(lamH, lamA, goalCap);
 
+    // core
     const mostLikely = mostLikelyScore(grid);
     const x12 = calc1X2(grid);
     const ou25 = calcOverUnder(grid, 2.5);
     const btts = calcBTTS(grid);
 
-    // ADD-ONS
+    // add-ons you already wanted
     const totals = buildTotalsPack(grid);
     const teamTotals = buildTeamTotalsPack(grid);
     const ah = buildAHPack(grid);
+
+    // cards/corners from payload (optional)
+    const cardsHome = Number(payload.cardsHome);
+    const cardsAway = Number(payload.cardsAway);
+    const cornersHome = Number(payload.cornersHome);
+    const cornersAway = Number(payload.cornersAway);
+
+    const haveCards = Number.isFinite(cardsHome) && Number.isFinite(cardsAway);
+    const haveCorners = Number.isFinite(cornersHome) && Number.isFinite(cornersAway);
+
+    // defaults if not provided
+    const cardsTotalLam = haveCards ? clamp(cardsHome + cardsAway, 1.5, 10.0) : 4.6;
+    const cornersTotalLam = haveCorners ? clamp(cornersHome + cornersAway, 4.0, 18.0) : 9.8;
+
+    const cardsTotal = build1DTotal(cardsTotalLam, 20);
+    const cornersTotal = build1DTotal(cornersTotalLam, 30);
 
     return {
       lamH,
@@ -224,9 +267,19 @@
       x12,
       ou25,
       btts,
-      totals,      // totals["2.5"].overOdds etc
-      teamTotals,  // teamTotals.home["1.5"].overOdds
-      ah,          // ah.home["-0.5"].coverOdds
+      totals,
+      teamTotals,
+      ah,
+      cards: {
+        lambdaTotal: cardsTotalLam,
+        mostLikelyTotal: cardsTotal.mostLikelyTotal,
+        ou45: ou1D(cardsTotal, 4.5),
+      },
+      corners: {
+        lambdaTotal: cornersTotalLam,
+        mostLikelyTotal: cornersTotal.mostLikelyTotal,
+        ou95: ou1D(cornersTotal, 9.5),
+      },
     };
   }
 
