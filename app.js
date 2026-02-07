@@ -79,6 +79,30 @@
     return leagueAliases[key] || teamName;
   }
 
+  // ✅ SAFE TEAM KEY RESOLVER:
+  // exact -> alias(if exists in table) -> normalized match -> fallback
+  function resolveTeamKey(xgTables, aliases, league, team) {
+    const table = xgTables?.[league];
+    if (!table || typeof table !== "object") return team;
+
+    // 1) exact key match
+    if (table[team]) return team;
+
+    // 2) alias only if alias exists in xgTables
+    const ali = applyAlias(aliases, league, team);
+    if (ali && table[ali]) return ali;
+
+    // 3) normalized scan
+    const nt = norm(team);
+    for (const k of Object.keys(table)) {
+      if (String(k).startsWith("__")) continue;
+      if (norm(k) === nt) return k;
+    }
+
+    // 4) fallback
+    return team;
+  }
+
   // ✅ xg_tables.json format: {att, def}
   function leagueAverages(xgTables, league, baseGoals = 1.35) {
     const table = xgTables?.[league];
@@ -156,7 +180,6 @@
 
       const teamsByLeague = await fetchJson("./data/teams.json");
 
-      // optional data
       let xgTables = {};
       let leagueStrength = {};
       let aliases = {};
@@ -210,9 +233,9 @@
           );
         }
 
-        // aliases
-        const aliHome = applyAlias(aliases, league, home);
-        const aliAway = applyAlias(aliases, league, away);
+        // ✅ resolve keys SAFELY (prevents alias breaking lookups)
+        const keyHome = resolveTeamKey(xgTables, aliases, league, home);
+        const keyAway = resolveTeamKey(xgTables, aliases, league, away);
 
         // league multiplier
         let leagueMult = 1.0;
@@ -225,8 +248,8 @@
         const goalCap = 8;
 
         // ✅ xG overall fallback (team -> league avg -> base)
-        const overallH = safeOverallOrLeagueAvg(xgTables, league, aliHome, baseGoals);
-        const overallA = safeOverallOrLeagueAvg(xgTables, league, aliAway, baseGoals);
+        const overallH = safeOverallOrLeagueAvg(xgTables, league, keyHome, baseGoals);
+        const overallA = safeOverallOrLeagueAvg(xgTables, league, keyAway, baseGoals);
 
         // convert to multipliers around base
         const H_att = clamp(overallH.xg / baseGoals, 0.6, 1.8);
@@ -237,9 +260,9 @@
         const xgHome = baseGoals * H_att * A_def;
         const xgAway = baseGoals * A_att * H_def;
 
-        // ✅ Cards & Corners (blend team for + opp against)
-        const ccH = getCardsCorners(cardsCorners, league, aliHome);
-        const ccA = getCardsCorners(cardsCorners, league, aliAway);
+        // ✅ Cards & Corners
+        const ccH = getCardsCorners(cardsCorners, league, keyHome);
+        const ccA = getCardsCorners(cardsCorners, league, keyAway);
 
         const cardsHome = ccH && ccA ? (ccH.cards_for + ccA.cards_against) / 2 : null;
         const cardsAway = ccH && ccA ? (ccA.cards_for + ccH.cards_against) / 2 : null;
@@ -247,7 +270,6 @@
         const cornersHome = ccH && ccA ? (ccH.corners_for + ccA.corners_against) / 2 : null;
         const cornersAway = ccH && ccA ? (ccA.corners_for + ccH.corners_against) / 2 : null;
 
-        // ✅ IMPORTANT: pass cards/corners into engine payload
         const out = engine({
           leagueName: league,
           homeTeam: home,
@@ -271,6 +293,10 @@
         const ml = out.mostLikely || {};
         const cards = out.cards || {};
         const corners = out.corners || {};
+
+        // ✅ debug line so you can see what keys were used
+        const foundH = !!xgTables?.[league]?.[keyHome];
+        const foundA = !!xgTables?.[league]?.[keyAway];
 
         setResults(`
           <div style="font-size:18px;font-weight:800;margin-bottom:6px;">
@@ -314,8 +340,8 @@
           </div>
 
           <div style="margin-top:12px;opacity:.75;font-size:12px;">
-            xG source: xg_tables.json (att/def).<br/>
-            Cards/Corners rows: ${ccH && ccA ? "found ✅" : "missing ⚠️ (check team names/aliases + file in /data)"}
+            xG key used: Home=<b>${keyHome}</b> (${foundH ? "FOUND ✅" : "MISSING ⚠️"}) • Away=<b>${keyAway}</b> (${foundA ? "FOUND ✅" : "MISSING ⚠️"})<br/>
+            Raw att/def: Home att=${fmtNum(overallH.xg,2)} def=${fmtNum(overallH.xga,2)} • Away att=${fmtNum(overallA.xg,2)} def=${fmtNum(overallA.xga,2)}
           </div>
         `);
 
