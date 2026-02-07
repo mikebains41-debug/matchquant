@@ -1,4 +1,4 @@
-/* app.js — MatchQuant (home/away xG splits supported) */
+/* app.js — MatchQuant (home/away xG splits + safe league avg fallback) */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -82,22 +82,39 @@
     return Math.max(lo, Math.min(hi, n));
   }
 
-  // overall table: {xg,xga} or {att,def}
-  function getOverall(xgTables, league, team) {
-    const row = xgTables?.[league]?.[team];
-    if (!row) return null;
+  // --- league-level fallback averages ---
+  function leagueAverages(xgTables, league, baseGoals = 1.35) {
+    const table = xgTables?.[league];
+    if (!table || typeof table !== "object") {
+      return { xg: baseGoals, xga: baseGoals };
+    }
 
-    if (row.xg != null || row.xga != null) {
-      return { xg: Number(row.xg ?? 1.35), xga: Number(row.xga ?? 1.35) };
+    let sxg = 0, sxga = 0, n = 0;
+
+    for (const [team, row] of Object.entries(table)) {
+      if (!row || team.startsWith("__")) continue;
+
+      const xg = Number(row.xg);
+      const xga = Number(row.xga);
+
+      if (Number.isFinite(xg) && Number.isFinite(xga)) {
+        sxg += xg;
+        sxga += xga;
+        n += 1;
+      }
     }
-    if (row.att != null || row.def != null) {
-      // if someone still uses att/def multipliers, interpret them into xg-ish
-      // base 1.35 scaled
-      const att = clamp(Number(row.att ?? 1.0), 0.4, 2.2);
-      const def = clamp(Number(row.def ?? 1.0), 0.4, 2.2);
-      return { xg: 1.35 * att, xga: 1.35 * def };
+
+    if (!n) return { xg: baseGoals, xga: baseGoals };
+    return { xg: sxg / n, xga: sxga / n };
+  }
+
+  // --- safe resolver: team → league avg → base ---
+  function safeOverallOrLeagueAvg(xgTables, league, team, baseGoals = 1.35) {
+    const row = xgTables?.[league]?.[team];
+    if (row && Number.isFinite(Number(row.xg)) && Number.isFinite(Number(row.xga))) {
+      return { xg: Number(row.xg), xga: Number(row.xga) };
     }
-    return null;
+    return leagueAverages(xgTables, league, baseGoals);
   }
 
   // split table format:
@@ -197,24 +214,25 @@
         if (typeof leagueStrength?.[league] === "number") leagueMult = leagueStrength[league];
         else if (typeof xgTables?.[league]?.__league_factor === "number") leagueMult = xgTables[league].__league_factor;
 
-        // pull splits first, else overall
-        const splitH = getSplit(xgSplits, league, aliHome);
-        const splitA = getSplit(xgSplits, league, aliAway);
-
-        const overallH = getOverall(xgTables, league, aliHome);
-        const overallA = getOverall(xgTables, league, aliAway);
-
-        // home uses HOME split; away uses AWAY split
-        const home_xg  = splitH?.home_xg  ?? overallH?.xg  ?? 1.35;
-        const home_xga = splitH?.home_xga ?? overallH?.xga ?? 1.35;
-        const away_xg  = splitA?.away_xg  ?? overallA?.xg  ?? 1.35;
-        const away_xga = splitA?.away_xga ?? overallA?.xga ?? 1.35;
-
-        // convert to multipliers around base
         const baseGoals = 1.35;
         const homeAdv = 1.10;
         const goalCap = 8;
 
+        // pull splits first
+        const splitH = getSplit(xgSplits, league, aliHome);
+        const splitA = getSplit(xgSplits, league, aliAway);
+
+        // SAFE overall fallback (team -> league avg -> base)
+        const overallH = safeOverallOrLeagueAvg(xgTables, league, aliHome, baseGoals);
+        const overallA = safeOverallOrLeagueAvg(xgTables, league, aliAway, baseGoals);
+
+        // home uses HOME split; away uses AWAY split
+        const home_xg  = splitH?.home_xg  ?? overallH.xg;
+        const home_xga = splitH?.home_xga ?? overallH.xga;
+        const away_xg  = splitA?.away_xg  ?? overallA.xg;
+        const away_xga = splitA?.away_xga ?? overallA.xga;
+
+        // convert to multipliers around base
         const H_att = clamp(home_xg / baseGoals, 0.6, 1.8);
         const H_def = clamp(home_xga / baseGoals, 0.6, 1.8);
         const A_att = clamp(away_xg / baseGoals, 0.6, 1.8);
@@ -270,8 +288,8 @@
           </div>
 
           <div style="margin-top:12px;opacity:.75;font-size:12px;">
-            Splits used: Home(${splitH ? "home split" : "overall"}) • Away(${splitA ? "away split" : "overall"})
-            <br/>Raw split xG: H xg=${home_xg.toFixed(2)} xga=${home_xga.toFixed(2)} • A xg=${away_xg.toFixed(2)} xga=${away_xga.toFixed(2)}
+            Splits used: Home(${splitH ? "home split" : "overall/league avg"}) • Away(${splitA ? "away split" : "overall/league avg"})
+            <br/>Raw xG used: H xg=${home_xg.toFixed(2)} xga=${home_xga.toFixed(2)} • A xg=${away_xg.toFixed(2)} xga=${away_xga.toFixed(2)}
           </div>
         `);
 
