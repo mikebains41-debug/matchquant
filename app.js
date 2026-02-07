@@ -1,4 +1,4 @@
-/* app.js — MatchQuant (works with xg_tables.json {att, def} + cards/corners) */
+/* app.js — MatchQuant (xg_tables.json {att, def} + cards/corners) */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -12,6 +12,10 @@
     status: $("statusLine"),
   };
 
+  const BASE_GOALS = 1.35;
+  const HOME_ADV = 1.10;
+  const GOAL_CAP = 8;
+
   const norm = (s) =>
     String(s || "")
       .trim()
@@ -22,13 +26,13 @@
 
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-  function status(msg) {
-    if (el.status) el.status.textContent = msg;
-  }
+  const status = (msg) => {
+    if (el.status) el.status.textContent = msg || "";
+  };
 
-  function setResults(html) {
-    if (el.results) el.results.innerHTML = html;
-  }
+  const setResults = (html) => {
+    if (el.results) el.results.innerHTML = html || "";
+  };
 
   function opt(v, t) {
     const o = document.createElement("option");
@@ -81,14 +85,14 @@
 
   // ✅ SAFE TEAM KEY RESOLVER:
   // exact -> alias(if exists in table) -> normalized match -> fallback
-  function resolveTeamKey(xgTables, aliases, league, team) {
-    const table = xgTables?.[league];
+  function resolveTeamKey(tableByLeague, aliases, league, team) {
+    const table = tableByLeague?.[league];
     if (!table || typeof table !== "object") return team;
 
-    // 1) exact key match
+    // 1) exact
     if (table[team]) return team;
 
-    // 2) alias only if alias exists in xgTables
+    // 2) alias (only if it exists in the table)
     const ali = applyAlias(aliases, league, team);
     if (ali && table[ali]) return ali;
 
@@ -104,25 +108,31 @@
   }
 
   // ✅ xg_tables.json format: {att, def}
-  function leagueAverages(xgTables, league, baseGoals = 1.35) {
+  function leagueAverages(xgTables, league, baseGoals = BASE_GOALS) {
     const table = xgTables?.[league];
     if (!table || typeof table !== "object") return { xg: baseGoals, xga: baseGoals };
 
-    let sxg = 0, sxga = 0, n = 0;
+    let sxg = 0,
+      sxga = 0,
+      n = 0;
+
     for (const [team, row] of Object.entries(table)) {
       if (!row || String(team).startsWith("__")) continue;
       const xg = Number(row.att);
       const xga = Number(row.def);
       if (Number.isFinite(xg) && Number.isFinite(xga)) {
-        sxg += xg; sxga += xga; n++;
+        sxg += xg;
+        sxga += xga;
+        n++;
       }
     }
+
     if (!n) return { xg: baseGoals, xga: baseGoals };
     return { xg: sxg / n, xga: sxga / n };
   }
 
-  function safeOverallOrLeagueAvg(xgTables, league, team, baseGoals = 1.35) {
-    const row = xgTables?.[league]?.[team];
+  function safeOverallOrLeagueAvg(xgTables, league, teamKey, baseGoals = BASE_GOALS) {
+    const row = xgTables?.[league]?.[teamKey];
     const xg = Number(row?.att);
     const xga = Number(row?.def);
     if (Number.isFinite(xg) && Number.isFinite(xga)) return { xg, xga };
@@ -131,8 +141,8 @@
 
   // cards/corners row format:
   // { cards_for, cards_against, corners_for, corners_against }
-  function getCardsCorners(cardsCorners, league, team) {
-    const row = cardsCorners?.[league]?.[team];
+  function getCardsCorners(cardsCorners, league, teamKey) {
+    const row = cardsCorners?.[league]?.[teamKey];
     if (!row) return null;
 
     const cards_for = Number(row.cards_for);
@@ -185,11 +195,19 @@
       let aliases = {};
       let cardsCorners = {};
 
-      // ✅ IMPORTANT: load your xg_tables.json
-      try { xgTables = await fetchJson("./data/xg_tables.json"); } catch {}
-      try { leagueStrength = await fetchJson("./data/league_strength.json"); } catch {}
-      try { aliases = await fetchJson("./data/aliases.json"); } catch {}
-      try { cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json"); } catch {}
+      // Optional datasets
+      try {
+        xgTables = await fetchJson("./data/xg_tables.json");
+      } catch {}
+      try {
+        leagueStrength = await fetchJson("./data/league_strength.json");
+      } catch {}
+      try {
+        aliases = await fetchJson("./data/aliases.json");
+      } catch {}
+      try {
+        cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json");
+      } catch {}
 
       const leagues = Object.keys(teamsByLeague || {}).sort();
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
@@ -233,42 +251,47 @@
           );
         }
 
-        // ✅ resolve keys SAFELY (prevents alias breaking lookups)
+        // ✅ Resolve keys consistently for both xG + cards/corners tables
         const keyHome = resolveTeamKey(xgTables, aliases, league, home);
         const keyAway = resolveTeamKey(xgTables, aliases, league, away);
 
-        // league multiplier
+        // League multiplier (strength overrides xg_tables __league_factor)
         let leagueMult = 1.0;
         if (typeof leagueStrength?.[league] === "number") leagueMult = leagueStrength[league];
-        else if (typeof xgTables?.[league]?.__league_factor === "number")
+        else if (typeof xgTables?.[league]?.__league_factor === "number") {
           leagueMult = xgTables[league].__league_factor;
-
-        const baseGoals = 1.35;
-        const homeAdv = 1.10;
-        const goalCap = 8;
+        }
 
         // ✅ xG overall fallback (team -> league avg -> base)
-        const overallH = safeOverallOrLeagueAvg(xgTables, league, keyHome, baseGoals);
-        const overallA = safeOverallOrLeagueAvg(xgTables, league, keyAway, baseGoals);
+        const overallH = safeOverallOrLeagueAvg(xgTables, league, keyHome, BASE_GOALS);
+        const overallA = safeOverallOrLeagueAvg(xgTables, league, keyAway, BASE_GOALS);
 
-        // convert to multipliers around base
-        const H_att = clamp(overallH.xg / baseGoals, 0.6, 1.8);
-        const H_def = clamp(overallH.xga / baseGoals, 0.6, 1.8);
-        const A_att = clamp(overallA.xg / baseGoals, 0.6, 1.8);
-        const A_def = clamp(overallA.xga / baseGoals, 0.6, 1.8);
+        // Convert to multipliers around BASE_GOALS
+        const H_att = clamp(overallH.xg / BASE_GOALS, 0.6, 1.8);
+        const H_def = clamp(overallH.xga / BASE_GOALS, 0.6, 1.8);
+        const A_att = clamp(overallA.xg / BASE_GOALS, 0.6, 1.8);
+        const A_def = clamp(overallA.xga / BASE_GOALS, 0.6, 1.8);
 
-        const xgHome = baseGoals * H_att * A_def;
-        const xgAway = baseGoals * A_att * H_def;
+        // Expected goals inputs into engine
+        const xgHome = BASE_GOALS * H_att * A_def;
+        const xgAway = BASE_GOALS * A_att * H_def;
 
-        // ✅ Cards & Corners
-        const ccH = getCardsCorners(cardsCorners, league, keyHome);
-        const ccA = getCardsCorners(cardsCorners, league, keyAway);
+        // ✅ Cards & Corners (try both key and alias key, to be extra safe)
+        const ccHome =
+          getCardsCorners(cardsCorners, league, keyHome) ||
+          getCardsCorners(cardsCorners, league, applyAlias(aliases, league, home));
 
-        const cardsHome = ccH && ccA ? (ccH.cards_for + ccA.cards_against) / 2 : null;
-        const cardsAway = ccH && ccA ? (ccA.cards_for + ccH.cards_against) / 2 : null;
+        const ccAway =
+          getCardsCorners(cardsCorners, league, keyAway) ||
+          getCardsCorners(cardsCorners, league, applyAlias(aliases, league, away));
 
-        const cornersHome = ccH && ccA ? (ccH.corners_for + ccA.corners_against) / 2 : null;
-        const cornersAway = ccH && ccA ? (ccA.corners_for + ccH.corners_against) / 2 : null;
+        const cardsHome = ccHome && ccAway ? (ccHome.cards_for + ccAway.cards_against) / 2 : null;
+        const cardsAway = ccHome && ccAway ? (ccAway.cards_for + ccHome.cards_against) / 2 : null;
+
+        const cornersHome =
+          ccHome && ccAway ? (ccHome.corners_for + ccAway.corners_against) / 2 : null;
+        const cornersAway =
+          ccHome && ccAway ? (ccAway.corners_for + ccHome.corners_against) / 2 : null;
 
         const out = engine({
           leagueName: league,
@@ -277,9 +300,9 @@
           xgHome,
           xgAway,
           leagueMult,
-          homeAdv,
-          baseGoals,
-          goalCap,
+          homeAdv: HOME_ADV,
+          baseGoals: BASE_GOALS,
+          goalCap: GOAL_CAP,
           sims: Number(el.sims?.value || 10000),
           cardsHome,
           cardsAway,
@@ -294,7 +317,7 @@
         const cards = out.cards || {};
         const corners = out.corners || {};
 
-        // ✅ debug line so you can see what keys were used
+        // Debug: confirm table keys are found
         const foundH = !!xgTables?.[league]?.[keyHome];
         const foundA = !!xgTables?.[league]?.[keyAway];
 
@@ -303,7 +326,7 @@
             ${home} vs ${away}
           </div>
           <div style="opacity:.85;margin-bottom:10px;">
-            ${league} • λH=${out.lamH.toFixed(2)} • λA=${out.lamA.toFixed(2)}
+            ${league} • λH=${Number(out.lamH).toFixed(2)} • λA=${Number(out.lamA).toFixed(2)}
           </div>
 
           <div class="kv">
@@ -359,3 +382,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+```0
