@@ -1,132 +1,130 @@
-{
-  "Premier League": {
-    "Arsenal": { "xg": 2.054, "xga": 0.783 },
-    "Manchester City": { "xg": 1.961, "xga": 1.214 },
-    "Aston Villa": { "xg": 1.423, "xga": 1.514 },
-    "Manchester United": { "xg": 1.954, "xga": 1.339 },
-    "Chelsea": { "xg": 1.972, "xga": 1.528 },
-    "Liverpool": { "xg": 1.789, "xga": 1.292 },
-    "Brentford": { "xg": 1.793, "xga": 1.422 },
-    "Sunderland": { "xg": 1.053, "xga": 1.566 },
-    "Fulham": { "xg": 1.175, "xga": 1.593 },
-    "Everton": { "xg": 1.223, "xga": 1.538 },
-    "Newcastle United": { "xg": 1.584, "xga": 1.249 },
-    "Bournemouth": { "xg": 1.740, "xga": 1.459 },
-    "Brighton": { "xg": 1.558, "xga": 1.592 },
-    "Tottenham": { "xg": 1.221, "xga": 1.377 },
-    "Crystal Palace": { "xg": 1.718, "xga": 1.542 },
-    "Leeds": { "xg": 1.484, "xga": 1.472 },
-    "Nottingham Forest": { "xg": 1.113, "xga": 1.669 },
-    "West Ham": { "xg": 1.250, "xga": 1.985 },
-    "Burnley": { "xg": 0.925, "xga": 2.230 },
-    "Wolverhampton": { "xg": 0.934, "xga": 1.560 }
-  },
+// --- Asian Handicap (fair odds) from scoreline probabilities ---
+// Requires a scoreProb matrix: scoreProb[h][a] = P(H=h, A=a)
+// If you only have sims, you can build scoreProb from sim counts.
 
-  "La Liga": {
-    "Barcelona": { "xg": 2.920, "xga": 1.418 },
-    "Real Madrid": { "xg": 2.485, "xga": 1.181 },
-    "Atletico Madrid": { "xg": 1.802, "xga": 1.132 },
-    "Villarreal": { "xg": 1.815, "xga": 1.378 },
-    "Real Betis": { "xg": 1.723, "xga": 1.409 },
-    "Espanyol": { "xg": 1.588, "xga": 1.477 },
-    "Celta Vigo": { "xg": 1.314, "xga": 1.454 },
-    "Real Sociedad": { "xg": 1.544, "xga": 1.431 },
-    "Osasuna": { "xg": 1.255, "xga": 1.296 },
-    "Alaves": { "xg": 1.329, "xga": 1.393 },
-    "Athletic Club": { "xg": 1.479, "xga": 1.252 },
-    "Girona": { "xg": 1.189, "xga": 1.884 },
-    "Elche": { "xg": 1.203, "xga": 2.001 },
-    "Mallorca": { "xg": 1.229, "xga": 1.724 },
-    "Sevilla": { "xg": 1.187, "xga": 1.827 },
-    "Getafe": { "xg": 0.789, "xga": 1.177 },
-    "Valencia": { "xg": 1.385, "xga": 1.519 },
-    "Rayo Vallecano": { "xg": 1.424, "xga": 1.566 },
-    "Levante": { "xg": 1.489, "xga": 1.833 },
-    "Real Oviedo": { "xg": 1.013, "xga": 1.806 }
-  },
+function computeAsianHandicapFair(scoreProb, maxGoals = 10) {
+  // goalDiffProb[d] where d = homeGoals - awayGoals (range -max..+max)
+  const diffOffset = maxGoals;
+  const diffProb = Array(2 * maxGoals + 1).fill(0);
 
-  "Bundesliga": {
-    "Bayern Munich": { "xg": 3.040, "xga": 0.995 },
-    "Borussia Dortmund": { "xg": 1.904, "xga": 1.129 },
-    "Hoffenheim": { "xg": 1.766, "xga": 1.454 },
-    "Stuttgart": { "xg": 1.912, "xga": 1.391 },
-    "RB Leipzig": { "xg": 2.076, "xga": 1.507 },
-    "Bayer Leverkusen": { "xg": 2.083, "xga": 1.369 },
-    "Eintracht Frankfurt": { "xg": 1.497, "xga": 1.626 },
-    "Freiburg": { "xg": 1.556, "xga": 1.542 },
-    "Union Berlin": { "xg": 1.478, "xga": 1.384 },
-    "FC Koln": { "xg": 1.543, "xga": 1.816 },
-    "Augsburg": { "xg": 1.184, "xga": 1.936 },
-    "Borussia Monchengladbach": { "xg": 1.449, "xga": 1.744 },
-    "Hamburger SV": { "xg": 1.312, "xga": 1.654 },
-    "Wolfsburg": { "xg": 1.399, "xga": 1.913 },
-    "Werder Bremen": { "xg": 1.234, "xga": 1.854 },
-    "Mainz": { "xg": 1.586, "xga": 1.990 },
-    "St. Pauli": { "xg": 0.993, "xga": 1.829 },
-    "Heidenheim": { "xg": 1.349, "xga": 2.205 }
-  },
-
-  "Serie A": {
-    "Inter": { "xg": 2.482, "xga": 0.843 },
-    "AC Milan": { "xg": 1.858, "xga": 1.078 },
-    "Napoli": { "xg": 1.580, "xga": 1.139 },
-    "Juventus": { "xg": 1.894, "xga": 0.872 },
-    "Roma": { "xg": 1.513, "xga": 1.169 },
-    "Como": { "xg": 1.819, "xga": 1.161 },
-    "Atalanta": { "xg": 1.806, "xga": 1.414 },
-    "Lazio": { "xg": 1.187, "xga": 1.336 },
-    "Udinese": { "xg": 1.275, "xga": 1.516 },
-    "Bologna": { "xg": 1.367, "xga": 1.527 },
-    "Sassuolo": { "xg": 1.243, "xga": 1.554 },
-    "Cagliari": { "xg": 1.066, "xga": 1.635 },
-    "Torino": { "xg": 1.366, "xga": 1.598 },
-    "Genoa": { "xg": 1.291, "xga": 1.562 },
-    "Cremonese": { "xg": 1.057, "xga": 1.827 },
-    "Parma Calcio 1913": { "xg": 1.056, "xga": 1.728 },
-    "Lecce": { "xg": 0.850, "xga": 1.696 },
-    "Fiorentina": { "xg": 1.603, "xga": 1.670 },
-    "Pisa": { "xg": 1.188, "xga": 1.884 },
-    "Verona": { "xg": 1.124, "xga": 1.414 }
-  },
-
-  "Ligue 1": {
-    "PSG": { "xg": 1.925, "xga": 0.925 },
-    "Lens": { "xg": 2.172, "xga": 1.252 },
-    "Marseille": { "xg": 2.122, "xga": 1.246 },
-    "Lyon": { "xg": 1.735, "xga": 1.222 },
-    "Lille": { "xg": 1.760, "xga": 1.442 },
-    "Rennes": { "xg": 1.544, "xga": 1.730 },
-    "Strasbourg": { "xg": 1.688, "xga": 1.325 },
-    "Toulouse": { "xg": 1.339, "xga": 1.311 },
-    "Lorient": { "xg": 1.463, "xga": 1.500 },
-    "Monaco": { "xg": 1.812, "xga": 1.540 },
-    "Angers": { "xg": 1.031, "xga": 1.712 },
-    "Brest": { "xg": 1.438, "xga": 1.529 },
-    "Nice": { "xg": 1.392, "xga": 1.826 },
-    "Paris FC": { "xg": 1.348, "xga": 1.685 },
-    "Le Havre": { "xg": 1.102, "xga": 1.495 },
-    "Nantes": { "xg": 1.074, "xga": 1.739 },
-    "Auxerre": { "xg": 1.154, "xga": 1.570 },
-    "Metz": { "xg": 0.974, "xga": 2.025 }
-  },
-
-  "Primeira Liga": {
-    "Arouca": { "xg": 1.12, "xga": 1.48 },
-    "AVS": { "xg": 0.78, "xga": 1.93 },
-    "Benfica": { "xg": 1.92, "xga": 0.92 },
-    "Boavista": { "xg": 1.05, "xga": 1.61 },
-    "Braga": { "xg": 1.74, "xga": 1.21 },
-    "Casa Pia": { "xg": 1.01, "xga": 1.29 },
-    "Estoril": { "xg": 1.18, "xga": 1.44 },
-    "Famalicao": { "xg": 1.22, "xga": 1.36 },
-    "Farense": { "xg": 0.97, "xga": 1.52 },
-    "Gil Vicente": { "xg": 1.09, "xga": 1.47 },
-    "Moreirense": { "xg": 1.11, "xga": 1.33 },
-    "Nacional": { "xg": 0.95, "xga": 1.58 },
-    "Portimonense": { "xg": 0.93, "xga": 1.63 },
-    "Porto": { "xg": 1.72, "xga": 0.47 },
-    "Rio Ave": { "xg": 1.08, "xga": 1.42 },
-    "Sporting CP": { "xg": 1.83, "xga": 0.49 },
-    "Vitoria Guimaraes": { "xg": 1.34, "xga": 1.18 }
+  for (let h = 0; h <= maxGoals; h++) {
+    for (let a = 0; a <= maxGoals; a++) {
+      const p = (scoreProb[h] && scoreProb[h][a]) ? scoreProb[h][a] : 0;
+      const d = h - a;
+      if (d >= -maxGoals && d <= maxGoals) diffProb[d + diffOffset] += p;
+    }
   }
+
+  function sumDiffGreaterThan(x) {
+    // P(diff > x)
+    let s = 0;
+    for (let d = x + 1; d <= maxGoals; d++) s += diffProb[d + diffOffset] || 0;
+    return s;
+  }
+  function sumDiffGreaterOrEqual(x) {
+    // P(diff >= x)
+    let s = 0;
+    for (let d = x; d <= maxGoals; d++) s += diffProb[d + diffOffset] || 0;
+    return s;
+  }
+  function sumDiffLessThan(x) {
+    // P(diff < x)
+    let s = 0;
+    for (let d = -maxGoals; d <= x - 1; d++) s += diffProb[d + diffOffset] || 0;
+    return s;
+  }
+  function sumDiffLessOrEqual(x) {
+    // P(diff <= x)
+    let s = 0;
+    for (let d = -maxGoals; d <= x; d++) s += diffProb[d + diffOffset] || 0;
+    return s;
+  }
+
+  // For a given line L (home -0.25 etc), compute win/push/lose for HOME side.
+  // Handles quarter-lines by splitting stake into two adjacent half-lines.
+  function homeAhWinPushLose(line) {
+    const isQuarter = Math.abs(line * 2 - Math.round(line * 2)) < 1e-9 && Math.abs(line * 1 - Math.round(line * 1)) > 1e-9;
+
+    const evalHalf = (halfLine) => {
+      // HOME bet at halfLine: outcome depends on diff + halfLine
+      // If diff + halfLine > 0 => win
+      // If diff + halfLine = 0 => push
+      // If diff + halfLine < 0 => lose
+      // diff is integer, so equality occurs when diff = -halfLine (halfLine is .0 or .5)
+      let win = 0, push = 0, lose = 0;
+
+      if (Math.abs(halfLine % 1) < 1e-9) {
+        // integer line (e.g. -1, 0, +1)
+        const t = -halfLine; // push when diff == t
+        win = sumDiffGreaterThan(t);
+        push = diffProb[t + diffOffset] || 0;
+        lose = sumDiffLessThan(t);
+      } else {
+        // half line (e.g. -0.5, +1.5) => no push possible
+        const t = -halfLine; // e.g. for -0.5, t=0.5. diff > 0.5 => diff>=1
+        // win when diff > t
+        // lose when diff < t
+        // since diff is integer: diff > 0.5 => diff>=1, diff < 0.5 => diff<=0
+        const ceilWin = Math.floor(t) + 1; // smallest integer > t
+        const floorLose = Math.floor(t);    // largest integer < t (since t not integer)
+        win = sumDiffGreaterOrEqual(ceilWin);
+        push = 0;
+        lose = sumDiffLessOrEqual(floorLose);
+      }
+
+      return { win, push, lose };
+    };
+
+    if (!isQuarter) {
+      // if line is integer or half (multiples of 0.5)
+      return evalHalf(line);
+    }
+
+    // quarter line: split into two half-lines
+    // Example: -0.25 = half stake on 0 and -0.5
+    //          +0.25 = half stake on 0 and +0.5
+    const lower = Math.floor(line * 2) / 2;       // nearest lower half-step
+    const upper = lower + 0.5;                    // next half-step
+
+    const a = evalHalf(lower);
+    const b = evalHalf(upper);
+
+    // combine half stakes
+    return {
+      win: 0.5 * (a.win + b.win),
+      push: 0.5 * (a.push + b.push),
+      lose: 0.5 * (a.lose + b.lose)
+    };
+  }
+
+  // Convert win/push/lose into "fair odds" for the home bet.
+  // Fair decimal odds = 1 / P(win) when no push; with push, effective return differs.
+  // We'll output:
+  // - winProb (stake wins)
+  // - loseProb (stake loses)
+  // - pushProb (stake refunded)
+  // - fairOdds "DNB-adjusted": 1 / (winProb / (winProb + loseProb))
+  function fairOddsFromWPL(wpl) {
+    const { win, push, lose } = wpl;
+    const denom = win + lose;
+    const dnbWinProb = denom > 0 ? win / denom : 0;
+    const fairOdds = dnbWinProb > 0 ? (1 / dnbWinProb) : Infinity;
+    return { win, push, lose, dnbWinProb, fairOdds };
+  }
+
+  const lines = [-2, -1.75, -1.5, -1.25, -1, -0.75, -0.5, -0.25, 0, +0.25, +0.5, +0.75, +1, +1.25, +1.5, +1.75, +2];
+
+  const results = lines.map((L) => {
+    const wpl = homeAhWinPushLose(L);
+    const out = fairOddsFromWPL(wpl);
+    return {
+      line: L,
+      home_win: out.win,
+      home_push: out.push,
+      home_lose: out.lose,
+      home_fair: Number.isFinite(out.fairOdds) ? +out.fairOdds.toFixed(2) : null
+    };
+  });
+
+  return results;
 }
