@@ -1,12 +1,15 @@
-// engine.js — MatchQuant Engine (Goals + Totals + Team Totals + AH + Cards + Corners)
+// engine.js — MatchQuant Engine (Goals + Totals + Team Totals + Asian Handicap (quarter lines) + Cards + Corners)
 // Exposes: window.MQ.predictMatchInternal(payload)
-// Sync output for app.js
+// NOTE: This is a full replacement for your current engine.js
 
 (() => {
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
-  // --- math helpers ---
+  // -------------------------
+  // Math helpers
+  // -------------------------
   function factorial(n) {
+    n = n | 0;
     if (n < 0) return NaN;
     if (n === 0 || n === 1) return 1;
     let r = 1;
@@ -20,11 +23,13 @@
   }
 
   function fairOdds(p) {
-    if (!p || p <= 0) return null;
+    if (!(p > 0)) return null;
     return +(1 / p).toFixed(2);
   }
 
-  // --- goals grid (home goals x away goals) ---
+  // -------------------------
+  // Goals grid (home goals x away goals)
+  // -------------------------
   function buildScoreGrid(lamH, lamA, goalCap = 8) {
     const cap = clamp(parseInt(goalCap || 8, 10), 4, 12);
     const grid = {};
@@ -76,7 +81,12 @@
         else away += p;
       }
     }
-    return { home, draw, away, homeOdds: fairOdds(home), drawOdds: fairOdds(draw), awayOdds: fairOdds(away) };
+    return {
+      home, draw, away,
+      homeOdds: fairOdds(home),
+      drawOdds: fairOdds(draw),
+      awayOdds: fairOdds(away)
+    };
   }
 
   function calcOverUnder(grid, line = 2.5) {
@@ -109,32 +119,173 @@
     return { yes, no, yesOdds: fairOdds(yes), noOdds: fairOdds(no) };
   }
 
-  // --- asian handicap ---
-  function calcAH(grid, side = "home", line = -0.5) {
-    let cover = 0, push = 0, fail = 0;
+  // -------------------------
+  // Asian Handicap — FAIR ODDS from score grid (supports quarter lines correctly)
+  // Returns HOME side W/P/L & DNB fair odds per line
+  // -------------------------
+  function computeAsianHandicapFair(scoreProb, maxGoals = 10) {
+    const clampInt = (n, lo, hi) => Math.max(lo, Math.min(hi, n | 0));
 
-    for (const hStr of Object.keys(grid)) {
-      const h = Number(hStr);
-      const row = grid[hStr];
-      for (const aStr of Object.keys(row)) {
-        const a = Number(aStr);
-        const p = row[aStr];
-        const diff = h - a;
-        const adj = side === "home" ? (diff + line) : (-diff + line);
+    // Build goal-diff distribution: diff = H - A, integer range [-maxGoals, +maxGoals]
+    const offset = maxGoals;
+    const diffProb = Array(2 * maxGoals + 1).fill(0);
 
-        if (adj > 0) cover += p;
-        else if (adj === 0) push += p;
-        else fail += p;
+    for (let h = 0; h <= maxGoals; h++) {
+      const row = scoreProb[h] || {};
+      for (let a = 0; a <= maxGoals; a++) {
+        const p = Number(row[a] ?? 0);
+        if (!p) continue;
+        const d = h - a;
+        if (d < -maxGoals || d > maxGoals) continue;
+        diffProb[d + offset] += p;
       }
     }
 
-    const eff = 1 - push;
-    const coverNoPush = eff > 0 ? cover / eff : 0;
+    // Prefix sums for fast range queries
+    const pref = Array(diffProb.length + 1).fill(0);
+    for (let i = 0; i < diffProb.length; i++) pref[i + 1] = pref[i] + diffProb[i];
 
-    return { cover, push, fail, coverOdds: fairOdds(coverNoPush) };
+    const sumIdx = (i0, i1) => {
+      i0 = clampInt(i0, 0, diffProb.length - 1);
+      i1 = clampInt(i1, 0, diffProb.length - 1);
+      if (i1 < i0) return 0;
+      return pref[i1 + 1] - pref[i0];
+    };
+
+    const P_diff_ge = (x) => sumIdx(x + offset, maxGoals + offset);
+    const P_diff_gt = (x) => P_diff_ge(x + 1);
+    const P_diff_le = (x) => sumIdx(-maxGoals + offset, x + offset);
+    const P_diff_lt = (x) => P_diff_le(x - 1);
+    const P_diff_eq = (x) => diffProb[x + offset] ?? 0;
+
+    function evalHalfOrInt(line) {
+      let win = 0, push = 0, lose = 0;
+
+      const isInteger = Math.abs(line - Math.round(line)) < 1e-12;
+      const isHalf = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12 && !isInteger;
+
+      if (!isInteger && !isHalf) {
+        throw new Error("evalHalfOrInt only accepts integer or half lines");
+      }
+
+      if (isInteger) {
+        // Push when diff + line == 0 => diff == -line
+        const t = -Math.round(line);
+        win = P_diff_gt(t);
+        push = P_diff_eq(t);
+        lose = P_diff_lt(t);
+        return { win, push, lose };
+      }
+
+      // Half line => no push
+      const t = -line;                // x.5
+      const smallestWin = Math.floor(t) + 1; // first integer > t
+      const largestLose = Math.floor(t);     // last integer < t
+      win = P_diff_ge(smallestWin);
+      push = 0;
+      lose = P_diff_le(largestLose);
+      return { win, push, lose };
+    }
+
+    function isQuarterLine(line) {
+      const q = Math.round(line * 4);
+      const isQuarterStep = Math.abs(line * 4 - q) < 1e-12;
+      const isHalfStep = Math.abs(line * 2 - Math.round(line * 2)) < 1e-12;
+      return isQuarterStep && !isHalfStep;
+    }
+
+    function homeAhWPL(line) {
+      if (!isQuarterLine(line)) return evalHalfOrInt(line);
+
+      // Split stake into two adjacent half-lines
+      const lower = Math.floor(line * 2) / 2;
+      const upper = lower + 0.5;
+
+      const a = evalHalfOrInt(lower);
+      const b = evalHalfOrInt(upper);
+
+      return {
+        win: 0.5 * (a.win + b.win),
+        push: 0.5 * (a.push + b.push),
+        lose: 0.5 * (a.lose + b.lose),
+      };
+    }
+
+    function toFair(wpl) {
+      const win = wpl.win;
+      const push = wpl.push;
+      const lose = wpl.lose;
+
+      // DNB-adjust: remove pushes
+      const denom = win + lose;
+      const dnbWinProb = denom > 0 ? win / denom : 0;
+      const fair = dnbWinProb > 0 ? 1 / dnbWinProb : null;
+
+      return {
+        win,
+        push,
+        lose,
+        dnbWinProb,
+        fairOdds: fair == null ? null : +fair.toFixed(2),
+      };
+    }
+
+    const lines = [
+      -2, -1.75, -1.5, -1.25, -1, -0.75, -0.5, -0.25,
+       0,  0.25,  0.5,  0.75,  1,  1.25,  1.5,  1.75, 2
+    ];
+
+    return lines.map((line) => {
+      const wpl = homeAhWPL(line);
+      const f = toFair(wpl);
+      return {
+        line,
+        home_win: +f.win.toFixed(6),
+        home_push: +f.push.toFixed(6),
+        home_lose: +f.lose.toFixed(6),
+        home_dnbWinProb: +f.dnbWinProb.toFixed(6),
+        home_fair: f.fairOdds,
+      };
+    });
   }
 
-  // --- team totals ---
+  // Build AH pack (home + away) from the fair ladder
+  function buildAHPack(grid, goalCap = 8) {
+    const cap = clamp(parseInt(goalCap || 8, 10), 4, 12);
+    const ladder = computeAsianHandicapFair(grid, cap);
+
+    const out = { home: {}, away: {} };
+
+    // HOME prices already computed
+    for (const r of ladder) {
+      out.home[String(r.line)] = {
+        win: r.home_win,
+        push: r.home_push,
+        lose: r.home_lose,
+        dnbWinProb: r.home_dnbWinProb,
+        fairOdds: r.home_fair,
+      };
+    }
+
+    // AWAY side = mirror the line for home (-line) using the same W/P/L but swapped win/lose
+    // Reason: Away +x equals Home -x
+    for (const r of ladder) {
+      const awayLine = -r.line;
+      out.away[String(awayLine)] = {
+        win: r.home_lose,
+        push: r.home_push,
+        lose: r.home_win,
+        dnbWinProb: +( (r.home_lose + r.home_win) > 0 ? (r.home_lose / (r.home_lose + r.home_win)) : 0 ).toFixed(6),
+        fairOdds: (r.home_lose > 0 ? +(1 / (r.home_lose / (r.home_lose + r.home_win))).toFixed(2) : null),
+      };
+    }
+
+    return out;
+  }
+
+  // -------------------------
+  // Team totals packs
+  // -------------------------
   function calcTeamTotal(grid, team = "home", line = 1.5) {
     let over = 0, under = 0;
     for (const hStr of Object.keys(grid)) {
@@ -168,17 +319,9 @@
     return out;
   }
 
-  function buildAHPack(grid) {
-    const lines = [-1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5];
-    const out = { home: {}, away: {} };
-    lines.forEach((ln) => {
-      out.home[String(ln)] = calcAH(grid, "home", ln);
-      out.away[String(ln)] = calcAH(grid, "away", ln);
-    });
-    return out;
-  }
-
-  // --- 1D poisson totals for cards/corners ---
+  // -------------------------
+  // 1D poisson totals for cards/corners
+  // -------------------------
   function build1DTotal(lambda, cap = 30) {
     const c = clamp(parseInt(cap || 30, 10), 10, 60);
     const probs = new Array(c + 1).fill(0);
@@ -215,14 +358,18 @@
     return { over, under, overOdds: fairOdds(over), underOdds: fairOdds(under) };
   }
 
-  // IMPORTANT: app.js calls this synchronously
+  // -------------------------
+  // MAIN: app.js calls this synchronously
+  // -------------------------
   function predictMatchInternal(payload) {
+    // required inputs
     const xgHome = Number(payload.xgHome ?? 1.35);
     const xgAway = Number(payload.xgAway ?? 1.35);
 
+    // tuning knobs
     const leagueMult = Number(payload.leagueMult ?? 1.0);
     const homeAdv = Number(payload.homeAdv ?? 1.10);
-    const goalCap = Number(payload.goalCap ?? 8);
+    const goalCap = clamp(parseInt(payload.goalCap ?? 8, 10), 4, 12);
 
     // Goals lambdas
     let lamH = xgHome * leagueMult * homeAdv;
@@ -239,12 +386,12 @@
     const ou25 = calcOverUnder(grid, 2.5);
     const btts = calcBTTS(grid);
 
-    // add-ons you already wanted
+    // packs
     const totals = buildTotalsPack(grid);
     const teamTotals = buildTeamTotalsPack(grid);
-    const ah = buildAHPack(grid);
+    const ah = buildAHPack(grid, goalCap); // quarter lines + DNB fair odds
 
-    // cards/corners from payload (optional)
+    // cards/corners inputs (optional: you can pass from your data file)
     const cardsHome = Number(payload.cardsHome);
     const cardsAway = Number(payload.cardsAway);
     const cornersHome = Number(payload.cornersHome);
@@ -270,15 +417,21 @@
       totals,
       teamTotals,
       ah,
+
       cards: {
         lambdaTotal: cardsTotalLam,
         mostLikelyTotal: cardsTotal.mostLikelyTotal,
+        ou35: ou1D(cardsTotal, 3.5),
         ou45: ou1D(cardsTotal, 4.5),
+        ou55: ou1D(cardsTotal, 5.5),
       },
+
       corners: {
         lambdaTotal: cornersTotalLam,
         mostLikelyTotal: cornersTotal.mostLikelyTotal,
+        ou85: ou1D(cornersTotal, 8.5),
         ou95: ou1D(cornersTotal, 9.5),
+        ou105: ou1D(cornersTotal, 10.5),
       },
     };
   }
