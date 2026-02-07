@@ -21,6 +21,7 @@
     "Burnley": { "xg": 0.925, "xga": 2.23 },
     "Wolverhampton": { "xg": 0.934, "xga": 1.56 }
   },
+
   "La Liga": {
     "Barcelona": { "xg": 2.92, "xga": 1.418 },
     "Real Madrid": { "xg": 2.485, "xga": 1.181 },
@@ -43,6 +44,7 @@
     "Levante": { "xg": 1.489, "xga": 1.833 },
     "Real Oviedo": { "xg": 1.013, "xga": 1.806 }
   },
+
   "Bundesliga": {
     "Bayern Munich": { "xg": 3.04, "xga": 0.995 },
     "Borussia Dortmund": { "xg": 1.904, "xga": 1.129 },
@@ -63,6 +65,7 @@
     "St. Pauli": { "xg": 0.993, "xga": 1.829 },
     "Heidenheim": { "xg": 1.349, "xga": 2.205 }
   },
+
   "Serie A": {
     "Inter": { "xg": 2.482, "xga": 0.843 },
     "AC Milan": { "xg": 1.858, "xga": 1.078 },
@@ -85,6 +88,7 @@
     "Pisa": { "xg": 1.188, "xga": 1.884 },
     "Verona": { "xg": 1.124, "xga": 1.414 }
   },
+
   "Ligue 1": {
     "PSG": { "xg": 1.925, "xga": 0.925 },
     "Lens": { "xg": 2.172, "xga": 1.252 },
@@ -105,5 +109,10 @@
     "Auxerre": { "xg": 1.154, "xga": 1.57 },
     "Metz": { "xg": 0.974, "xga": 2.025 }
   },
-  "Portugal": {}
+
+  "Portugal": {
+    "Benfica": { "xg": 1.92, "xga": 0.92 },
+    "Sporting CP": { "xg": 1.83, "xga": 0.49 },
+    "FC Porto": { "xg": 1.72, "xga": 0.47 }
+  }
 }
