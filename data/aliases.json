@@ -27,7 +27,6 @@
     "wolverhampton": "Wolverhampton",
     "wolverhampton wanderers": "Wolverhampton"
   },
-
   "La Liga": {
     "alaves": "Alaves",
     "almeria": "Almeria",
@@ -52,7 +51,6 @@
     "valencia": "Valencia",
     "villarreal": "Villarreal"
   },
-
   "Bundesliga": {
     "augsburg": "Augsburg",
     "bayer leverkusen": "Bayer Leverkusen",
@@ -79,7 +77,6 @@
     "werder bremen": "Werder Bremen",
     "wolfsburg": "Wolfsburg"
   },
-
   "Serie A": {
     "atalanta": "Atalanta",
     "bologna": "Bologna",
@@ -106,7 +103,6 @@
     "venezia": "Venezia",
     "verona": "Verona"
   },
-
   "Ligue 1": {
     "angers": "Angers",
     "auxerre": "Auxerre",
@@ -130,7 +126,6 @@
     "strasbourg": "Strasbourg",
     "toulouse": "Toulouse"
   },
-
   "Primeira Liga": {
     "arouca": "Arouca",
     "avs": "AVS",
