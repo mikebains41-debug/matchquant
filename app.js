@@ -1,4 +1,4 @@
-/* app.js — MatchQuant (FULL REWRITE: xG + Cards/Corners + strong diagnostics) */
+/* app.js — MatchQuant (DEBUG + FIX: teams.json object arrays + SW cache bust) */
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -111,13 +111,101 @@
   }
 
   // -------------------------
+  // DEBUG overlay (mobile friendly)
+  // -------------------------
+  const DBG_ID = "mq_debug_box";
+  function dbgEnsure() {
+    let box = document.getElementById(DBG_ID);
+    if (box) return box;
+
+    box = document.createElement("div");
+    box.id = DBG_ID;
+    box.style.cssText = `
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      z-index: 999999;
+      max-height: 42vh;
+      overflow: auto;
+      background: rgba(0,0,0,.78);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 14px;
+      padding: 10px;
+      font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #e9eefc;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    `;
+    box.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <b>MatchQuant Debug</b>
+      <button id="mq_dbg_close" style="border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#e9eefc;border-radius:10px;padding:6px 10px">Hide</button>
+    </div>
+    <div id="mq_dbg_lines" style="margin-top:8px;white-space:pre-wrap"></div>`;
+    document.body.appendChild(box);
+
+    box.querySelector("#mq_dbg_close").onclick = () => (box.style.display = "none");
+    return box;
+  }
+
+  function dbgClear() {
+    const box = dbgEnsure();
+    const lines = box.querySelector("#mq_dbg_lines");
+    lines.textContent = "";
+  }
+
+  function dbg(msg) {
+    const box = dbgEnsure();
+    const lines = box.querySelector("#mq_dbg_lines");
+    const ts = new Date().toLocaleTimeString();
+    lines.textContent = `${lines.textContent}${lines.textContent ? "\n" : ""}[${ts}] ${msg}`;
+  }
+
+  // -------------------------
+  // FIX: robust teams.json parsing
+  // -------------------------
+  function getTeamsForLeague(teamsByLeague, league) {
+    const v = teamsByLeague?.[league];
+    if (!v) return [];
+
+    // Array of strings: ["Arsenal", "Chelsea"]
+    if (Array.isArray(v) && typeof v[0] === "string") return v.slice();
+
+    // Array of objects: [{name:"Arsenal"}, {team:"Chelsea"}]
+    if (Array.isArray(v) && typeof v[0] === "object") {
+      return v
+        .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
+        .filter(Boolean)
+        .sort();
+    }
+
+    // Object forms:
+    if (typeof v === "object") {
+      if (Array.isArray(v.teams)) {
+        const t = v.teams;
+        if (!t.length) return [];
+        if (typeof t[0] === "string") return t.slice().sort();
+        return t
+          .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
+          .filter(Boolean)
+          .sort();
+      }
+      // { "Arsenal": {...}, "Chelsea": {...} } -> use keys
+      return Object.keys(v).filter((k) => !String(k).startsWith("__")).sort();
+    }
+
+    return [];
+  }
+
+  // -------------------------
   // xG league averages
   // -------------------------
   function computeLeagueXgAverages(xgTables, baseGoals = 1.35) {
     const out = {};
     for (const [league, table] of Object.entries(xgTables || {})) {
       if (!table || typeof table !== "object") continue;
-      let sxg = 0, sxga = 0, n = 0;
+      let sxg = 0,
+        sxga = 0,
+        n = 0;
       for (const [team, row] of Object.entries(table)) {
         if (!row || String(team).startsWith("__")) continue;
         const att = Number(row.att);
@@ -218,8 +306,22 @@
   // -------------------------
   async function init() {
     try {
+      dbgEnsure();
+      dbgClear();
+
       if (!el.league || !el.home || !el.away || !el.runBtn || !el.results) {
         throw new Error("Missing HTML IDs. index.html IDs must match app.js.");
+      }
+
+      // IMPORTANT: kill service worker during debug to avoid cached old JS/data
+      if ("serviceWorker" in navigator) {
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.unregister();
+          dbg("ServiceWorker: unregistered");
+        } catch (e) {
+          dbg("ServiceWorker: unregister failed");
+        }
       }
 
       resetSelect(el.league, "Select league", true);
@@ -231,6 +333,7 @@
 
       // REQUIRED
       const teamsByLeague = await fetchJson("./data/teams.json");
+      dbg("teams.json loaded");
 
       // OPTIONAL
       let xgTables = {};
@@ -238,16 +341,40 @@
       let leagueStrength = {};
       let cardsCorners = {};
 
-      try { xgTables = await fetchJson("./data/xg_tables.json"); } catch (e) { console.warn(e); }
-      try { aliases = await fetchJson("./data/aliases.json"); } catch (e) { console.warn(e); }
-      try { leagueStrength = await fetchJson("./data/league_strength.json"); } catch (e) { console.warn(e); }
-      try { cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json"); } catch (e) { console.warn(e); }
+      try {
+        xgTables = await fetchJson("./data/xg_tables.json");
+        dbg("xg_tables.json loaded");
+      } catch (e) {
+        dbg("xg_tables.json missing/failed");
+      }
+
+      try {
+        aliases = await fetchJson("./data/aliases.json");
+        dbg("aliases.json loaded");
+      } catch (e) {
+        dbg("aliases.json missing/failed");
+      }
+
+      try {
+        leagueStrength = await fetchJson("./data/league_strength.json");
+        dbg("league_strength.json loaded");
+      } catch (e) {
+        dbg("league_strength.json missing/failed");
+      }
+
+      try {
+        cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json");
+        dbg("cards_corners_2025_2026.json loaded");
+      } catch (e) {
+        dbg("cards_corners_2025_2026.json missing/failed");
+      }
 
       const baseGoals = 1.35;
       const leagueXgAvg = computeLeagueXgAverages(xgTables, baseGoals);
       const leagueCcAvg = computeLeagueCcAverages(cardsCorners);
 
       const leagues = Object.keys(teamsByLeague || {}).sort();
+      dbg(`Leagues found: ${leagues.length}`);
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
 
       resetSelect(el.league, "Select league", false);
@@ -260,10 +387,20 @@
         resetSelect(el.home, "Select home team", true);
         resetSelect(el.away, "Select away team", true);
 
-        if (!league) return status("Pick a league.");
+        if (!league) {
+          status("Pick a league.");
+          dbg("League empty");
+          return;
+        }
 
-        const teams = teamsByLeague[league];
-        if (!Array.isArray(teams) || !teams.length) return status(`No teams found for ${league}`);
+        const teams = getTeamsForLeague(teamsByLeague, league);
+        dbg(`League changed: ${league} -> teams: ${teams.length}`);
+
+        if (!Array.isArray(teams) || !teams.length) {
+          status(`No teams found for ${league}`);
+          dbg(`No teams for ${league}. Check teams.json shape/keys.`);
+          return;
+        }
 
         fillSelect(el.home, teams, "Select home team");
         fillSelect(el.away, teams, "Select away team");
@@ -284,6 +421,7 @@
 
         const engine = findEngine();
         if (!engine) {
+          dbg("Engine NOT found: window.MQ.predictMatchInternal missing");
           return setResults(
             `<b>Engine not found.</b><br>
              Make sure <code>engine.js</code> loads before <code>app.js</code> and exposes:<br>
@@ -400,14 +538,17 @@
 
         setResults(html);
         status("Done.");
+        dbg("Prediction ran OK");
       });
 
       status("Ready.");
       setResults(`<div style="opacity:.85">Select a league and teams, then press <b>Run Prediction</b>.</div>`);
+      dbg("App ready");
     } catch (err) {
       console.error(err);
       status("App error");
       setResults(`<b>Error:</b> ${String(err.message || err)}`);
+      dbg(`ERROR: ${String(err.message || err)}`);
     }
   }
 
