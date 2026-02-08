@@ -1,8 +1,78 @@
-<!doctype html>
-<html>
-  <head>
-    <meta http-equiv="refresh" content="0; url=./matchquant/">
-    <link rel="canonical" href="./matchquant/">
-  </head>
-  <body></body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchQuant</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1323" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>MatchQuant</h1>
+      <p>Professional xG-based football predictions</p>
+    </div>
+  </section>
+
+  <main class="wrap">
+    <div class="card">
+      <h2>Match Setup</h2>
+
+      <div class="grid2">
+        <div class="field">
+          <label>League</label>
+          <select id="leagueSelect"></select>
+        </div>
+
+        <div class="field">
+          <label>Home Team</label>
+          <select id="homeTeam" disabled></select>
+        </div>
+
+        <div class="field">
+          <label>Away Team</label>
+          <select id="awayTeam" disabled></select>
+        </div>
+
+        <div class="field">
+          <label>Simulations</label>
+          <select id="sims">
+            <option value="5000">5,000</option>
+            <option value="10000" selected>10,000</option>
+            <option value="20000">20,000</option>
+          </select>
+        </div>
+      </div>
+
+      <button id="runBtn" class="btn">Run Prediction</button>
+      <div id="statusLine" class="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Results</h2>
+      <div id="results" class="results">
+        Select a league and teams, then press <b>Run Prediction</b>.
+      </div>
+    </div>
+  </main>
+
+  <footer class="foot">
+    MatchQuant • xG Engine • Fair Odds • No Bookmaker Bias
+  </footer>
+
+  <!-- SCRIPT LOAD ORDER -->
+  <script src="engine.js"></script>
+  <script src="ah.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
+</body>
 </html>
