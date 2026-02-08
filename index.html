@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
 
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json?v=3" />
   <meta name="theme-color" content="#0b1323" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 
 <body>
@@ -64,15 +64,18 @@
     MatchQuant • xG Engine • Fair Odds • No Bookmaker Bias
   </footer>
 
-  <!-- SCRIPT LOAD ORDER -->
-  <script src="engine.js"></script>
-  <script src="ah.js"></script>
-  <script src="app.js"></script>
+  <!-- SCRIPT LOAD ORDER (cache-busted) -->
+  <script defer src="./engine.js?v=3"></script>
+  <script defer src="./ah.js?v=3"></script>
+  <script defer src="./app.js?v=3"></script>
 
+  <!-- TEMP: disable SW until everything is stable -->
+  <!--
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js");
+      navigator.serviceWorker.register("sw.js?v=3");
     }
   </script>
+  -->
 </body>
 </html>
