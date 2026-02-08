@@ -1,4 +1,9 @@
-/* app.js — MatchQuant (DEBUG + FIX: teams.json object arrays + SW cache bust) */
+/* app.js — MatchQuant (REWRITE: stable dropdowns + robust data load + mobile debug)
+   - Fixes league->teams population issues on mobile
+   - Loads ./data/*.json with cache-bust
+   - Works whether teams.json values are arrays/objects
+   - Does NOT rely on touch/click hacks; one clean change handler
+*/
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -15,6 +20,8 @@
   // -------------------------
   // helpers
   // -------------------------
+  const VERSION = String(Date.now()); // per-load cache bust
+
   const norm = (s) =>
     String(s || "")
       .trim()
@@ -58,7 +65,9 @@
   }
 
   async function fetchJson(path) {
-    const res = await fetch(path, { cache: "no-store" });
+    // cache-bust + no-store
+    const url = `${path}${path.includes("?") ? "&" : "?"}v=${encodeURIComponent(VERSION)}`;
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`${path} failed (${res.status})`);
     return await res.json();
   }
@@ -76,7 +85,6 @@
     return leagueAliases[key] || teamName;
   }
 
-  // exact -> alias -> normalized scan (works for xgTables OR cardsCorners)
   function resolveTeamKeyAny(tableByLeague, aliases, league, teamName) {
     const table = tableByLeague?.[league];
     if (!table || typeof table !== "object") return teamName;
@@ -149,8 +157,7 @@
 
   function dbgClear() {
     const box = dbgEnsure();
-    const lines = box.querySelector("#mq_dbg_lines");
-    lines.textContent = "";
+    box.querySelector("#mq_dbg_lines").textContent = "";
   }
 
   function dbg(msg) {
@@ -161,16 +168,16 @@
   }
 
   // -------------------------
-  // FIX: robust teams.json parsing
+  // Robust teams.json parsing
   // -------------------------
   function getTeamsForLeague(teamsByLeague, league) {
     const v = teamsByLeague?.[league];
     if (!v) return [];
 
-    // Array of strings: ["Arsenal", "Chelsea"]
-    if (Array.isArray(v) && typeof v[0] === "string") return v.slice();
+    // Array of strings
+    if (Array.isArray(v) && typeof v[0] === "string") return v.slice().sort();
 
-    // Array of objects: [{name:"Arsenal"}, {team:"Chelsea"}]
+    // Array of objects
     if (Array.isArray(v) && typeof v[0] === "object") {
       return v
         .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
@@ -178,7 +185,7 @@
         .sort();
     }
 
-    // Object forms:
+    // Object forms
     if (typeof v === "object") {
       if (Array.isArray(v.teams)) {
         const t = v.teams;
@@ -189,7 +196,7 @@
           .filter(Boolean)
           .sort();
       }
-      // { "Arsenal": {...}, "Chelsea": {...} } -> use keys
+      // { "Arsenal": {...}, "Chelsea": {...} } -> keys
       return Object.keys(v).filter((k) => !String(k).startsWith("__")).sort();
     }
 
@@ -288,17 +295,7 @@
     const avg = leagueCcAvg?.[league];
     if (avg) return { ...avg, found: false };
 
-    return null; // no data for that league
-  }
-
-  function wireLeagueUpdate(updateTeams) {
-    ["change", "input", "click", "touchend"].forEach((ev) => {
-      el.league?.addEventListener(ev, () => {
-        setTimeout(updateTeams, 0);
-        setTimeout(updateTeams, 60);
-        setTimeout(updateTeams, 160);
-      });
-    });
+    return null;
   }
 
   // -------------------------
@@ -313,7 +310,7 @@
         throw new Error("Missing HTML IDs. index.html IDs must match app.js.");
       }
 
-      // IMPORTANT: kill service worker during debug to avoid cached old JS/data
+      // Debug mode: unregister SW to stop stale cached JS/data
       if ("serviceWorker" in navigator) {
         try {
           const regs = await navigator.serviceWorker.getRegistrations();
@@ -377,12 +374,14 @@
       dbg(`Leagues found: ${leagues.length}`);
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
 
+      // Fill league dropdown
       resetSelect(el.league, "Select league", false);
       leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
       el.league.disabled = false;
 
-      const updateTeams = () => {
-        const league = el.league.value;
+      // ONE stable handler (no click/touch hacks)
+      function updateTeams() {
+        const league = el.league.value || "";
 
         resetSelect(el.home, "Select home team", true);
         resetSelect(el.away, "Select away team", true);
@@ -396,7 +395,7 @@
         const teams = getTeamsForLeague(teamsByLeague, league);
         dbg(`League changed: ${league} -> teams: ${teams.length}`);
 
-        if (!Array.isArray(teams) || !teams.length) {
+        if (!teams.length) {
           status(`No teams found for ${league}`);
           dbg(`No teams for ${league}. Check teams.json shape/keys.`);
           return;
@@ -405,11 +404,12 @@
         fillSelect(el.home, teams, "Select home team");
         fillSelect(el.away, teams, "Select away team");
         status(`Loaded ${teams.length} teams for ${league}`);
-      };
+      }
 
-      wireLeagueUpdate(updateTeams);
+      el.league.addEventListener("change", updateTeams);
       updateTeams();
 
+      // Run prediction
       el.runBtn.addEventListener("click", () => {
         const league = el.league.value;
         const home = el.home.value;
@@ -439,8 +439,7 @@
         // league multiplier
         let leagueMult = 1.0;
         if (typeof leagueStrength?.[league] === "number") leagueMult = leagueStrength[league];
-        else if (typeof xgTables?.[league]?.__league_factor === "number")
-          leagueMult = xgTables[league].__league_factor;
+        else if (typeof xgTables?.[league]?.__league_factor === "number") leagueMult = xgTables[league].__league_factor;
 
         const homeAdv = 1.10;
         const goalCap = 8;
@@ -554,3 +553,4 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
+```0
