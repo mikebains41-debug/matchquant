@@ -1,8 +1,7 @@
-/* app.js — MatchQuant (REWRITE: stable dropdowns + robust data load + mobile debug)
-   - Fixes league->teams population issues on mobile
-   - Loads ./data/*.json with cache-bust
-   - Works whether teams.json values are arrays/objects
-   - Does NOT rely on touch/click hacks; one clean change handler
+/* app.js — MatchQuant (stable dropdowns + robust data load + mobile debug)
+   - Loads ./data/*.json with cache-bust + no-store
+   - Populates league -> teams reliably on mobile
+   - Resolves team keys across datasets using aliases + normalization
 */
 (() => {
   const $ = (id) => document.getElementById(id);
@@ -17,10 +16,7 @@
     status: $("statusLine"),
   };
 
-  // -------------------------
-  // helpers
-  // -------------------------
-  const VERSION = String(Date.now()); // per-load cache bust
+  const VERSION = "4"; // bump this when you deploy changes
 
   const norm = (s) =>
     String(s || "")
@@ -65,7 +61,6 @@
   }
 
   async function fetchJson(path) {
-    // cache-bust + no-store
     const url = `${path}${path.includes("?") ? "&" : "?"}v=${encodeURIComponent(VERSION)}`;
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`${path} failed (${res.status})`);
@@ -76,6 +71,77 @@
     return window.MQ && typeof window.MQ.predictMatchInternal === "function"
       ? window.MQ.predictMatchInternal
       : null;
+  }
+
+  // -------- Debug overlay (mobile) --------
+  const DBG_ID = "mq_debug_box";
+  function dbgEnsure() {
+    let box = document.getElementById(DBG_ID);
+    if (box) return box;
+
+    box = document.createElement("div");
+    box.id = DBG_ID;
+    box.style.cssText = `
+      position: fixed; left: 10px; right: 10px; bottom: 10px; z-index: 999999;
+      max-height: 42vh; overflow: auto;
+      background: rgba(0,0,0,.78);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 14px;
+      padding: 10px;
+      font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      color: #e9eefc;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+    `;
+    box.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <b>MatchQuant Debug</b>
+      <button id="mq_dbg_close" style="border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#e9eefc;border-radius:10px;padding:6px 10px">Hide</button>
+    </div>
+    <div id="mq_dbg_lines" style="margin-top:8px;white-space:pre-wrap"></div>`;
+    document.body.appendChild(box);
+    box.querySelector("#mq_dbg_close").onclick = () => (box.style.display = "none");
+    return box;
+  }
+
+  function dbgClear() {
+    const box = dbgEnsure();
+    box.querySelector("#mq_dbg_lines").textContent = "";
+  }
+
+  function dbg(msg) {
+    const box = dbgEnsure();
+    const lines = box.querySelector("#mq_dbg_lines");
+    const ts = new Date().toLocaleTimeString();
+    lines.textContent = `${lines.textContent}${lines.textContent ? "\n" : ""}[${ts}] ${msg}`;
+  }
+
+  // -------- teams.json parsing --------
+  function getTeamsForLeague(teamsByLeague, league) {
+    const v = teamsByLeague?.[league];
+    if (!v) return [];
+
+    if (Array.isArray(v) && typeof v[0] === "string") return v.slice().sort();
+
+    if (Array.isArray(v) && typeof v[0] === "object") {
+      return v
+        .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
+        .filter(Boolean)
+        .sort();
+    }
+
+    if (typeof v === "object") {
+      if (Array.isArray(v.teams)) {
+        const t = v.teams;
+        if (!t.length) return [];
+        if (typeof t[0] === "string") return t.slice().sort();
+        return t
+          .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
+          .filter(Boolean)
+          .sort();
+      }
+      return Object.keys(v).filter((k) => !String(k).startsWith("__")).sort();
+    }
+
+    return [];
   }
 
   function applyAlias(aliasesByLeague, league, teamName) {
@@ -102,125 +168,18 @@
     return teamName;
   }
 
-  function fmtNum(x, d = 2) {
-    if (x == null || !Number.isFinite(Number(x))) return "—";
-    return Number(x).toFixed(d);
-  }
-
-  function toPct(x) {
-    if (x == null || !Number.isFinite(Number(x))) return "—";
-    return (Number(x) * 100).toFixed(1) + "%";
-  }
-
-  function fairOdds(p) {
-    const pp = Number(p);
-    if (!pp || !Number.isFinite(pp) || pp <= 0) return "—";
-    return (1 / pp).toFixed(2);
-  }
-
-  // -------------------------
-  // DEBUG overlay (mobile friendly)
-  // -------------------------
-  const DBG_ID = "mq_debug_box";
-  function dbgEnsure() {
-    let box = document.getElementById(DBG_ID);
-    if (box) return box;
-
-    box = document.createElement("div");
-    box.id = DBG_ID;
-    box.style.cssText = `
-      position: fixed;
-      left: 10px;
-      right: 10px;
-      bottom: 10px;
-      z-index: 999999;
-      max-height: 42vh;
-      overflow: auto;
-      background: rgba(0,0,0,.78);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 14px;
-      padding: 10px;
-      font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      color: #e9eefc;
-      box-shadow: 0 12px 30px rgba(0,0,0,.35);
-    `;
-    box.innerHTML = `<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-      <b>MatchQuant Debug</b>
-      <button id="mq_dbg_close" style="border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#e9eefc;border-radius:10px;padding:6px 10px">Hide</button>
-    </div>
-    <div id="mq_dbg_lines" style="margin-top:8px;white-space:pre-wrap"></div>`;
-    document.body.appendChild(box);
-
-    box.querySelector("#mq_dbg_close").onclick = () => (box.style.display = "none");
-    return box;
-  }
-
-  function dbgClear() {
-    const box = dbgEnsure();
-    box.querySelector("#mq_dbg_lines").textContent = "";
-  }
-
-  function dbg(msg) {
-    const box = dbgEnsure();
-    const lines = box.querySelector("#mq_dbg_lines");
-    const ts = new Date().toLocaleTimeString();
-    lines.textContent = `${lines.textContent}${lines.textContent ? "\n" : ""}[${ts}] ${msg}`;
-  }
-
-  // -------------------------
-  // Robust teams.json parsing
-  // -------------------------
-  function getTeamsForLeague(teamsByLeague, league) {
-    const v = teamsByLeague?.[league];
-    if (!v) return [];
-
-    // Array of strings
-    if (Array.isArray(v) && typeof v[0] === "string") return v.slice().sort();
-
-    // Array of objects
-    if (Array.isArray(v) && typeof v[0] === "object") {
-      return v
-        .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
-        .filter(Boolean)
-        .sort();
-    }
-
-    // Object forms
-    if (typeof v === "object") {
-      if (Array.isArray(v.teams)) {
-        const t = v.teams;
-        if (!t.length) return [];
-        if (typeof t[0] === "string") return t.slice().sort();
-        return t
-          .map((x) => x?.name || x?.team || x?.Team || x?.club || x?.Club || "")
-          .filter(Boolean)
-          .sort();
-      }
-      // { "Arsenal": {...}, "Chelsea": {...} } -> keys
-      return Object.keys(v).filter((k) => !String(k).startsWith("__")).sort();
-    }
-
-    return [];
-  }
-
-  // -------------------------
-  // xG league averages
-  // -------------------------
+  // -------- league averages --------
   function computeLeagueXgAverages(xgTables, baseGoals = 1.35) {
     const out = {};
     for (const [league, table] of Object.entries(xgTables || {})) {
       if (!table || typeof table !== "object") continue;
-      let sxg = 0,
-        sxga = 0,
-        n = 0;
+      let sxg = 0, sxga = 0, n = 0;
       for (const [team, row] of Object.entries(table)) {
         if (!row || String(team).startsWith("__")) continue;
         const att = Number(row.att);
         const def = Number(row.def);
         if (Number.isFinite(att) && Number.isFinite(def)) {
-          sxg += att;
-          sxga += def;
-          n++;
+          sxg += att; sxga += def; n++;
         }
       }
       out[league] = n ? { xg: sxg / n, xga: sxga / n } : { xg: baseGoals, xga: baseGoals };
@@ -239,44 +198,31 @@
     return { att: avg.xg, def: avg.xga, found: false };
   }
 
-  // -------------------------
-  // Cards/Corners league averages
-  // -------------------------
   function computeLeagueCcAverages(cardsCorners) {
     const out = {};
     for (const [league, table] of Object.entries(cardsCorners || {})) {
       if (!table || typeof table !== "object") continue;
 
-      let scf = 0,
-        sca = 0,
-        sof = 0,
-        soa = 0,
-        n = 0;
-
+      let scf = 0, sca = 0, sof = 0, soa = 0, n = 0;
       for (const [team, row] of Object.entries(table)) {
         if (!row || String(team).startsWith("__")) continue;
+
         const cf = Number(row.cards_for);
         const ca = Number(row.cards_against);
         const of = Number(row.corners_for);
         const oa = Number(row.corners_against);
 
         if ([cf, ca, of, oa].every(Number.isFinite)) {
-          scf += cf;
-          sca += ca;
-          sof += of;
-          soa += oa;
-          n++;
+          scf += cf; sca += ca; sof += of; soa += oa; n++;
         }
       }
 
-      out[league] = n
-        ? {
-            cards_for: scf / n,
-            cards_against: sca / n,
-            corners_for: sof / n,
-            corners_against: soa / n,
-          }
-        : null;
+      out[league] = n ? {
+        cards_for: scf / n,
+        cards_against: sca / n,
+        corners_for: sof / n,
+        corners_against: soa / n,
+      } : null;
     }
     return out;
   }
@@ -298,9 +244,20 @@
     return null;
   }
 
-  // -------------------------
-  // init
-  // -------------------------
+  function fmtNum(x, d = 2) {
+    if (x == null || !Number.isFinite(Number(x))) return "—";
+    return Number(x).toFixed(d);
+  }
+  function toPct(x) {
+    if (x == null || !Number.isFinite(Number(x))) return "—";
+    return (Number(x) * 100).toFixed(1) + "%";
+  }
+  function fairOdds(p) {
+    const pp = Number(p);
+    if (!pp || !Number.isFinite(pp) || pp <= 0) return "—";
+    return (1 / pp).toFixed(2);
+  }
+
   async function init() {
     try {
       dbgEnsure();
@@ -310,17 +267,6 @@
         throw new Error("Missing HTML IDs. index.html IDs must match app.js.");
       }
 
-      // Debug mode: unregister SW to stop stale cached JS/data
-      if ("serviceWorker" in navigator) {
-        try {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const r of regs) await r.unregister();
-          dbg("ServiceWorker: unregistered");
-        } catch (e) {
-          dbg("ServiceWorker: unregister failed");
-        }
-      }
-
       resetSelect(el.league, "Select league", true);
       resetSelect(el.home, "Select home team", true);
       resetSelect(el.away, "Select away team", true);
@@ -328,43 +274,25 @@
       status("Loading data…");
       setResults(`<div style="opacity:.8">Loading…</div>`);
 
-      // REQUIRED
       const teamsByLeague = await fetchJson("./data/teams.json");
       dbg("teams.json loaded");
 
-      // OPTIONAL
       let xgTables = {};
       let aliases = {};
       let leagueStrength = {};
       let cardsCorners = {};
 
-      try {
-        xgTables = await fetchJson("./data/xg_tables.json");
-        dbg("xg_tables.json loaded");
-      } catch (e) {
-        dbg("xg_tables.json missing/failed");
-      }
+      try { xgTables = await fetchJson("./data/xg_tables.json"); dbg("xg_tables.json loaded"); }
+      catch { dbg("xg_tables.json missing/failed"); }
 
-      try {
-        aliases = await fetchJson("./data/aliases.json");
-        dbg("aliases.json loaded");
-      } catch (e) {
-        dbg("aliases.json missing/failed");
-      }
+      try { aliases = await fetchJson("./data/aliases.json"); dbg("aliases.json loaded"); }
+      catch { dbg("aliases.json missing/failed"); }
 
-      try {
-        leagueStrength = await fetchJson("./data/league_strength.json");
-        dbg("league_strength.json loaded");
-      } catch (e) {
-        dbg("league_strength.json missing/failed");
-      }
+      try { leagueStrength = await fetchJson("./data/league_strength.json"); dbg("league_strength.json loaded"); }
+      catch { dbg("league_strength.json missing/failed"); }
 
-      try {
-        cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json");
-        dbg("cards_corners_2025_2026.json loaded");
-      } catch (e) {
-        dbg("cards_corners_2025_2026.json missing/failed");
-      }
+      try { cardsCorners = await fetchJson("./data/cards_corners_2025_2026.json"); dbg("cards_corners_2025_2026.json loaded"); }
+      catch { dbg("cards_corners_2025_2026.json missing/failed"); }
 
       const baseGoals = 1.35;
       const leagueXgAvg = computeLeagueXgAverages(xgTables, baseGoals);
@@ -374,15 +302,12 @@
       dbg(`Leagues found: ${leagues.length}`);
       if (!leagues.length) throw new Error("teams.json loaded but has no leagues");
 
-      // Fill league dropdown
       resetSelect(el.league, "Select league", false);
       leagues.forEach((lg) => el.league.appendChild(opt(lg, lg)));
       el.league.disabled = false;
 
-      // ONE stable handler (no click/touch hacks)
       function updateTeams() {
         const league = el.league.value || "";
-
         resetSelect(el.home, "Select home team", true);
         resetSelect(el.away, "Select away team", true);
 
@@ -409,7 +334,6 @@
       el.league.addEventListener("change", updateTeams);
       updateTeams();
 
-      // Run prediction
       el.runBtn.addEventListener("click", () => {
         const league = el.league.value;
         const home = el.home.value;
@@ -429,14 +353,12 @@
           );
         }
 
-        // resolve keys per dataset
         const xgHomeKey = resolveTeamKeyAny(xgTables, aliases, league, home);
         const xgAwayKey = resolveTeamKeyAny(xgTables, aliases, league, away);
 
         const ccHomeKey = resolveTeamKeyAny(cardsCorners, aliases, league, home);
         const ccAwayKey = resolveTeamKeyAny(cardsCorners, aliases, league, away);
 
-        // league multiplier
         let leagueMult = 1.0;
         if (typeof leagueStrength?.[league] === "number") leagueMult = leagueStrength[league];
         else if (typeof xgTables?.[league]?.__league_factor === "number") leagueMult = xgTables[league].__league_factor;
@@ -444,7 +366,6 @@
         const homeAdv = 1.10;
         const goalCap = 8;
 
-        // xG (team or league avg)
         const H = getTeamXgOrLeagueAvg(xgTables, leagueXgAvg, league, xgHomeKey, baseGoals);
         const A = getTeamXgOrLeagueAvg(xgTables, leagueXgAvg, league, xgAwayKey, baseGoals);
 
@@ -456,7 +377,6 @@
         const xgHome = baseGoals * H_att * A_def;
         const xgAway = baseGoals * A_att * H_def;
 
-        // Cards/Corners (team or league avg or fallback)
         const CC_H = getTeamCcOrLeagueAvg(cardsCorners, leagueCcAvg, league, ccHomeKey);
         const CC_A = getTeamCcOrLeagueAvg(cardsCorners, leagueCcAvg, league, ccAwayKey);
 
@@ -466,7 +386,6 @@
 
         const cardsHome = (num(hcc.cards_for) + num(acc.cards_against)) / 2;
         const cardsAway = (num(acc.cards_for) + num(hcc.cards_against)) / 2;
-
         const cornersHome = (num(hcc.corners_for) + num(acc.corners_against)) / 2;
         const cornersAway = (num(acc.corners_for) + num(hcc.corners_against)) / 2;
 
@@ -516,21 +435,8 @@
             <div style="opacity:.85">Team Cards (inputs): Home ${fmtNum(cardsHome,2)} • Away ${fmtNum(cardsAway,2)}</div>
             <div style="opacity:.85">Team Corners (inputs): Home ${fmtNum(cornersHome,2)} • Away ${fmtNum(cornersAway,2)}</div>
 
-            <div style="margin-top:10px">
-              <div>Total Cards λ: <b>${fmtNum(out.cards.lambdaTotal,2)}</b> • Most likely total: <b>${out.cards.mostLikelyTotal.k}</b></div>
-              <div>O4.5: ${toPct(out.cards.ou45.over)} (fair ${fairOdds(out.cards.ou45.over)}) •
-                   U4.5: ${toPct(out.cards.ou45.under)} (fair ${fairOdds(out.cards.ou45.under)})</div>
-            </div>
-
-            <div style="margin-top:10px">
-              <div>Total Corners λ: <b>${fmtNum(out.corners.lambdaTotal,2)}</b> • Most likely total: <b>${out.corners.mostLikelyTotal.k}</b></div>
-              <div>O9.5: ${toPct(out.corners.ou95.over)} (fair ${fairOdds(out.corners.ou95.over)}) •
-                   U9.5: ${toPct(out.corners.ou95.under)} (fair ${fairOdds(out.corners.ou95.under)})</div>
-            </div>
-
             <div style="opacity:.75;margin-top:12px;font-size:.9em">
-              xG key used: Home=${xgHomeKey} ${H.found ? "" : "(LEAGUE AVG)"} • Away=${xgAwayKey} ${A.found ? "" : "(LEAGUE AVG)"}<br>
-              Cards/Corners key used: Home=${ccHomeKey} ${CC_H?.found ? "" : "(LEAGUE AVG)"} • Away=${ccAwayKey} ${CC_A?.found ? "" : "(LEAGUE AVG)"}
+              xG key used: Home=${xgHomeKey} ${H.found ? "" : "(LEAGUE AVG)"} • Away=${xgAwayKey} ${A.found ? "" : "(LEAGUE AVG)"}
             </div>
           </div>
         `;
@@ -553,4 +459,3 @@
 
   document.addEventListener("DOMContentLoaded", init);
 })();
-```0
