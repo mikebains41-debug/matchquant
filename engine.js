@@ -2,7 +2,7 @@
 // Exposes: window.MQ.predictMatchInternal(payload)
 
 (() => {
-  console.log("✅ MatchQuant REAL engine loaded");
+  console.log("✅ MatchQuant engine loaded");
 
   const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
@@ -77,12 +77,7 @@
         else away += p;
       }
     }
-    return {
-      home, draw, away,
-      homeOdds: fairOdds(home),
-      drawOdds: fairOdds(draw),
-      awayOdds: fairOdds(away),
-    };
+    return { home, draw, away, homeOdds: fairOdds(home), drawOdds: fairOdds(draw), awayOdds: fairOdds(away) };
   }
 
   function calcOverUnder(grid, line = 2.5) {
@@ -115,7 +110,6 @@
     return { yes, no, yesOdds: fairOdds(yes), noOdds: fairOdds(no) };
   }
 
-  // 1D totals (cards/corners)
   function build1DTotal(lambda, cap = 30) {
     const c = clamp(parseInt(cap || 30, 10), 10, 80);
     const probs = new Array(c + 1).fill(0);
@@ -153,7 +147,6 @@
   }
 
   function predictMatchInternal(payload) {
-    // ----- GOALS -----
     const xgHome = Number(payload.xgHome ?? 1.35);
     const xgAway = Number(payload.xgAway ?? 1.35);
 
@@ -174,7 +167,6 @@
     const ou25 = calcOverUnder(grid, 2.5);
     const btts = calcBTTS(grid);
 
-    // ----- CARDS / CORNERS -----
     const cardsHome = toFiniteOrNull(payload.cardsHome);
     const cardsAway = toFiniteOrNull(payload.cardsAway);
     const cornersHome = toFiniteOrNull(payload.cornersHome);
@@ -183,7 +175,6 @@
     const haveCards = cardsHome !== null && cardsAway !== null;
     const haveCorners = cornersHome !== null && cornersAway !== null;
 
-    // If missing, use league-typical defaults (you can tune these)
     const cardsTotalLam = haveCards ? clamp(cardsHome + cardsAway, 1.5, 12.0) : 4.6;
     const cornersTotalLam = haveCorners ? clamp(cornersHome + cornersAway, 4.0, 22.0) : 9.8;
 
@@ -197,19 +188,15 @@
       x12,
       ou25,
       btts,
-
-      // Keep team inputs so UI can show them
       cardsHome,
       cardsAway,
       cornersHome,
       cornersAway,
-
       cards: {
         lambdaTotal: cardsTotalLam,
         mostLikelyTotal: cardsTotal.mostLikelyTotal,
         ou45: ou1D(cardsTotal, 4.5),
       },
-
       corners: {
         lambdaTotal: cornersTotalLam,
         mostLikelyTotal: cornersTotal.mostLikelyTotal,
