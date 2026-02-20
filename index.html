@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchQuant</title>
 
-  <link rel="manifest" href="manifest.json?v=4" />
+  <!-- Keep these versioned so GitHub Pages + mobile caches refresh -->
+  <link rel="manifest" href="manifest.json?v=5" />
   <meta name="theme-color" content="#0b1323" />
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 
 <body>
@@ -64,18 +65,11 @@
     MatchQuant • xG Engine • Fair Odds • No Bookmaker Bias
   </footer>
 
-  <!-- SCRIPT LOAD ORDER (cache-busted) -->
-  <script defer src="./engine.js?v=4"></script>
-  <script defer src="./ah.js?v=4"></script>
-  <script defer src="./app.js?v=4"></script>
+  <!-- IMPORTANT: keep order: engine -> ah -> app -->
+  <script defer src="./engine.js?v=5"></script>
+  <script defer src="./ah.js?v=5"></script>
+  <script defer src="./app.js?v=5"></script>
 
-  <!-- SERVICE WORKER: keep OFF until stable -->
-  <!--
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js?v=4");
-    }
-  </script>
-  -->
+  <!-- Service worker OFF to stop stale caching while debugging -->
 </body>
 </html>
