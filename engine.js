@@ -46,7 +46,7 @@ function poissonSample(lambda, rng) {
 
 function mulberry32(seed) {
   let a = seed >>> 0;
-  return function() {
+  return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
     let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
@@ -56,10 +56,15 @@ function mulberry32(seed) {
 
 function keyScore(h, a) { return `${h}-${a}`; }
 
+// ------------------------------------------------------------
+// 1) Core simulation
+// - Returns totals[] and diffs[] so totals + AH are exact
+// - Keeps scoreCounts for top scorelines
+// ------------------------------------------------------------
 export function simulateMatch({
   homeXG, awayXG,
-  homeAdv = 0.10,         // small home advantage in goals
-  pace = 1.00,            // 1.0 default, adjust if you later model tempo
+  homeAdv = 0.10,     // small home advantage in goals
+  pace = 1.00,        // 1.0 default, adjust if you later model tempo
   sims = 20000,
   seed = 1337
 }) {
@@ -72,26 +77,32 @@ export function simulateMatch({
   let over25 = 0, btts = 0;
 
   const scoreCounts = new Map();
-  const totals = [];
+
+  // Use typed arrays for speed + smaller memory
+  const totals = new Int16Array(sims); // h+a
+  const diffs  = new Int16Array(sims); // h-a
 
   for (let i = 0; i < sims; i++) {
     const h = poissonSample(lamH, rng);
     const a = poissonSample(lamA, rng);
 
-    if (h > a) homeW++;
-    else if (h === a) draw++;
+    const d = h - a;
+    const t = h + a;
+
+    diffs[i] = d;
+    totals[i] = t;
+
+    if (d > 0) homeW++;
+    else if (d === 0) draw++;
     else awayW++;
 
-    if (h + a >= 3) over25++;
+    if (t >= 3) over25++;
     if (h >= 1 && a >= 1) btts++;
-
-    totals.push(h + a);
 
     const k = keyScore(h, a);
     scoreCounts.set(k, (scoreCounts.get(k) || 0) + 1);
   }
 
-  // top scorelines
   const topScores = [...scoreCounts.entries()]
     .sort((x, y) => y[1] - x[1])
     .slice(0, 8)
@@ -107,41 +118,102 @@ export function simulateMatch({
       btts: btts / sims
     },
     topScores,
-    totals // keep for flexible total/alt lines
+    totals,
+    diffs,
+    scoreCounts
   };
 }
 
+// ------------------------------------------------------------
+// 2) Totals probability with push support
+// - For line 207.0, equality is PUSH
+// - For 207.5, push will be 0 naturally
+// ------------------------------------------------------------
 export function probOverTotal(totalsArr, line) {
   const L = Number(line);
-  if (!isFinite(L)) return null;
-  // Basketball totals are integer or .5, soccer totals are .5 etc.
-  // We interpret "Over 207.0" as total >= 208 (strictly greater than 207)
-  // For .5 lines, total > line works naturally.
-  let over = 0;
+  if (!isFinite(L) || !totalsArr || totalsArr.length === 0) return null;
+
+  let win = 0, push = 0;
   for (const t of totalsArr) {
-    if (t > L) over++;
+    if (t > L) win++;
+    else if (t === L) push++;
   }
-  return over / totalsArr.length;
+  const n = totalsArr.length;
+  return { win: win / n, push: push / n, lose: 1 - (win / n) - (push / n) };
 }
 
 export function probUnderTotal(totalsArr, line) {
   const L = Number(line);
-  if (!isFinite(L)) return null;
-  let under = 0;
+  if (!isFinite(L) || !totalsArr || totalsArr.length === 0) return null;
+
+  let win = 0, push = 0;
   for (const t of totalsArr) {
-    if (t < L) under++;
+    if (t < L) win++;
+    else if (t === L) push++;
   }
-  return under / totalsArr.length;
+  const n = totalsArr.length;
+  return { win: win / n, push: push / n, lose: 1 - (win / n) - (push / n) };
 }
 
-export function probAHCover({ results, ah }) {
-  // results: array of {h,a} OR totals? (for soccer we use goals)
-  // Here we assume you pass in per-sim (h,a) but we currently store totals only.
-  // We'll compute AH on scoreline distribution approximation from topScores not perfect.
-  // For soccer app this can be expanded; for now v2 focuses on 1X2 + totals.
-  return null;
+// ------------------------------------------------------------
+// 3) Asian Handicap cover probability (home perspective)
+// Input:
+//   diffs = (homeGoals - awayGoals) per simulation (Int16Array ok)
+//   ah    = handicap on HOME team (e.g. -0.25, +0.5, +1.0)
+// Output:
+//   { win, push, lose } probabilities
+// Supports quarter lines by splitting (e.g. -0.25 => -0.0 and -0.5)
+// ------------------------------------------------------------
+function splitAH(ah) {
+  const x = Number(ah);
+  if (!isFinite(x)) return [null, null];
+
+  const frac = Math.abs(x % 1);
+  const sign = x < 0 ? -1 : 1;
+
+  // Quarter lines split into two adjacent half-lines
+  if (Math.abs(frac - 0.25) < 1e-9) return [x - 0.25 * sign, x + 0.25 * sign];
+  if (Math.abs(frac - 0.75) < 1e-9) return [x - 0.25 * sign, x + 0.25 * sign];
+
+  // Whole or half lines
+  return [x, null];
 }
 
+function settleSingleAH(diff, line) {
+  // diff = home-away, line is home handicap
+  const v = diff + line;
+  if (v > 0) return 1;    // win
+  if (v === 0) return 0;  // push
+  return -1;              // lose
+}
+
+export function probAHCover({ diffs, ah }) {
+  if (!diffs || typeof diffs.length !== "number" || diffs.length === 0) return null;
+
+  const [a1, a2] = splitAH(ah);
+  if (a1 == null) return null;
+
+  let win = 0, push = 0, lose = 0;
+
+  for (const d of diffs) {
+    const r1 = settleSingleAH(d, a1);
+    const r2 = (a2 == null) ? null : settleSingleAH(d, a2);
+
+    // If split, average the two legs (half-stake each)
+    const outcome = (r2 == null) ? r1 : (r1 + r2) / 2;
+
+    if (outcome > 0) win++;
+    else if (outcome === 0) push++;
+    else lose++;
+  }
+
+  const n = diffs.length;
+  return { win: win / n, push: push / n, lose: lose / n };
+}
+
+// ------------------------------------------------------------
+// EV + tiering helpers
+// ------------------------------------------------------------
 export function evEdge(modelProb, offeredOddsDecimal) {
   const p = Number(modelProb);
   const o = Number(offeredOddsDecimal);
