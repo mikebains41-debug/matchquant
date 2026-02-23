@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 const state = {
   tables: { leagues:{}, teams:{}, xg:{}, h2h:{} },
   deferredPrompt: null,
+  lastResult: null
 };
 
 const STORAGE_KEY = "mq2_history_v1";
@@ -60,7 +61,7 @@ function renderOutput(result){
   const best = model.bestScore;
   const bestStr = `${best.h}-${best.a} (${pct(best.p)})`;
 
-  const edgeLine = market ? `
+  const edgeLine = (market && edges) ? `
     <div class="hr"></div>
     <div class="small"><b>Market comparison (no-vig from your 1X2 odds)</b></div>
     <div class="code">
@@ -69,8 +70,8 @@ function renderOutput(result){
     </div>
   ` : "";
 
-  const ouLine = inputs.ouLine;
-  const ahLine = inputs.ahLine;
+  const ouLine = model.pOver != null ? Number($("ouLine").value) : null;
+  const ahLine = model.pAHHome != null ? Number($("ahLine").value) : null;
 
   const ouBlock = (ouLine!=null && !isNaN(ouLine)) ? `
     <div class="kpi">
@@ -100,12 +101,12 @@ function renderOutput(result){
     <div class="kpi">
       <div class="label">Home AH ${ahLine}</div>
       <div class="value">${pct(model.pAHHome)}</div>
-      <div class="small">Win-prob only (push separate)</div>
+      <div class="small">Profit-weighted (supports .25/.75)</div>
     </div>
     <div class="kpi">
       <div class="label">Away AH ${-ahLine}</div>
       <div class="value">${pct(model.pAHAway)}</div>
-      <div class="small">Win-prob only (push separate)</div>
+      <div class="small">Profit-weighted (supports .25/.75)</div>
     </div>
   ` : `
     <div class="kpi">
@@ -120,20 +121,19 @@ function renderOutput(result){
     </div>
   `;
 
-  // Quick “best angle” heuristic
-  let angle = [];
+  // Quick heuristic
   const probs = [
     {k:"Home", p:model.pHome, fo:fairOdds.home},
     {k:"Draw", p:model.pDraw, fo:fairOdds.draw},
     {k:"Away", p:model.pAway, fo:fairOdds.away},
   ].sort((a,b)=>b.p-a.p);
 
+  let angle = [];
   angle.push(`Most likely result by model: <b>${probs[0].k}</b> (${pct(probs[0].p)})`);
-
-  if (ouLine!=null && model.pOver!=null){
+  if (!isNaN(Number($("ouLine").value)) && model.pOver!=null){
     angle.push(`Total lean: <b>${model.pOver>0.52 ? "Over" : (model.pOver<0.48 ? "Under" : "No strong edge")}</b>`);
   }
-  if (ahLine!=null && model.pAHHome!=null){
+  if (!isNaN(Number($("ahLine").value)) && model.pAHHome!=null){
     angle.push(`AH lean: <b>${model.pAHHome>0.52 ? "Home" : (model.pAHHome<0.48 ? "Away" : "No strong edge")}</b>`);
   }
 
@@ -178,11 +178,8 @@ function renderOutput(result){
 }
 
 function getHistory(){
-  try{
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  }catch{
-    return [];
-  }
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch{ return []; }
 }
 
 function setHistory(items){
@@ -218,6 +215,8 @@ function currentOptions(){
     oddsH: toNum($("oddsH").value),
     oddsD: toNum($("oddsD").value),
     oddsA: toNum($("oddsA").value),
+    sims: 20000,
+    seed: 1337
   };
 }
 
@@ -282,20 +281,29 @@ async function init(){
   window.addEventListener("online", setNetBadge);
   window.addEventListener("offline", setNetBadge);
 
-  // Load data
-  const [leagues, teams, xg, h2h] = await Promise.all([
-    loadJSON("data/leagues.json"),
-    loadJSON("data/teams.json"),
+  // ✅ Only load what exists
+  const [xg, h2h] = await Promise.all([
     loadJSON("data/xg_tables.json"),
     loadJSON("data/h2h.json"),
   ]);
 
-  state.tables.leagues = leagues;
-  state.tables.teams = teams;
   state.tables.xg = xg;
   state.tables.h2h = h2h;
 
-  const leagueNames = Object.keys(leagues).sort((a,b)=>a.localeCompare(b));
+  // ✅ Build leagues + teams from xg_tables.json
+  state.tables.leagues = {};
+  state.tables.teams = {};
+
+  const leagueNames = Object.keys(xg || {}).sort((a,b)=>a.localeCompare(b));
+
+  for (const L of leagueNames) {
+    const teamsObj = xg[L] || {};
+    const teamNames = Object.keys(teamsObj).sort((a,b)=>a.localeCompare(b));
+    state.tables.leagues[L] = { home_adv: 0.10, pace: 1.00 };
+    state.tables.teams[L] = {};
+    for (const t of teamNames) state.tables.teams[L][t] = 1;
+  }
+
   fillSelect($("leagueSelect"), leagueNames, "Select league");
 
   $("leagueSelect").addEventListener("change", () => {
@@ -307,6 +315,7 @@ async function init(){
 
   $("runBtn").addEventListener("click", run);
   $("saveBtn").addEventListener("click", saveToHistory);
+
   $("swapBtn").addEventListener("click", () => {
     const h = $("homeSelect").value;
     const a = $("awaySelect").value;
@@ -314,6 +323,7 @@ async function init(){
     $("homeSelect").value = a;
     $("awaySelect").value = h;
   });
+
   $("resetBtn").addEventListener("click", resetAll);
 
   $("exportBtn").addEventListener("click", () => {
@@ -332,11 +342,8 @@ async function init(){
 
   // Service worker
   if ("serviceWorker" in navigator){
-    try{
-      await navigator.serviceWorker.register("sw.js");
-    }catch(e){
-      console.warn("SW register failed", e);
-    }
+    try{ await navigator.serviceWorker.register("sw.js"); }
+    catch(e){ console.warn("SW register failed", e); }
   }
 
   // Install prompt
@@ -354,7 +361,7 @@ async function init(){
     $("installBtn").style.display = "none";
   });
 
-  // Auto-select first league for convenience
+  // Auto-select first league
   if (leagueNames.length){
     $("leagueSelect").value = leagueNames[0];
     $("leagueSelect").dispatchEvent(new Event("change"));
@@ -364,6 +371,8 @@ async function init(){
       $("awaySelect").value = t[1];
     }
   }
+
+  $("output").innerHTML = `<div class="muted">Pick a league + teams and hit <b>Run Prediction</b>.</div>`;
 }
 
 init().catch(err => {
