@@ -1,14 +1,21 @@
 const $ = (id) => document.getElementById(id);
 
 const state = {
-  tables: { leagues:{}, teams:{}, xg:{}, h2h:{} },
+  tables: {
+    leagues: {},
+    teams: {},
+    xg: {},
+    h2h: {},
+    splits: {},   // { "Premier League": { home:{}, away:{} }, ... }
+    players: {}   // { "Premier League": [ ...players ], ... }
+  },
   deferredPrompt: null,
   lastResult: null
 };
 
 const STORAGE_KEY = "mq2_history_v1";
 
-function setNetBadge(){
+function setNetBadge() {
   const b = $("netBadge");
   const on = navigator.onLine;
   b.textContent = on ? "Online" : "Offline";
@@ -16,13 +23,24 @@ function setNetBadge(){
   b.style.color = on ? "rgba(61,220,151,.95)" : "rgba(174,185,214,.95)";
 }
 
-async function loadJSON(path){
+async function loadJSON(path) {
   const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed ${path}: ${res.status}`);
   return await res.json();
 }
 
-function fillSelect(selectEl, items, placeholder){
+// Try-load helper: returns null if missing (404) or fails
+async function tryLoadJSON(path) {
+  try {
+    const res = await fetch(path, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function fillSelect(selectEl, items, placeholder) {
   selectEl.innerHTML = "";
   const p = document.createElement("option");
   p.value = "";
@@ -31,7 +49,7 @@ function fillSelect(selectEl, items, placeholder){
   p.selected = true;
   selectEl.appendChild(p);
 
-  for (const it of items){
+  for (const it of items) {
     const o = document.createElement("option");
     o.value = it;
     o.textContent = it;
@@ -39,19 +57,19 @@ function fillSelect(selectEl, items, placeholder){
   }
 }
 
-function leagueTeams(league){
+function leagueTeams(league) {
   const t = state.tables.teams?.[league] || {};
-  return Object.keys(t).sort((a,b)=>a.localeCompare(b));
+  return Object.keys(t).sort((a, b) => a.localeCompare(b));
 }
 
-function round2(x){ return Math.round(x*100)/100; }
-function pct(x){
-  if (x==null || isNaN(x)) return "—";
-  return `${Math.round(x*1000)/10}%`;
+function round2(x) { return Math.round(x * 100) / 100; }
+function pct(x) {
+  if (x == null || isNaN(x)) return "—";
+  return `${Math.round(x * 1000) / 10}%`;
 }
 
-function renderOutput(result){
-  if (result.error){
+function renderOutput(result) {
+  if (result?.error) {
     $("output").innerHTML = `<div class="muted">${result.error}</div>`;
     return;
   }
@@ -73,16 +91,16 @@ function renderOutput(result){
   const ouLine = model.pOver != null ? Number($("ouLine").value) : null;
   const ahLine = model.pAHHome != null ? Number($("ahLine").value) : null;
 
-  const ouBlock = (ouLine!=null && !isNaN(ouLine)) ? `
+  const ouBlock = (ouLine != null && !isNaN(ouLine)) ? `
     <div class="kpi">
       <div class="label">Over ${ouLine}</div>
       <div class="value">${pct(model.pOver)}</div>
-      <div class="small">Fair odds: ${fairOdds.over ? round2(fairOdds.over) : "—"}</div>
+      <div class="small">Fair odds: ${fairOdds?.over ? round2(fairOdds.over) : "—"}</div>
     </div>
     <div class="kpi">
       <div class="label">Under ${ouLine}</div>
       <div class="value">${pct(model.pUnder)}</div>
-      <div class="small">Fair odds: ${fairOdds.under ? round2(fairOdds.under) : "—"}</div>
+      <div class="small">Fair odds: ${fairOdds?.under ? round2(fairOdds.under) : "—"}</div>
     </div>
   ` : `
     <div class="kpi">
@@ -97,7 +115,7 @@ function renderOutput(result){
     </div>
   `;
 
-  const ahBlock = (ahLine!=null && !isNaN(ahLine)) ? `
+  const ahBlock = (ahLine != null && !isNaN(ahLine)) ? `
     <div class="kpi">
       <div class="label">Home AH ${ahLine}</div>
       <div class="value">${pct(model.pAHHome)}</div>
@@ -121,20 +139,19 @@ function renderOutput(result){
     </div>
   `;
 
-  // Quick heuristic
   const probs = [
-    {k:"Home", p:model.pHome, fo:fairOdds.home},
-    {k:"Draw", p:model.pDraw, fo:fairOdds.draw},
-    {k:"Away", p:model.pAway, fo:fairOdds.away},
-  ].sort((a,b)=>b.p-a.p);
+    { k: "Home", p: model.pHome, fo: fairOdds?.home },
+    { k: "Draw", p: model.pDraw, fo: fairOdds?.draw },
+    { k: "Away", p: model.pAway, fo: fairOdds?.away },
+  ].sort((a, b) => b.p - a.p);
 
   let angle = [];
   angle.push(`Most likely result by model: <b>${probs[0].k}</b> (${pct(probs[0].p)})`);
-  if (!isNaN(Number($("ouLine").value)) && model.pOver!=null){
-    angle.push(`Total lean: <b>${model.pOver>0.52 ? "Over" : (model.pOver<0.48 ? "Under" : "No strong edge")}</b>`);
+  if (!isNaN(Number($("ouLine").value)) && model.pOver != null) {
+    angle.push(`Total lean: <b>${model.pOver > 0.52 ? "Over" : (model.pOver < 0.48 ? "Under" : "No strong edge")}</b>`);
   }
-  if (!isNaN(Number($("ahLine").value)) && model.pAHHome!=null){
-    angle.push(`AH lean: <b>${model.pAHHome>0.52 ? "Home" : (model.pAHHome<0.48 ? "Away" : "No strong edge")}</b>`);
+  if (!isNaN(Number($("ahLine").value)) && model.pAHHome != null) {
+    angle.push(`AH lean: <b>${model.pAHHome > 0.52 ? "Home" : (model.pAHHome < 0.48 ? "Away" : "No strong edge")}</b>`);
   }
 
   $("output").innerHTML = `
@@ -156,7 +173,7 @@ function renderOutput(result){
       <div class="kpi">
         <div class="label">Home / Draw / Away</div>
         <div class="value">${pct(model.pHome)} / ${pct(model.pDraw)} / ${pct(model.pAway)}</div>
-        <div class="small">Fair: ${round2(fairOdds.home)} / ${round2(fairOdds.draw)} / ${round2(fairOdds.away)}</div>
+        <div class="small">Fair: ${round2(fairOdds?.home)} / ${round2(fairOdds?.draw)} / ${round2(fairOdds?.away)}</div>
       </div>
 
       <div class="kpi">
@@ -177,19 +194,19 @@ function renderOutput(result){
   `;
 }
 
-function getHistory(){
-  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-  catch{ return []; }
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+  catch { return []; }
 }
 
-function setHistory(items){
+function setHistory(items) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   renderHistory();
 }
 
-function renderHistory(){
+function renderHistory() {
   const items = getHistory();
-  if (!items.length){
+  if (!items.length) {
     $("history").innerHTML = `<div class="muted">No saved matches yet.</div>`;
     return;
   }
@@ -204,7 +221,7 @@ function renderHistory(){
   `).join("");
 }
 
-function currentOptions(){
+function currentOptions() {
   const toNum = (v) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
@@ -220,7 +237,7 @@ function currentOptions(){
   };
 }
 
-function getSelection(){
+function getSelection() {
   return {
     league: $("leagueSelect").value,
     homeTeam: $("homeSelect").value,
@@ -229,8 +246,9 @@ function getSelection(){
   };
 }
 
-function run(){
+function run() {
   const { league, homeTeam, awayTeam } = getSelection();
+
   const result = window.MQ2.analyzeMatch({
     league,
     homeTeam,
@@ -239,15 +257,18 @@ function run(){
       leagues: state.tables.leagues,
       teams: state.tables.teams,
       xg: state.tables.xg,
-      h2h: state.tables.h2h
+      h2h: state.tables.h2h,
+      splits: state.tables.splits,   // ✅ now available to engine if it uses it
+      players: state.tables.players  // ✅ now available to engine if it uses it
     },
     options: currentOptions()
   });
+
   state.lastResult = result;
   renderOutput(result);
 }
 
-function saveToHistory(){
+function saveToHistory() {
   const r = state.lastResult;
   if (!r || r.error) return;
 
@@ -266,7 +287,7 @@ function saveToHistory(){
   setHistory(items);
 }
 
-function resetAll(){
+function resetAll() {
   $("ouLine").value = "";
   $("ahLine").value = "";
   $("oddsH").value = "";
@@ -276,30 +297,68 @@ function resetAll(){
   $("output").innerHTML = `<div class="muted">Pick a league + teams and hit <b>Run Prediction</b>.</div>`;
 }
 
-async function init(){
+function extractTeamsFromXGLeague(xgLeagueValue) {
+  // Supports:
+  // 1) Array of rows: [{team:"Arsenal", ...}, ...]
+  // 2) Object keyed by team: {"Arsenal": {...}, ...}
+  // 3) Object row map with "team" inside values (rare)
+  if (!xgLeagueValue) return [];
+
+  if (Array.isArray(xgLeagueValue)) {
+    return xgLeagueValue
+      .map(r => r?.team)
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  if (typeof xgLeagueValue === "object") {
+    const keys = Object.keys(xgLeagueValue);
+    // If keys look like team names, use them
+    if (keys.length && typeof xgLeagueValue[keys[0]] === "object") {
+      // Prefer keys (most common)
+      return keys.sort((a, b) => a.localeCompare(b));
+    }
+  }
+
+  return [];
+}
+
+async function init() {
   setNetBadge();
   window.addEventListener("online", setNetBadge);
   window.addEventListener("offline", setNetBadge);
 
-  // ✅ Only load what exists
+  // REQUIRED
   const [xg, h2h] = await Promise.all([
     loadJSON("data/xg_tables.json"),
-    loadJSON("data/h2h.json"),
+    loadJSON("data/h2h.json")
   ]);
 
-  state.tables.xg = xg;
-  state.tables.h2h = h2h;
+  // OPTIONAL (won't crash if missing)
+  const [eplSplits, eplPlayers] = await Promise.all([
+    tryLoadJSON("data/epl_splits.json"),
+    tryLoadJSON("data/epl_players.json")
+  ]);
 
-  // ✅ Build leagues + teams from xg_tables.json
+  state.tables.xg = xg || {};
+  state.tables.h2h = h2h || {};
+
+  // Attach EPL splits/players if present
+  if (eplSplits) state.tables.splits["Premier League"] = eplSplits;
+  if (eplPlayers) state.tables.players["Premier League"] = eplPlayers;
+
+  // Build leagues + teams FROM xg_tables.json
   state.tables.leagues = {};
   state.tables.teams = {};
 
-  const leagueNames = Object.keys(xg || {}).sort((a,b)=>a.localeCompare(b));
+  const leagueNames = Object.keys(state.tables.xg || {}).sort((a, b) => a.localeCompare(b));
 
   for (const L of leagueNames) {
-    const teamsObj = xg[L] || {};
-    const teamNames = Object.keys(teamsObj).sort((a,b)=>a.localeCompare(b));
+    const teamNames = extractTeamsFromXGLeague(state.tables.xg[L]);
+
+    // default league params (you can tune later)
     state.tables.leagues[L] = { home_adv: 0.10, pace: 1.00 };
+
     state.tables.teams[L] = {};
     for (const t of teamNames) state.tables.teams[L][t] = 1;
   }
@@ -328,7 +387,7 @@ async function init(){
 
   $("exportBtn").addEventListener("click", () => {
     const items = getHistory();
-    const blob = new Blob([JSON.stringify(items, null, 2)], {type:"application/json"});
+    const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -341,9 +400,9 @@ async function init(){
   renderHistory();
 
   // Service worker
-  if ("serviceWorker" in navigator){
-    try{ await navigator.serviceWorker.register("sw.js"); }
-    catch(e){ console.warn("SW register failed", e); }
+  if ("serviceWorker" in navigator) {
+    try { await navigator.serviceWorker.register("sw.js"); }
+    catch (e) { console.warn("SW register failed", e); }
   }
 
   // Install prompt
@@ -362,17 +421,24 @@ async function init(){
   });
 
   // Auto-select first league
-  if (leagueNames.length){
+  if (leagueNames.length) {
     $("leagueSelect").value = leagueNames[0];
     $("leagueSelect").dispatchEvent(new Event("change"));
     const t = leagueTeams(leagueNames[0]);
-    if (t.length >= 2){
+    if (t.length >= 2) {
       $("homeSelect").value = t[0];
       $("awaySelect").value = t[1];
     }
   }
 
-  $("output").innerHTML = `<div class="muted">Pick a league + teams and hit <b>Run Prediction</b>.</div>`;
+  // Show what loaded (quietly, but useful)
+  const spl = Object.keys(state.tables.splits).length;
+  const ply = Object.keys(state.tables.players).length;
+  const note = (spl || ply)
+    ? `<div class="muted">Loaded extras: ${spl ? "splits" : ""}${spl && ply ? " + " : ""}${ply ? "players" : ""}.</div>`
+    : "";
+
+  $("output").innerHTML = `${note}<div class="muted">Pick a league + teams and hit <b>Run Prediction</b>.</div>`;
 }
 
 init().catch(err => {
