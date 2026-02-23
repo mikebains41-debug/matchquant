@@ -1,3 +1,25 @@
 {
-  "note": "Drop your real xG/xGA/xPTS/strength tables here if you want. The app currently uses /data/teams.json directly."
+  "Premier League": {
+    "Arsenal": { "xg": 1.65, "xga": 0.95 },
+    "Liverpool": { "xg": 1.85, "xga": 1.00 },
+    "Manchester City": { "xg": 2.05, "xga": 0.90 },
+    "Chelsea": { "xg": 1.55, "xga": 1.25 }
+  },
+  "La Liga": {
+    "Real Madrid": { "xg": 1.95, "xga": 0.85 },
+    "Barcelona": { "xg": 1.80, "xga": 1.00 },
+    "Atletico Madrid": { "xg": 1.55, "xga": 0.95 }
+  },
+  "Bundesliga": {
+    "Bayern Munich": { "xg": 2.10, "xga": 1.05 },
+    "Borussia Dortmund": { "xg": 1.85, "xga": 1.20 }
+  },
+  "Serie A": {
+    "Inter": { "xg": 1.75, "xga": 0.95 },
+    "Juventus": { "xg": 1.45, "xga": 0.90 }
+  },
+  "Ligue 1": {
+    "PSG": { "xg": 2.00, "xga": 0.95 },
+    "Marseille": { "xg": 1.55, "xga": 1.10 }
+  }
 }
