@@ -1,0 +1,7 @@
+{
+  "Premier League": { "home_adv": 0.16, "strength": 1.05 },
+  "La Liga": { "home_adv": 0.15, "strength": 1.03 },
+  "Serie A": { "home_adv": 0.15, "strength": 1.02 },
+  "Bundesliga": { "home_adv": 0.14, "strength": 1.04 },
+  "Ligue 1": { "home_adv": 0.15, "strength": 1.01 }
+}
