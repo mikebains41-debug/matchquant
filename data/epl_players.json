@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>MatchQuant Player Converter</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:16px;max-width:1000px}
+    textarea{width:100%;min-height:260px;font-family:ui-monospace,Menlo,Consolas,monospace}
+    button{padding:10px 14px;margin:10px 6px 0 0}
+    .muted{opacity:.7}
+    pre{background:#f4f4f4;padding:10px;overflow:auto}
+  </style>
+</head>
+<body>
+  <h2>Convert Players Table → epl_players.json</h2>
+  <p class="muted">Paste the Players section exactly as you sent me (including the header row).</p>
+
+  <textarea id="src" placeholder='Paste Players block here...'></textarea><br/>
+  <button id="go">Convert & Download</button>
+
+  <h3>Preview</h3>
+  <pre id="out">(nothing yet)</pre>
+
+<script>
+function parsePlayers(raw){
+  const lines = raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+
+  // find header line
+  const headerIdx = lines.findIndex(l => l.includes('"player"') && l.includes('"team"'));
+  if (headerIdx === -1) throw new Error("Could not find header row with player/team columns.");
+
+  const rows = lines.slice(headerIdx + 1).filter(l => l.includes(";"));
+
+  const out = [];
+  for (const r of rows){
+    // split by ; respecting simple quoted fields
+    const parts = r.split(";").map(x => x.trim());
+    if (parts.length < 11) continue;
+
+    const clean = (s) => s.replace(/^"+|"+$/g, "").trim();
+
+    const obj = {
+      number: Number(clean(parts[0])),
+      player: clean(parts[1]),
+      teams: clean(parts[2]).split(",").map(t => t.trim()).filter(Boolean),
+      apps: Number(clean(parts[3])),
+      min: Number(clean(parts[4])),
+      goals: Number(clean(parts[5])),
+      a: Number(clean(parts[6])),
+      xG: Number(clean(parts[7])),
+      xA: Number(clean(parts[8])),
+      xG90: Number(clean(parts[9])),
+      xA90: Number(clean(parts[10]))
+    };
+    out.push(obj);
+  }
+  return out;
+}
+
+document.getElementById("go").addEventListener("click", () => {
+  try{
+    const raw = document.getElementById("src").value;
+    const players = parsePlayers(raw);
+    document.getElementById("out").textContent = JSON.stringify(players.slice(0, 10), null, 2);
+
+    const blob = new Blob([JSON.stringify(players, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "epl_players.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    document.getElementById("out").textContent = "ERROR: " + e.message;
+  }
+});
+</script>
+</body>
+</html>
